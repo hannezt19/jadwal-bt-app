@@ -47,7 +47,21 @@ jobs:
 
       - name: Sinkronkan file web ke proyek Android
         run: npx cap sync android
+      - name: Perbaiki konflik versi Kotlin
+        run: |
+          cat >> android/build.gradle << 'EOF'
 
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.24"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24"
+                  }
+              }
+          }
+          EOF
       - name: Build APK versi uji coba (debug)
         working-directory: android
         run: |
