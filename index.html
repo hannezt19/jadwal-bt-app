@@ -187,11 +187,10 @@
 
   /* side drawer settings */
   .drawer-bg{position:fixed;inset:0;background:rgba(24,34,56,0.5);z-index:150;}
-  .drawer{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:340px;background:var(--paper);z-index:151;padding:20px 18px;box-shadow:6px 0 30px rgba(0,0,0,0.2);transform:translateX(0);}
+  .drawer{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:340px;background:var(--paper);z-index:151;padding:calc(20px + env(safe-area-inset-top,0px)) 18px 20px;box-shadow:6px 0 30px rgba(0,0,0,0.2);transform:translateX(0);}
   .drawer h3{margin:0 0 4px;font-size:16px;}
   .drawer .dsub{font-size:11px;color:var(--sub);margin-bottom:16px;}
-  .drawer-close{position:absolute;right:14px;top:16px;font-size:18px;color:var(--sub);}
-
+  .drawer-close{position:absolute;right:14px;top:calc(16px + env(safe-area-inset-top,0px));font-size:18px;color:var(--sub);}
   .fw-entry{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
   .fw-entry:last-child{margin-bottom:0;}
   .fw-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
