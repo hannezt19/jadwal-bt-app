@@ -1,0 +1,61 @@
+name: Build Capacitor APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil kode dari repo
+        uses: actions/checkout@v4
+
+      - name: Siapkan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Siapkan Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Susun folder www/ dari file web yang sudah ada di repo
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp manifest.json www/ || true
+          cp service-worker.js www/ || true
+          cp -r icons www/ || true
+          cp -r fonts www/ || true
+          cp -r vendor www/ || true
+
+      - name: Buat identitas proyek (package.json)
+        run: npm init -y
+
+      - name: Pasang Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Inisialisasi Capacitor
+        run: npx cap init "Jadwal BT" "com.yohanes.jadwalbt" --web-dir=www
+
+      - name: Tambahkan platform Android
+        run: npx cap add android
+
+      - name: Sinkronkan file web ke proyek Android
+        run: npx cap sync android
+
+      - name: Build APK versi uji coba (debug)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Unggah hasil APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jadwal-bt-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
