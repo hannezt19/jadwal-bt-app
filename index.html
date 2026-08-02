@@ -168,7 +168,7 @@
   .empty{text-align:center;padding:34px 14px;color:var(--sub);font-size:12.5px;}
 
   .modal-bg{position:fixed;inset:0;background:rgba(24,34,56,0.5);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
-  .modal-bg .sheet{width:100%;max-width:480px;background:var(--paper);border-radius:22px 22px 0 0;padding:18px 18px 26px;max-height:82vh;overflow-y:auto;}
+  .modal-bg .sheet{width:100%;max-width:480px;background:var(--paper);border-radius:22px 22px 0 0;padding:18px 18px calc(26px + env(safe-area-inset-bottom,0px));max-height:82vh;overflow-y:auto;}
   .modal-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
   .modal-title h3{margin:0;font-size:15px;}
   .field-lbl{font-size:11px;color:var(--sub);font-weight:600;margin:10px 0 4px;}
@@ -191,6 +191,7 @@
   .drawer h3{margin:0 0 4px;font-size:16px;}
   .drawer .dsub{font-size:11px;color:var(--sub);margin-bottom:16px;}
   .drawer-close{position:absolute;right:14px;top:calc(16px + env(safe-area-inset-top,0px));font-size:18px;color:var(--sub);}
+
   .fw-entry{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
   .fw-entry:last-child{margin-bottom:0;}
   .fw-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
@@ -387,6 +388,13 @@
 <script src="vendor/jspdf.umd.min.js"></script>
 <script>
 /* ============ DATA CONTOH (DUMMY) ============ */
+document.addEventListener('input', function(e){
+  if(e.target.classList && e.target.classList.contains('time-chip')){
+    let digits = e.target.value.replace(/\D/g,'').slice(0,4);
+    e.target.value = digits.length > 2 ? digits.slice(0,2) + '.' + digits.slice(2) : digits;
+  }
+});
+
 const CATEGORIES = [
   {id:'tenaga', name:'Angkutan Tenaga', color:'#5FA8D3'},
   {id:'tebu', name:'Angkutan Tebu', color:'#4C9A6A'},
@@ -1373,10 +1381,8 @@ function toast(msg){
 }
 
 /* ============ SIMPAN OTOMATIS (localStorage) ============ */
-// Catatan: TODAY_ANCHOR di atas sengaja dikunci ke tanggal contoh untuk mode
-// preview. Untuk versi final, ganti baris `const TODAY_ANCHOR = '...'`
-// menjadi `const TODAY_ANCHOR = toIso(new Date());` supaya selalu memakai
-// tanggal hari ini yang sesungguhnya.
+// Catatan: TODAY_ANCHOR sudah memakai tanggal hari ini yang sesungguhnya
+// dari perangkat (toIso(new Date())) — bukan tanggal contoh yang dikunci.
 const STORAGE_KEY = 'jadwalBT_state_v1';
 function saveState(){
   try{
@@ -1450,3 +1456,19 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+SOString() });
+      }
+      if(e.history.length) existing.history = existing.history.concat(e.history);
+      existing.bt = e.bt; existing.kegiatan = e.kegiatan; existing.lembur = e.lembur;
+    } else {
+      seen[e.partnerId] = e;
+      result.push(e);
+    }
+  });
+  progEntries = result;
+  if(mergedAny) saveState();
+}
+dedupeProgEntries();
+
+/* ============ INIT ============ */
+function renderAll(){ renderDayStrip(); renderHeader(); renderBtRow(); renderAbsen(); renderLemburWidget(); renderHm(); renderFuelWor
