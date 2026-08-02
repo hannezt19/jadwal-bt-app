@@ -1456,19 +1456,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
-SOString() });
-      }
-      if(e.history.length) existing.history = existing.history.concat(e.history);
-      existing.bt = e.bt; existing.kegiatan = e.kegiatan; existing.lembur = e.lembur;
-    } else {
-      seen[e.partnerId] = e;
-      result.push(e);
-    }
-  });
-  progEntries = result;
-  if(mergedAny) saveState();
-}
-dedupeProgEntries();
-
-/* ============ INIT ============ */
-function renderAll(){ renderDayStrip(); renderHeader(); renderBtRow(); renderAbsen(); renderLemburWidget(); renderHm(); renderFuelWor
