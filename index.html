@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#1C2333">
 <title>Jadwal & HM Terpadu</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   :root{
     --primary:#A8580E; --primary-container:#FFDDB0; --on-primary-container:#3A2200;
@@ -224,7 +223,8 @@
     <div class="drawer-item" onclick="closeDrawer();openJenisSheet()">🧾&nbsp; Kelola Jenis Layanan</div>
     <div class="drawer-item" onclick="closeDrawer();openBlokSheet()">📍&nbsp; Kelola Blok/Petak (Rute)</div>
     <div class="drawer-item" onclick="closeDrawer();openLiburSheet()">📅&nbsp; Kelola Hari Libur</div>
-    <div class="drawer-item" onclick="closeDrawer();showScreen('peta')">🗺️&nbsp; Buka Peta / Impor Vektor</div>
+    <div class="drawer-item" onclick="closeDrawer();showScreen('peta')">🗺️&nbsp; Buka Peta</div>
+    <div class="drawer-item" onclick="closeDrawer();openServiceSettingSheet()">🔧&nbsp; Standar Servis Berkala</div>
     <div class="drawer-group-label">Lainnya</div>
     <div class="drawer-item" onclick="closeDrawer();showScreen('rekap');setTimeout(openExportSheet,300)">📤&nbsp; Export Data</div>
   </div>
@@ -235,12 +235,13 @@
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  #petaMap{width:100%;height:340px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--outline);margin-bottom:12px;}
   .peta-upload{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-container);border:1.5px dashed var(--outline);border-radius:var(--radius-md);padding:14px;font-size:13px;font-weight:700;color:var(--on-surface-variant);cursor:pointer;margin-bottom:12px;}
   .peta-upload input{display:none;}
   .peta-selected{background:var(--primary-container);color:var(--on-primary-container);border-radius:var(--radius-md);padding:12px 14px;font-size:14px;font-weight:700;margin-bottom:12px;}
+  .peta-imgwrap{position:relative;width:100%;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--outline);margin-bottom:12px;background:var(--surface-container);touch-action:manipulation;}
+  .peta-imgwrap img{width:100%;display:block;}
+  .peta-pin{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-26px;cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
 </style>
 <script>
 /* ============ STORAGE ============ */
@@ -335,7 +336,10 @@ function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
 document.addEventListener('input', function(e){
   if(e.target.classList && e.target.classList.contains('time-chip')){
     let digits = e.target.value.replace(/\D/g,'').slice(0,4);
-    e.target.value = digits.length > 2 ? digits.slice(0,2)+'.'+digits.slice(2) : digits;
+    let hh = digits.slice(0,2), mm = digits.slice(2,4);
+    if(hh.length===2 && parseInt(hh,10)>23) hh='23';
+    if(mm.length===2 && parseInt(mm,10)>59) mm='59';
+    e.target.value = mm.length>0 ? hh+'.'+mm : hh;
   }
 });
 
@@ -565,87 +569,90 @@ function renderProgram(){
   `;
 }
 
-/* ============ PETA ============ */
-let PETA_GEOJSON = LS.get('mrg_peta_geojson', null);
-let petaLeafletMap = null;
-let petaSelected = null; // {label}
-function savePetaGeojson(){ LS.set('mrg_peta_geojson', PETA_GEOJSON); }
-function petaBlokLabel(props){
-  if(!props) return 'Blok';
-  const keys = Object.keys(props);
-  const guess = keys.find(k=>/blok|petak|no|nama|name|id/i.test(k));
-  return guess ? String(props[guess]) : (keys.length ? String(props[keys[0]]) : 'Blok');
-}
+/* ============ PETA (gambar dari HP, offline total) ============ */
+let PETA_IMAGE = LS.get('mrg_peta_image', null); // dataURL hasil kompres
+let PETA_PINS = LS.get('mrg_peta_pins', []); // [{id,xPct,yPct,label}]
+function savePetaImage(){ LS.set('mrg_peta_image', PETA_IMAGE); }
+function savePetaPins(){ LS.set('mrg_peta_pins', PETA_PINS); }
 function renderPeta(){
   const host = document.getElementById('screen-peta');
-  host.innerHTML = `
-    <div class="section-eyebrow">Peta Kebun</div>
-    <label class="peta-upload" for="petaFileInput">📤 Impor Peta Vektor (GeoJSON)
-      <input type="file" id="petaFileInput" accept=".geojson,.json" onchange="handlePetaUpload(event)">
-    </label>
-    <div id="petaMap"></div>
-    <div id="petaSelWrap"></div>
-    <div class="dsub" style="margin:0 0 8px;">Ketuk petak/blok di peta untuk memilihnya. Nomor blok dari file vektor otomatis tersimpan sebagai database dan bisa dipakai ulang di kolom Keterangan/Rute (juga bisa ditambah manual lewat menu ☰ → Kelola Blok/Petak).</div>
-  `;
-  setTimeout(initPetaMap, 30);
-}
-function initPetaMap(){
-  const el = document.getElementById('petaMap');
-  if(!el || typeof L==='undefined') { if(el) el.innerHTML='<div class="empty-note">Peta gagal dimuat (perlu koneksi internet).</div>'; return; }
-  if(petaLeafletMap){ petaLeafletMap.remove(); petaLeafletMap=null; }
-  petaLeafletMap = L.map('petaMap');
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(petaLeafletMap);
-  let bounds = null;
-  if(PETA_GEOJSON){
-    const layer = L.geoJSON(PETA_GEOJSON, {
-      style:{color:'#A8580E', weight:2, fillColor:'#F2C98A', fillOpacity:.35},
-      onEachFeature:(feature, lyr)=>{
-        const label = petaBlokLabel(feature.properties);
-        lyr.bindTooltip(label, {permanent:false});
-        lyr.on('click', ()=>selectPetaBlok(label));
-      }
-    }).addTo(petaLeafletMap);
-    bounds = layer.getBounds();
+  if(!PETA_IMAGE){
+    host.innerHTML = `
+      <div class="section-eyebrow">Peta Kebun</div>
+      <label class="peta-upload" for="petaFileInput">📤 Pilih Gambar Peta dari HP
+        <input type="file" id="petaFileInput" accept="image/*" onchange="handlePetaUpload(event)">
+      </label>
+      <div class="empty-note">Belum ada gambar peta. Pilih foto/scan peta kebun dari galeri HP-mu — tersimpan permanen di aplikasi, bisa dipakai tanpa internet.</div>
+    `;
+    return;
   }
-  if(bounds && bounds.isValid()) petaLeafletMap.fitBounds(bounds, {padding:[16,16]});
-  else petaLeafletMap.setView([-4.9,105.2], 12); // fallback: area default kebun
+  host.innerHTML = `
+    <div class="section-eyebrow">Peta Kebun
+      <button class="btn-sm" onclick="document.getElementById('petaFileInput2').click()">🔄 Ganti Gambar</button>
+    </div>
+    <input type="file" id="petaFileInput2" accept="image/*" style="display:none;" onchange="handlePetaUpload(event)">
+    <div class="dsub" style="margin:0 0 8px;">Ketuk di atas peta untuk menandai lokasi. Ketuk pin yang sudah ada untuk memakainya di kolom Rute.</div>
+    <div class="peta-imgwrap" id="petaImgWrap">
+      <img src="${PETA_IMAGE}" id="petaImgEl" onclick="handlePetaTap(event)">
+      ${PETA_PINS.map(p=>`<div class="peta-pin" style="left:${p.xPct}%;top:${p.yPct}%;" title="${p.label}" onclick="event.stopPropagation();selectPetaPin('${p.id}')">📍</div>`).join('')}
+    </div>
+    <div id="petaSelWrap"></div>
+  `;
 }
 function handlePetaUpload(ev){
   const file = ev.target.files[0]; if(!file) return;
   const reader = new FileReader();
   reader.onload = ()=>{
-    try{
-      const gj = JSON.parse(reader.result);
-      PETA_GEOJSON = gj; savePetaGeojson();
-      const feats = gj.features || (gj.type==='Feature' ? [gj] : []);
-      let added = 0;
-      feats.forEach(f=>{
-        const label = petaBlokLabel(f.properties);
-        if(label && !BLOK_LIST.some(b=>b.label===label)){ BLOK_LIST.push({id:uid(), label, source:'peta'}); added++; }
-      });
-      saveBlok(); refreshBlokDatalist();
-      toast(added>0 ? added+' blok dari peta ditambahkan ke database' : 'Peta dimuat');
+    const img = new Image();
+    img.onload = ()=>{
+      // kompres/perkecil dulu supaya hemat penyimpanan
+      const maxW = 1400;
+      const scale = Math.min(1, maxW/img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width*scale; canvas.height = img.height*scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      PETA_IMAGE = canvas.toDataURL('image/jpeg', 0.82);
+      savePetaImage();
+      PETA_PINS = []; savePetaPins();
+      toast('Gambar peta disimpan');
       renderPeta();
-    }catch(err){ toast('File bukan GeoJSON yang valid'); }
+    };
+    img.onerror = ()=>toast('Gagal membaca gambar');
+    img.src = reader.result;
   };
-  reader.readAsText(file);
+  reader.onerror = ()=>toast('Gagal membaca file');
+  reader.readAsDataURL(file);
 }
-function selectPetaBlok(label){
-  petaSelected = label;
+function handlePetaTap(ev){
+  const rect = ev.target.getBoundingClientRect();
+  const xPct = ((ev.clientX - rect.left) / rect.width * 100).toFixed(2);
+  const yPct = ((ev.clientY - rect.top) / rect.height * 100).toFixed(2);
+  const label = prompt('Nama lokasi/blok di titik ini?');
+  if(!label || !label.trim()) return;
+  const pin = {id:uid(), xPct, yPct, label:label.trim()};
+  PETA_PINS.push(pin); savePetaPins();
+  if(!BLOK_LIST.some(b=>b.label===pin.label)){ BLOK_LIST.push({id:uid(), label:pin.label, source:'peta'}); saveBlok(); refreshBlokDatalist(); }
+  toast('Titik lokasi ditambahkan'); renderPeta();
+}
+function selectPetaPin(id){
+  const p = PETA_PINS.find(x=>x.id===id); if(!p) return;
   document.getElementById('petaSelWrap').innerHTML = `
-    <div class="peta-selected">📍 ${label}
+    <div class="peta-selected">📍 ${p.label}
       <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn-sm primary" onclick="applyPetaBlokToRute()">Isi ke Rute Hari Ini</button>
+        <button class="btn-sm primary" onclick="applyPetaPinToRute('${p.id}')">Isi ke Rute Hari Ini</button>
+        <button class="btn-sm" onclick="removePetaPin('${p.id}')" style="color:var(--danger);">Hapus Titik</button>
       </div>
     </div>`;
 }
-function applyPetaBlokToRute(){
-  if(!petaSelected) return;
-  if(!BLOK_LIST.some(b=>b.label===petaSelected)){ BLOK_LIST.push({id:uid(), label:petaSelected, source:'peta'}); saveBlok(); refreshBlokDatalist(); }
-  window._todayEntry = window._todayEntry || entryForToday() || {};
+function applyPetaPinToRute(id){
+  const p = PETA_PINS.find(x=>x.id===id); if(!p) return;
   showScreen('hari');
-  setTimeout(()=>quickSaveField('jenisKet', petaSelected), 30);
+  setTimeout(()=>quickSaveField('jenisKet', p.label), 30);
   toast('Rute diisi dari peta');
+}
+function removePetaPin(id){
+  if(!confirm('Hapus titik lokasi ini dari peta?')) return;
+  PETA_PINS = PETA_PINS.filter(x=>x.id!==id); savePetaPins(); toast('Titik dihapus'); renderPeta();
 }
 
 /* ============ SERVIS ============ */
@@ -694,7 +701,29 @@ function deleteServis(id){ if(!confirm('Hapus catatan servis ini?')) return; SER
 
 /* ============ REKAP ============ */
 let rekapMonth = todayIso().slice(0,7);
-const SERVICE_INTERVAL_HM = 240;
+let SERVICE_SETTING = LS.get('mrg_servis_setting', {intervalHm:240, warnBeforeHm:20});
+function saveServiceSetting(){ LS.set('mrg_servis_setting', SERVICE_SETTING); }
+function openServiceSettingSheet(){
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Standar Servis Berkala</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="dsub">Menentukan kapan progres servis dianggap "mendekati" dan "harus segera"</div>
+        <label class="flabel">Interval Servis (jam HM)</label>
+        <input type="text" inputmode="numeric" id="svIntervalInput" value="${SERVICE_SETTING.intervalHm}">
+        <label class="flabel">Mulai Peringatan (jam sebelum interval tercapai)</label>
+        <input type="text" inputmode="numeric" id="svWarnInput" value="${SERVICE_SETTING.warnBeforeHm}">
+        <button class="btn-filled" onclick="saveServiceSettingForm()">Simpan</button>
+      </div>
+    </div>`;
+}
+function saveServiceSettingForm(){
+  const iv = parseFloat(document.getElementById('svIntervalInput').value)||240;
+  const wb = parseFloat(document.getElementById('svWarnInput').value)||0;
+  SERVICE_SETTING = {intervalHm: iv, warnBeforeHm: wb};
+  saveServiceSetting(); closeModal(); toast('Standar servis diperbarui'); renderRekap();
+}
 function lastServisForBt(btId){
   const list = SERVIS.filter(s=>s.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
   return list[0] || null;
@@ -723,8 +752,11 @@ function renderRekap(){
   const mainBtEntriesMonth = monthEntries.filter(e=>e.btId===mainBt);
   const mainBtBbmMonth = mainBtEntriesMonth.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
   const svc = hmServiceStatus(mainBt);
-  const pct = svc.sisa!==null ? Math.min(100, Math.round((svc.sisa/SERVICE_INTERVAL_HM)*100)) : null;
-  const warn = svc.sisa!==null && svc.sisa>=SERVICE_INTERVAL_HM;
+  const intervalHm = SERVICE_SETTING.intervalHm;
+  const pct = svc.sisa!==null ? Math.min(100, Math.round((svc.sisa/intervalHm)*100)) : null;
+  const overdue = svc.sisa!==null && svc.sisa>=intervalHm;
+  const nearing = svc.sisa!==null && !overdue && svc.sisa>=(intervalHm-SERVICE_SETTING.warnBeforeHm);
+  const warn = overdue || nearing;
 
   host.innerHTML = `
     <div class="section-eyebrow">Ringkasan
@@ -746,13 +778,13 @@ function renderRekap(){
         <div><div class="field-label">HM Sekarang</div><div class="field-value" style="font-size:19px;">${svc.current!==null?svc.current.toFixed(1):'—'}</div></div>
       </div>
     </div>
-    <div class="card" style="${warn?'border-color:var(--danger);':''}">
-      <div class="field-label">Progres Menuju Servis Berkala (${SERVICE_INTERVAL_HM} jam HM)</div>
+    <div class="card" style="${overdue?'border-color:var(--danger);':nearing?'border-color:var(--primary);':''}">
+      <div class="field-label">Progres Menuju Servis Berkala (${intervalHm} jam HM)</div>
       ${svc.baseHm===null ? `<div class="field-sub" style="margin-top:6px;">Belum ada catatan servis untuk ${btLabel(mainBt)}. Tambahkan servis terakhir agar progres bisa dihitung.</div>` : `
         <div style="background:var(--surface-container-high);border-radius:100px;height:10px;margin:10px 0 6px;overflow:hidden;">
-          <div style="height:100%;border-radius:100px;width:${pct}%;background:${warn?'var(--danger)':'var(--primary)'};"></div>
+          <div style="height:100%;border-radius:100px;width:${pct}%;background:${overdue?'var(--danger)':'var(--primary)'};"></div>
         </div>
-        <div class="field-sub">${svc.sisa.toFixed(1)} jam terpakai sejak servis terakhir (${fmtLabel(svc.last.date)}, HM ${svc.baseHm})${warn?' — sudah melewati batas, segera servis!':''}</div>
+        <div class="field-sub">${svc.sisa.toFixed(1)} jam terpakai sejak servis terakhir (${fmtLabel(svc.last.date)}, HM ${svc.baseHm})${overdue?' — sudah melewati batas, segera servis!':nearing?' — sudah mendekati batas servis':''}</div>
       `}
       <button class="btn-outline" style="margin-top:12px;" onclick="openServisForm('${mainBt}', ${svc.current!==null?svc.current:'null'})">🔧 Catat Servis Berkala (Reset)</button>
     </div>
@@ -975,7 +1007,7 @@ function renderBlokSheet(){
       <div class="sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-title-row"><h3>Kelola Blok/Petak</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
-        <div class="dsub">Daftar ini muncul sebagai saran otomatis di kolom Keterangan/Rute. Blok bisa ditambah manual di sini, atau otomatis masuk saat kamu impor peta vektor (GeoJSON) di tab Peta.</div>
+        <div class="dsub">Daftar ini muncul sebagai saran otomatis di kolom Keterangan/Rute. Blok bisa ditambah manual di sini, atau otomatis masuk saat kamu menandai titik baru di tab Peta.</div>
         ${BLOK_LIST.length===0 ? '<div class="empty-note">Belum ada blok/petak.</div>' : BLOK_LIST.map(b=>`
           <div class="list-row"><div class="list-row-name">${b.label} ${b.source==='peta'?'<span class="badge-mini badge-partner">Peta</span>':''}</div>
             <div class="list-row-actions"><button class="icon-x" onclick="removeBlok('${b.id}')">✕</button></div></div>
