@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#1C2333">
 <title>Jadwal & HM Terpadu</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   :root{
     --primary:#A8580E; --primary-container:#FFDDB0; --on-primary-container:#3A2200;
@@ -148,6 +149,11 @@
     opacity:0;transition:all .25s ease;z-index:300;pointer-events:none;white-space:nowrap;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  .kgt-add{width:20px;height:20px;line-height:18px;border-radius:50%;border:none;background:var(--primary-container);color:var(--on-primary-container);font-weight:800;font-size:13px;cursor:pointer;padding:0;}
+  .kgt-row{display:flex;gap:6px;margin-bottom:8px;}
+  .kgt-row input{margin-bottom:0;flex:1;}
+  .kgt-row .kgt-rm{flex-shrink:0;width:32px;border-radius:10px;border:1.5px solid var(--outline);background:#fff;color:var(--danger);font-weight:700;cursor:pointer;}
+
   .badge-mini{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:100px;margin-left:6px;}
   .badge-saya{background:var(--primary-container);color:var(--on-primary-container);}
   .badge-partner{background:var(--secondary-container);color:var(--secondary);}
@@ -172,13 +178,7 @@
   <!-- PROGRAM -->
   <div class="screen" id="screen-program"></div>
   <!-- PETA -->
-  <div class="screen" id="screen-peta">
-    <div class="placeholder-box">
-      <div class="pic">🗺️</div>
-      <div style="font-weight:700;font-size:15px;color:var(--on-surface);margin-bottom:6px;">Peta segera hadir</div>
-      <div style="font-size:13px;">Fitur tandai lokasi di peta kebun sedang disiapkan di update berikutnya.</div>
-    </div>
-  </div>
+  <div class="screen" id="screen-peta"></div>
   <!-- SERVIS -->
   <div class="screen" id="screen-servis"></div>
   <!-- REKAP -->
@@ -221,17 +221,27 @@
     <div class="drawer-group-label">Akun & Data Utama</div>
     <div class="drawer-item" onclick="closeDrawer();openSettingSheet()">⚙️&nbsp; Setting Akun</div>
     <div class="drawer-item" onclick="closeDrawer();openBtPartnerSheet()">🚚&nbsp; Kelola BT & Partner</div>
+    <div class="drawer-item" onclick="closeDrawer();openJenisSheet()">🧾&nbsp; Kelola Jenis Layanan</div>
+    <div class="drawer-item" onclick="closeDrawer();openBlokSheet()">📍&nbsp; Kelola Blok/Petak (Rute)</div>
     <div class="drawer-item" onclick="closeDrawer();openLiburSheet()">📅&nbsp; Kelola Hari Libur</div>
-    <div class="drawer-item" onclick="closeDrawer();toast('Fitur ganti peta segera hadir')">🗺️&nbsp; Ganti Sumber Peta</div>
+    <div class="drawer-item" onclick="closeDrawer();showScreen('peta')">🗺️&nbsp; Buka Peta / Impor Vektor</div>
     <div class="drawer-group-label">Lainnya</div>
     <div class="drawer-item" onclick="closeDrawer();showScreen('rekap');setTimeout(openExportSheet,300)">📤&nbsp; Export Data</div>
   </div>
 
   <div id="modalHost"></div>
   <div class="toast" id="toast"></div>
+  <datalist id="blokDatalist"></datalist>
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  #petaMap{width:100%;height:340px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--outline);margin-bottom:12px;}
+  .peta-upload{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-container);border:1.5px dashed var(--outline);border-radius:var(--radius-md);padding:14px;font-size:13px;font-weight:700;color:var(--on-surface-variant);cursor:pointer;margin-bottom:12px;}
+  .peta-upload input{display:none;}
+  .peta-selected{background:var(--primary-container);color:var(--on-primary-container);border-radius:var(--radius-md);padding:12px 14px;font-size:14px;font-weight:700;margin-bottom:12px;}
+</style>
 <script>
 /* ============ STORAGE ============ */
 const LS = {
@@ -258,7 +268,8 @@ const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis',"Jumat",'Sabtu'];
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const MONTH_NAMES_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const NORMAL_HOURS = {1:7,2:7,3:7,4:7,5:6.5,6:5.5,0:0};
-const JENIS_KATEGORI = ['Angkutan Tenaga Kerja','Angkutan Tebu','Layanan Drone','Lainnya'];
+let JENIS_KATEGORI = LS.get('mrg_jenis', ['Angkutan Tenaga Kerja','Angkutan Tebu','Layanan Drone','Lainnya']);
+function saveJenis(){ LS.set('mrg_jenis', JENIS_KATEGORI); }
 
 function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -296,6 +307,7 @@ function showScreen(name){
   document.getElementById('topTitle').textContent = titles[name][1];
   if(name==='hari') renderHari();
   if(name==='program') renderProgram();
+  if(name==='peta') renderPeta();
   if(name==='servis') renderServis();
   if(name==='rekap') renderRekap();
 }
@@ -321,6 +333,29 @@ document.addEventListener('input', function(e){
 function entryForToday(){
   return ENTRIES.find(e=>e.date===todayIso() && e.ownerType==='saya' && e.btId===USER.mainBt);
 }
+function normKegiatan(e){
+  ['kegiatanPagi','kegiatanSore'].forEach(k=>{
+    if(typeof e[k]==='string'){ e[k] = e[k] ? [e[k]] : ['']; }
+    if(!Array.isArray(e[k]) || e[k].length===0) e[k]=[''];
+  });
+  return e;
+}
+function kegiatanListHtml(e, field){
+  return e[field].map((v,i)=>`
+    <div class="kgt-row">
+      <input type="text" value="${v||''}" placeholder="mis. Pel. Umum" onchange="updateKegiatan('${field}', ${i}, this.value)">
+      ${e[field].length>1 ? `<button type="button" class="kgt-rm" onclick="removeKegiatan('${field}', ${i})">✕</button>` : ''}
+    </div>`).join('');
+}
+function addKegiatan(field){
+  const e = window._todayEntry; e[field].push(''); quickSaveField(field, e[field]);
+}
+function updateKegiatan(field, idx, val){
+  const e = window._todayEntry; e[field][idx] = val; quickSaveField(field, e[field]);
+}
+function removeKegiatan(field, idx){
+  const e = window._todayEntry; e[field].splice(idx,1); if(e[field].length===0) e[field]=['']; quickSaveField(field, e[field]);
+}
 function btOptionsHtml(selId){
   return BT_CODES.map(b=>`<option value="${b.id}" ${b.id===selId?'selected':''}>${b.label}</option>`).join('');
 }
@@ -335,6 +370,7 @@ function renderHari(){
       s1Time:'', s5Time:'', kegiatanPagi:'', kegiatanSore:'', istMulai:'11.00', istSelesai:'13.30', istLembur:false,
       otOverride:null, hmAwal:'', hmAkhir:'', bbmLiter:'', jenisKategori:JENIS_KATEGORI[0], jenisKet:'', catatan:''};
   }
+  normKegiatan(e);
   const ot = computeOT(e);
   const holiday = dow(e.date)===0 || isHoliday(e.date);
   const host = document.getElementById('screen-hari');
@@ -351,17 +387,23 @@ function renderHari(){
       <select id="fBt" onchange="quickSaveField('btId', this.value)">${btOptionsHtml(e.btId)}</select>
       <div class="grid2">
         <div><label class="flabel">Jenis Layanan</label><select id="fJenis" onchange="quickSaveField('jenisKategori', this.value)">${jenisOptionsHtml(e.jenisKategori)}</select></div>
-        <div><label class="flabel">Keterangan/Rute</label><input type="text" value="${e.jenisKet||''}" placeholder="mis. Blok 14 → PKS" onchange="quickSaveField('jenisKet', this.value)"></div>
+        <div><label class="flabel">Keterangan/Rute</label><input type="text" list="blokDatalist" value="${e.jenisKet||''}" placeholder="mis. Blok 14 → PKS" onchange="quickSaveField('jenisKet', this.value)"></div>
       </div>
     </div>
 
     <div class="section-eyebrow">5 Tahap Kegiatan</div>
     <div class="card">
       <div class="grid2">
-        <div><label class="flabel">1. Absen Pagi / Putak</label><input type="text" class="time-chip" inputmode="numeric" placeholder="0700" value="${e.s1Time||''}" onchange="quickSaveField('s1Time', this.value)"></div>
-        <div><label class="flabel">5. Antar Pulang / Putak</label><input type="text" class="time-chip" inputmode="numeric" placeholder="1730" value="${e.s5Time||''}" onchange="quickSaveField('s5Time', this.value)"></div>
-        <div><label class="flabel">2. Kegiatan Pagi</label><input type="text" value="${e.kegiatanPagi||''}" placeholder="mis. Pel. Umum" onchange="quickSaveField('kegiatanPagi', this.value)"></div>
-        <div><label class="flabel">4. Kegiatan Sore</label><input type="text" value="${e.kegiatanSore||''}" placeholder="mis. Pel. Umum" onchange="quickSaveField('kegiatanSore', this.value)"></div>
+        <div><label class="flabel">1. Absen Berangkat</label><input type="text" class="time-chip" inputmode="numeric" placeholder="0700" value="${e.s1Time||''}" onchange="quickSaveField('s1Time', this.value)"></div>
+        <div><label class="flabel">5. Absen Pulang</label><input type="text" class="time-chip" inputmode="numeric" placeholder="1730" value="${e.s5Time||''}" onchange="quickSaveField('s5Time', this.value)"></div>
+        <div>
+          <label class="flabel" style="display:flex;justify-content:space-between;align-items:center;">2. Kegiatan Pagi <button type="button" class="kgt-add" onclick="addKegiatan('kegiatanPagi')">+</button></label>
+          ${kegiatanListHtml(e, 'kegiatanPagi')}
+        </div>
+        <div>
+          <label class="flabel" style="display:flex;justify-content:space-between;align-items:center;">4. Kegiatan Sore <button type="button" class="kgt-add" onclick="addKegiatan('kegiatanSore')">+</button></label>
+          ${kegiatanListHtml(e, 'kegiatanSore')}
+        </div>
       </div>
       <label class="flabel" style="margin-top:4px;">3. Istirahat Siang</label>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -419,8 +461,8 @@ function openEntryForm(existing){
             </select>
           </div>
           <div class="full" id="efPartnerWrap" style="display:${e.ownerType==='partner'?'block':'none'}"><label class="flabel">Pilih Partner</label><select id="efPartner">${partnerOpts}</select></div>
-          <div><label class="flabel">Absen Pagi</label><input type="text" class="time-chip" id="efS1" inputmode="numeric" value="${e.s1Time||''}"></div>
-          <div><label class="flabel">Antar Pulang</label><input type="text" class="time-chip" id="efS5" inputmode="numeric" value="${e.s5Time||''}"></div>
+          <div><label class="flabel">Absen Berangkat</label><input type="text" class="time-chip" id="efS1" inputmode="numeric" value="${e.s1Time||''}"></div>
+          <div><label class="flabel">Absen Pulang</label><input type="text" class="time-chip" id="efS5" inputmode="numeric" value="${e.s5Time||''}"></div>
           <div><label class="flabel">HM Awal</label><input type="text" id="efHmA" inputmode="decimal" value="${e.hmAwal||''}"></div>
           <div><label class="flabel">HM Akhir</label><input type="text" id="efHmB" inputmode="decimal" value="${e.hmAkhir||''}"></div>
           <div><label class="flabel">BBM (liter)</label><input type="text" id="efBbm" inputmode="decimal" value="${e.bbmLiter||''}"></div>
@@ -513,6 +555,89 @@ function renderProgram(){
   `;
 }
 
+/* ============ PETA ============ */
+let PETA_GEOJSON = LS.get('mrg_peta_geojson', null);
+let petaLeafletMap = null;
+let petaSelected = null; // {label}
+function savePetaGeojson(){ LS.set('mrg_peta_geojson', PETA_GEOJSON); }
+function petaBlokLabel(props){
+  if(!props) return 'Blok';
+  const keys = Object.keys(props);
+  const guess = keys.find(k=>/blok|petak|no|nama|name|id/i.test(k));
+  return guess ? String(props[guess]) : (keys.length ? String(props[keys[0]]) : 'Blok');
+}
+function renderPeta(){
+  const host = document.getElementById('screen-peta');
+  host.innerHTML = `
+    <div class="section-eyebrow">Peta Kebun</div>
+    <label class="peta-upload" for="petaFileInput">📤 Impor Peta Vektor (GeoJSON)
+      <input type="file" id="petaFileInput" accept=".geojson,.json" onchange="handlePetaUpload(event)">
+    </label>
+    <div id="petaMap"></div>
+    <div id="petaSelWrap"></div>
+    <div class="dsub" style="margin:0 0 8px;">Ketuk petak/blok di peta untuk memilihnya. Nomor blok dari file vektor otomatis tersimpan sebagai database dan bisa dipakai ulang di kolom Keterangan/Rute (juga bisa ditambah manual lewat menu ☰ → Kelola Blok/Petak).</div>
+  `;
+  setTimeout(initPetaMap, 30);
+}
+function initPetaMap(){
+  const el = document.getElementById('petaMap');
+  if(!el || typeof L==='undefined') { if(el) el.innerHTML='<div class="empty-note">Peta gagal dimuat (perlu koneksi internet).</div>'; return; }
+  if(petaLeafletMap){ petaLeafletMap.remove(); petaLeafletMap=null; }
+  petaLeafletMap = L.map('petaMap');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(petaLeafletMap);
+  let bounds = null;
+  if(PETA_GEOJSON){
+    const layer = L.geoJSON(PETA_GEOJSON, {
+      style:{color:'#A8580E', weight:2, fillColor:'#F2C98A', fillOpacity:.35},
+      onEachFeature:(feature, lyr)=>{
+        const label = petaBlokLabel(feature.properties);
+        lyr.bindTooltip(label, {permanent:false});
+        lyr.on('click', ()=>selectPetaBlok(label));
+      }
+    }).addTo(petaLeafletMap);
+    bounds = layer.getBounds();
+  }
+  if(bounds && bounds.isValid()) petaLeafletMap.fitBounds(bounds, {padding:[16,16]});
+  else petaLeafletMap.setView([-4.9,105.2], 12); // fallback: area default kebun
+}
+function handlePetaUpload(ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const gj = JSON.parse(reader.result);
+      PETA_GEOJSON = gj; savePetaGeojson();
+      const feats = gj.features || (gj.type==='Feature' ? [gj] : []);
+      let added = 0;
+      feats.forEach(f=>{
+        const label = petaBlokLabel(f.properties);
+        if(label && !BLOK_LIST.some(b=>b.label===label)){ BLOK_LIST.push({id:uid(), label, source:'peta'}); added++; }
+      });
+      saveBlok(); refreshBlokDatalist();
+      toast(added>0 ? added+' blok dari peta ditambahkan ke database' : 'Peta dimuat');
+      renderPeta();
+    }catch(err){ toast('File bukan GeoJSON yang valid'); }
+  };
+  reader.readAsText(file);
+}
+function selectPetaBlok(label){
+  petaSelected = label;
+  document.getElementById('petaSelWrap').innerHTML = `
+    <div class="peta-selected">📍 ${label}
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn-sm primary" onclick="applyPetaBlokToRute()">Isi ke Rute Hari Ini</button>
+      </div>
+    </div>`;
+}
+function applyPetaBlokToRute(){
+  if(!petaSelected) return;
+  if(!BLOK_LIST.some(b=>b.label===petaSelected)){ BLOK_LIST.push({id:uid(), label:petaSelected, source:'peta'}); saveBlok(); refreshBlokDatalist(); }
+  window._todayEntry = window._todayEntry || entryForToday() || {};
+  showScreen('hari');
+  setTimeout(()=>quickSaveField('jenisKet', petaSelected), 30);
+  toast('Rute diisi dari peta');
+}
+
 /* ============ SERVIS ============ */
 function renderServis(){
   const host = document.getElementById('screen-servis');
@@ -535,15 +660,16 @@ function renderServis(){
   `;
 }
 function toggleSRow(id){ document.getElementById('srow-'+id).classList.toggle('open'); }
-function openServisForm(){
+function openServisForm(prefillBt, prefillHm){
   document.getElementById('modalHost').innerHTML = `
     <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
       <div class="sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-title-row"><h3>Tambah Servis</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="dsub">Menyimpan catatan ini akan mereset hitungan progres menuju servis berikutnya.</div>
         <label class="flabel">Tanggal</label><input type="date" id="svDate" value="${todayIso()}">
-        <label class="flabel">Kode BT</label><select id="svBt">${btOptionsHtml(USER.mainBt)}</select>
-        <label class="flabel">HM saat servis</label><input type="text" id="svHm" inputmode="decimal">
+        <label class="flabel">Kode BT</label><select id="svBt">${btOptionsHtml(prefillBt||USER.mainBt)}</select>
+        <label class="flabel">HM saat servis</label><input type="text" id="svHm" inputmode="decimal" value="${prefillHm!=null&&prefillHm!=='null'?prefillHm:''}">
         <label class="flabel">Catatan Perbaikan</label><textarea id="svCatatan" placeholder="mis. Ganti oli & filter"></textarea>
         <button class="btn-filled" onclick="saveServisForm()">Simpan</button>
       </div>
@@ -552,12 +678,28 @@ function openServisForm(){
 function saveServisForm(){
   SERVIS.push({id:uid(), date:document.getElementById('svDate').value, btId:document.getElementById('svBt').value,
     hm:document.getElementById('svHm').value, catatan:document.getElementById('svCatatan').value});
-  saveServis(); closeModal(); toast('Catatan servis disimpan'); renderServis();
+  saveServis(); closeModal(); toast('Catatan servis disimpan — progres direset'); renderServis(); renderRekap();
 }
 function deleteServis(id){ if(!confirm('Hapus catatan servis ini?')) return; SERVIS = SERVIS.filter(x=>x.id!==id); saveServis(); toast('Dihapus'); renderServis(); }
 
 /* ============ REKAP ============ */
 let rekapMonth = todayIso().slice(0,7);
+const SERVICE_INTERVAL_HM = 240;
+function lastServisForBt(btId){
+  const list = SERVIS.filter(s=>s.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
+  return list[0] || null;
+}
+function currentHmForBt(btId){
+  const vals = ENTRIES.filter(e=>e.btId===btId && e.hmAkhir!=='' && e.hmAkhir!=null).map(e=>parseFloat(e.hmAkhir)).filter(v=>!isNaN(v));
+  return vals.length ? Math.max(...vals) : null;
+}
+function hmServiceStatus(btId){
+  const last = lastServisForBt(btId);
+  const current = currentHmForBt(btId);
+  const baseHm = last ? parseFloat(last.hm)||0 : null;
+  const sisa = (baseHm!==null && current!==null) ? Math.max(0, current-baseHm) : null;
+  return {last, current, baseHm, sisa};
+}
 function renderRekap(){
   const host = document.getElementById('screen-rekap');
   const monthEntries = ENTRIES.filter(e=>monthKey(e.date)===rekapMonth);
@@ -566,6 +708,14 @@ function renderRekap(){
   const totalOt = monthEntries.reduce((s,e)=>s+computeOT(e).otMin,0)/60;
   const ratio = totalHm>0 ? (totalBbm/totalHm).toFixed(2) : '0.00';
   const list = monthEntries.filter(e=>e.ownerType===histFilter).sort((a,b)=>b.date.localeCompare(a.date));
+
+  const mainBt = USER.mainBt;
+  const mainBtEntriesMonth = monthEntries.filter(e=>e.btId===mainBt);
+  const mainBtBbmMonth = mainBtEntriesMonth.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
+  const svc = hmServiceStatus(mainBt);
+  const pct = svc.sisa!==null ? Math.min(100, Math.round((svc.sisa/SERVICE_INTERVAL_HM)*100)) : null;
+  const warn = svc.sisa!==null && svc.sisa>=SERVICE_INTERVAL_HM;
+
   host.innerHTML = `
     <div class="section-eyebrow">Ringkasan
       <input type="month" value="${rekapMonth}" style="width:auto;margin:0;padding:6px 10px;font-size:12.5px;" onchange="rekapMonth=this.value;renderRekap()">
@@ -578,6 +728,25 @@ function renderRekap(){
       <div class="card"><div class="field-label">Rasio L/HM</div><div class="field-value" style="font-size:17px;">${ratio}</div></div>
       <div class="card"><div class="field-label">Total Lembur</div><div class="field-value" style="font-size:17px;">${totalOt.toFixed(1)}j</div></div>
     </div>
+
+    <div class="section-eyebrow">Filter BT Saya — ${btLabel(mainBt)}</div>
+    <div class="card">
+      <div class="row-2" style="margin-bottom:2px;">
+        <div><div class="field-label">BBM bulan ini (${btLabel(mainBt)})</div><div class="field-value" style="font-size:19px;">${mainBtBbmMonth.toFixed(0)} L</div></div>
+        <div><div class="field-label">HM Sekarang</div><div class="field-value" style="font-size:19px;">${svc.current!==null?svc.current.toFixed(1):'—'}</div></div>
+      </div>
+    </div>
+    <div class="card" style="${warn?'border-color:var(--danger);':''}">
+      <div class="field-label">Progres Menuju Servis Berkala (${SERVICE_INTERVAL_HM} jam HM)</div>
+      ${svc.baseHm===null ? `<div class="field-sub" style="margin-top:6px;">Belum ada catatan servis untuk ${btLabel(mainBt)}. Tambahkan servis terakhir agar progres bisa dihitung.</div>` : `
+        <div style="background:var(--surface-container-high);border-radius:100px;height:10px;margin:10px 0 6px;overflow:hidden;">
+          <div style="height:100%;border-radius:100px;width:${pct}%;background:${warn?'var(--danger)':'var(--primary)'};"></div>
+        </div>
+        <div class="field-sub">${svc.sisa.toFixed(1)} jam terpakai sejak servis terakhir (${fmtLabel(svc.last.date)}, HM ${svc.baseHm})${warn?' — sudah melewati batas, segera servis!':''}</div>
+      `}
+      <button class="btn-outline" style="margin-top:12px;" onclick="openServisForm('${mainBt}', ${svc.current!==null?svc.current:'null'})">🔧 Catat Servis Berkala (Reset)</button>
+    </div>
+
     <div class="section-eyebrow">Riwayat</div>
     <div class="hist-tabs">
       <div class="hist-tab ${histFilter==='saya'?'active-saya':''}" onclick="setHistFilter('saya')">🟠 Saya</div>
@@ -613,6 +782,15 @@ function openExportSheet(){
       </div>
     </div>`;
 }
+function sanitizePdfText(s){
+  return String(s)
+    .replace(/→/g, '->')
+    .replace(/—/g, '-')
+    .replace(/–/g, '-')
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/•/g, '-');
+}
 function getExportRows(){
   const cols = EXPORT_COLS.filter(c=>document.getElementById('exp-'+c.key).checked);
   const monthEntries = ENTRIES.filter(e=>monthKey(e.date)===rekapMonth).sort((a,b)=>a.date.localeCompare(b.date));
@@ -621,9 +799,9 @@ function getExportRows(){
     cols.forEach(c=>{
       if(c.key==='date') o[c.label]=fmtLabel(e.date);
       if(c.key==='btId') o[c.label]=btLabel(e.btId)+(e.ownerType==='partner'?' ('+e.ownerName+')':'');
-      if(c.key==='hm') o[c.label]=(e.hmAwal||'-')+' → '+(e.hmAkhir||'-')+' ('+hmPakai(e)+' jam)';
+      if(c.key==='hm') o[c.label]=(e.hmAwal||'-')+' -> '+(e.hmAkhir||'-')+' ('+hmPakai(e)+' jam)';
       if(c.key==='bbm') o[c.label]=(e.bbmLiter||0)+' L';
-      if(c.key==='jenis') o[c.label]=(e.jenisKategori||'-')+' — '+(e.jenisKet||'-');
+      if(c.key==='jenis') o[c.label]=(e.jenisKategori||'-')+' - '+(e.jenisKet||'-');
       if(c.key==='ot') o[c.label]=fmtHoursNum(ot.otMin)+' jam';
       if(c.key==='catatan') o[c.label]=e.catatan||'-';
     });
@@ -646,13 +824,26 @@ function doExport(fmt){
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.setFontSize(14); doc.text('Laporan Bulanan — '+rekapMonth, 14, 16);
-    let y = 28;
-    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginX = 14;
+    const usableWidth = pageWidth - marginX*2;
+    doc.setFontSize(14);
+    doc.text(sanitizePdfText('Laporan Bulanan - '+rekapMonth), marginX, 16);
+    let y = 26;
     rows.forEach((r,i)=>{
-      let line = headers.map(h=>h+': '+r[h]).join('  |  ');
-      const split = doc.splitTextToSize(line, 180);
-      doc.text(split, 14, y); y += split.length*5 + 3;
+      doc.setFontSize(9);
+      doc.setFont('helvetica','bold');
+      const headLine = sanitizePdfText((r[headers[0]]||'')+'  |  '+(headers[1]?(headers[1]+': '+r[headers[1]]):''));
+      const headSplit = doc.splitTextToSize(headLine, usableWidth);
+      doc.text(headSplit, marginX, y); y += headSplit.length*4.6;
+      doc.setFont('helvetica','normal');
+      headers.slice(2).forEach(h=>{
+        const line = sanitizePdfText(h+': '+r[h]);
+        const split = doc.splitTextToSize(line, usableWidth);
+        doc.text(split, marginX, y); y += split.length*4.6;
+      });
+      y += 4;
       if(y > 280){ doc.addPage(); y=16; }
     });
     doc.save('rekap-'+rekapMonth+'.pdf');
@@ -729,6 +920,76 @@ function removePartner(id){
   PARTNERS = PARTNERS.filter(x=>x.id!==id); savePartners(); renderBtPartnerSheet(); toast('Partner dihapus');
 }
 
+/* ============ KELOLA JENIS LAYANAN ============ */
+function openJenisSheet(){ renderJenisSheet(); }
+function renderJenisSheet(){
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Kelola Jenis Layanan</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="dsub">Daftar ini otomatis muncul di pilihan "Jenis Layanan" pada Beranda</div>
+        ${JENIS_KATEGORI.map((j,i)=>`
+          <div class="list-row"><div class="list-row-name" onclick="renameJenis(${i})">${j}</div>
+            <div class="list-row-actions"><button class="icon-x" onclick="removeJenis(${i})">✕</button></div></div>
+        `).join('')}
+        <div class="add-row">
+          <input type="text" id="jenisNewInput" placeholder="mis. Angkutan Pupuk">
+          <button onclick="addJenis()">+</button>
+        </div>
+      </div>
+    </div>`;
+}
+function addJenis(){
+  const val = document.getElementById('jenisNewInput').value.trim();
+  if(!val) return;
+  JENIS_KATEGORI.push(val); saveJenis(); renderJenisSheet(); toast('Jenis layanan ditambahkan');
+}
+function renameJenis(i){
+  const val = prompt('Ubah nama jenis layanan', JENIS_KATEGORI[i]);
+  if(val && val.trim()){ JENIS_KATEGORI[i] = val.trim(); saveJenis(); renderJenisSheet(); renderHari(); toast('Diperbarui'); }
+}
+function removeJenis(i){
+  if(!confirm('Hapus jenis layanan ini?')) return;
+  JENIS_KATEGORI.splice(i,1); if(JENIS_KATEGORI.length===0) JENIS_KATEGORI.push('Lainnya');
+  saveJenis(); renderJenisSheet(); toast('Dihapus');
+}
+
+/* ============ KELOLA BLOK/PETAK (RUTE) ============ */
+let BLOK_LIST = LS.get('mrg_blok', []); // [{id,label,source:'manual'|'peta'}]
+function saveBlok(){ LS.set('mrg_blok', BLOK_LIST); }
+function openBlokSheet(){ renderBlokSheet(); }
+function renderBlokSheet(){
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Kelola Blok/Petak</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="dsub">Daftar ini muncul sebagai saran otomatis di kolom Keterangan/Rute. Blok bisa ditambah manual di sini, atau otomatis masuk saat kamu impor peta vektor (GeoJSON) di tab Peta.</div>
+        ${BLOK_LIST.length===0 ? '<div class="empty-note">Belum ada blok/petak.</div>' : BLOK_LIST.map(b=>`
+          <div class="list-row"><div class="list-row-name">${b.label} ${b.source==='peta'?'<span class="badge-mini badge-partner">Peta</span>':''}</div>
+            <div class="list-row-actions"><button class="icon-x" onclick="removeBlok('${b.id}')">✕</button></div></div>
+        `).join('')}
+        <div class="add-row">
+          <input type="text" id="blokNewInput" placeholder="mis. Blok 14 → PKS">
+          <button onclick="addBlokManual()">+</button>
+        </div>
+      </div>
+    </div>`;
+}
+function addBlokManual(){
+  const val = document.getElementById('blokNewInput').value.trim();
+  if(!val) return;
+  BLOK_LIST.push({id:uid(), label:val, source:'manual'}); saveBlok(); renderBlokSheet(); refreshBlokDatalist(); toast('Blok ditambahkan');
+}
+function removeBlok(id){
+  BLOK_LIST = BLOK_LIST.filter(x=>x.id!==id); saveBlok(); renderBlokSheet(); refreshBlokDatalist(); toast('Dihapus');
+}
+function refreshBlokDatalist(){
+  const dl = document.getElementById('blokDatalist');
+  if(dl) dl.innerHTML = BLOK_LIST.map(b=>`<option value="${b.label}">`).join('');
+}
+
 /* ============ KELOLA LIBUR ============ */
 function openLiburSheet(){ renderLiburSheet(); }
 function renderLiburSheet(){
@@ -763,6 +1024,7 @@ function removeLibur(date){
 }
 
 /* ============ INIT ============ */
+refreshBlokDatalist();
 showScreen('hari');
 </script>
 </body>
