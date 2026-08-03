@@ -3,1456 +3,767 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>Jadwal BT — Pencatat Kegiatan &amp; Overtime</title>
-<meta name="description" content="Pencatat jadwal kegiatan, jam kerja & overtime harian BT — bekerja sepenuhnya offline.">
-<meta name="theme-color" content="#182238">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Jadwal BT">
+<meta name="theme-color" content="#1C2333">
+<title>Jadwal & HM Terpadu</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
-  @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/space-grotesk-latin-500-normal.woff2') format('woff2');}
-  @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/space-grotesk-latin-600-normal.woff2') format('woff2');}
-  @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/space-grotesk-latin-700-normal.woff2') format('woff2');}
-  @font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');}
-  @font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2');}
-  @font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2');}
-  @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/inter-latin-400-normal.woff2') format('woff2');}
-  @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/inter-latin-500-normal.woff2') format('woff2');}
-  @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/inter-latin-600-normal.woff2') format('woff2');}
-  @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/inter-latin-700-normal.woff2') format('woff2');}
-  :root{--navy:#182238;--navy-2:#22304f;--amber:#F2A93B;--amber-soft:#FBEBD1;--paper:#F6F3EC;--card:#FFFFFF;--ink:#2A2F3A;--sub:#7A8296;--line:#E7E2D6;--ok:#4C8B67;--red:#C1553F;}
+  :root{
+    --primary:#A8580E; --primary-container:#FFDDB0; --on-primary-container:#3A2200;
+    --secondary:#3A5B6E; --secondary-container:#D3E8F0;
+    --navy:#1C2333; --navy-2:#262F45;
+    --surface:#FFF8F2; --surface-container:#F4EDE3; --surface-container-high:#EDE3D3;
+    --on-surface:#211A12; --on-surface-variant:#6F6357; --outline:#E4DACB;
+    --danger:#B3261E; --danger-bg:#FBEAE8; --success:#3D6B3E;
+    --radius-lg:20px; --radius-md:16px; --radius-sm:12px;
+  }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
-  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
-  .mono{font-family:'IBM Plex Mono',monospace;}
-  button{font-family:inherit;cursor:pointer;border:none;background:none;}
-  input,select,textarea{font-family:inherit;}
-  #app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;background:var(--paper);box-shadow:0 0 40px rgba(24,34,56,0.08);overflow-x:hidden;}
+  html,body{margin:0;padding:0;background:var(--surface);font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--on-surface);}
+  button,input,select,textarea{font-family:inherit;}
+  .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
 
-  .topbar{background:var(--navy);padding:calc(22px + env(safe-area-inset-top,0px)) 20px 18px;position:relative;overflow:hidden;}
-  .topbar::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(242,169,59,0.14),transparent 70%);}
-  .hamburger{position:absolute;left:18px;top:calc(22px + env(safe-area-inset-top,0px));width:32px;height:32px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:6px;z-index:5;}
-  .hamburger span{display:block;height:2px;background:#fff;border-radius:2px;}
-  .topbar-inner{padding-left:38px;}
-  .topbar .eyebrow{color:var(--amber);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;}
-  .topbar h1{color:#fff;font-size:19px;margin:4px 0 0;font-weight:700;}
-  .topbar .sub{color:#9BA3B8;font-size:12px;margin-top:3px;}
-  .topbar-right{position:absolute;right:16px;top:calc(16px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:6px;z-index:5;}
-  .bt-badge-top{background:rgba(242,169,59,0.15);color:var(--amber);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;border:1px solid rgba(242,169,59,0.35);}
-  .cal-btn-top{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  /* TOP BAR */
+  .topbar{background:var(--navy);color:#fff;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+  .icon-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:#fff;cursor:pointer;flex-shrink:0;}
+  .icon-btn:active{background:rgba(255,255,255,0.12);}
+  .topbar-title{flex:1;min-width:0;}
+  .topbar-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#F2C98A;font-weight:700;}
+  .topbar-title h1{margin:2px 0 0;font-size:18px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bt-chip{background:var(--primary-container);color:var(--on-primary-container);font-weight:700;font-size:13px;padding:6px 12px;border-radius:100px;flex-shrink:0;border:none;}
 
-  .bt-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
-  .bt-chip-edit{display:flex;align-items:center;gap:5px;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:4px 4px 4px 12px;}
-  .bt-chip-edit select{border:none;background:transparent;font-family:'IBM Plex Mono';font-size:12.5px;font-weight:600;color:var(--navy);-webkit-appearance:none;appearance:none;}
-  .bt-chip-edit .rm{width:20px;height:20px;border-radius:50%;background:#FBEAE6;color:var(--red);font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .bt-add{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  /* SCREENS */
+  .screen{display:none;flex:1;overflow-y:auto;padding:16px 16px 100px;}
+  .screen.active{display:block;}
+  .section-eyebrow{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--on-surface-variant);font-weight:700;margin:20px 2px 10px;display:flex;justify-content:space-between;align-items:center;}
+  .section-eyebrow:first-child{margin-top:0;}
+  .card{background:#fff;border:1px solid var(--outline);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;}
+  .card-flat{background:var(--surface-container);border:none;}
+  .row-2{display:flex;gap:12px;}
+  .row-2 .card{flex:1;margin-bottom:0;}
+  .field-label{font-size:12px;font-weight:600;color:var(--on-surface-variant);margin-bottom:4px;}
+  .field-value{font-size:20px;font-weight:700;}
+  .field-sub{font-size:12px;color:var(--on-surface-variant);margin-top:2px;}
+  .empty-note{text-align:center;color:var(--on-surface-variant);font-size:13px;padding:24px 12px;}
 
-  main{padding:16px 16px 100px;min-height:70vh;}
-  .view{display:none;}
-  .view.active{display:block;animation:fadein .25s ease;}
-  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .hero-card{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
+  .hero-card::after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(242,169,59,.22),transparent 70%);}
+  .hero-label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#F2C98A;font-weight:700;}
+  .hero-num{font-size:34px;font-weight:800;margin:6px 0 2px;display:flex;align-items:baseline;gap:8px;}
+  .hero-num input{background:transparent;border:none;border-bottom:2px dashed rgba(242,169,59,.5);color:var(--primary-container);font-size:34px;font-weight:800;width:70px;font-family:inherit;}
+  .hero-num input:focus{outline:none;border-bottom-style:solid;}
+  .hero-num span{font-size:14px;font-weight:600;color:#C9CFDD;}
+  .hero-sub{font-size:12.5px;color:#B6BDCE;}
 
-  .section-label{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);font-weight:700;margin:18px 2px 8px;display:flex;align-items:center;justify-content:space-between;gap:6px;}
-  .section-label:first-child{margin-top:2px;}
-  .section-label .sl-actions{display:flex;gap:6px;}
+  label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface-variant);margin-bottom:5px;}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    width:100%;border:1.5px solid var(--outline);border-radius:12px;padding:11px 12px;font-size:14.5px;
+    background:var(--surface-container);color:var(--on-surface);margin-bottom:12px;
+  }
+  textarea{resize:vertical;min-height:56px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
+  .grid2 .full{grid-column:1/-1;}
 
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;}
-  .card.tight{padding:12px 14px;}
+  .pill-btn{display:inline-flex;align-items:center;gap:6px;background:var(--primary-container);color:var(--on-primary-container);font-size:13px;font-weight:700;padding:9px 16px;border-radius:100px;border:none;cursor:pointer;}
+  .btn-filled{width:100%;background:var(--primary);color:#fff;font-size:15px;font-weight:700;padding:14px;border-radius:100px;border:none;cursor:pointer;}
+  .btn-outline{width:100%;background:transparent;color:var(--primary);font-size:14.5px;font-weight:700;padding:12px;border-radius:100px;border:1.5px solid var(--primary);cursor:pointer;}
+  .btn-sm{font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:100px;border:1.5px solid var(--outline);background:#fff;color:var(--on-surface-variant);cursor:pointer;}
+  .btn-sm.primary{border-color:transparent;background:var(--primary-container);color:var(--on-primary-container);}
 
-  .lembur-widget{background:linear-gradient(135deg,var(--navy),#243660);border-radius:18px;padding:16px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}
-  .lembur-widget::after{content:"";position:absolute;right:-30px;bottom:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(242,169,59,0.18),transparent 70%);}
-  .lembur-widget .l-lbl{font-size:10px;color:#9BA3B8;text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
-  .lembur-widget .l-val{font-family:'Space Grotesk';font-size:26px;font-weight:700;color:var(--amber);display:flex;align-items:baseline;gap:6px;}
-  .lembur-widget .l-val input{background:transparent;border:none;border-bottom:2px dashed rgba(242,169,59,.5);color:var(--amber);font-family:'Space Grotesk';font-size:26px;font-weight:700;width:52px;text-align:right;}
-  .lembur-widget .l-val input:focus{outline:none;border-bottom-style:solid;}
-  .lembur-widget .l-note{font-size:10.5px;color:#9BA3B8;margin-top:2px;}
-  .lembur-widget .edit-hint{font-size:9.5px;color:var(--amber);background:rgba(242,169,59,.14);padding:4px 9px;border-radius:20px;font-weight:600;white-space:nowrap;}
+  /* RIWAYAT */
+  .hist-tabs{display:flex;gap:8px;margin-bottom:12px;}
+  .hist-tab{flex:1;text-align:center;padding:9px;border-radius:100px;font-size:13px;font-weight:700;border:1.5px solid var(--outline);color:var(--on-surface-variant);cursor:pointer;background:#fff;}
+  .hist-tab.active-saya{background:var(--primary-container);color:var(--on-primary-container);border-color:transparent;}
+  .hist-tab.active-partner{background:var(--secondary-container);color:var(--secondary);border-color:transparent;}
+  .hrow{background:#fff;border:1px solid var(--outline);border-radius:var(--radius-md);margin-bottom:10px;overflow:hidden;}
+  .hrow-head{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;}
+  .hrow-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;}
+  .hrow-dot.partner{background:var(--secondary);}
+  .hrow-main{flex:1;min-width:0;}
+  .hrow-date{font-size:14px;font-weight:700;}
+  .hrow-sum{font-size:12.5px;color:var(--on-surface-variant);margin-top:1px;}
+  .hrow-chev{color:var(--on-surface-variant);transition:transform .2s;flex-shrink:0;}
+  .hrow.open .hrow-chev{transform:rotate(180deg);}
+  .hrow-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+  .hrow.open .hrow-body{max-height:900px;border-top:1px solid var(--outline);}
+  .hrow-body-inner{padding:14px;}
+  .hrow-actions{display:flex;gap:8px;margin-top:2px;}
+  .btn-save{flex:1;background:var(--primary);color:#fff;border:none;border-radius:100px;padding:11px;font-weight:700;font-size:13.5px;}
+  .btn-del{background:var(--danger-bg);color:var(--danger);border:none;border-radius:100px;padding:11px 16px;font-weight:700;font-size:13.5px;}
 
-  .hm-card{display:flex;align-items:center;gap:10px;}
-  .hm-field{flex:1;}
-  .hm-field label{font-size:9.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;font-weight:700;display:block;margin-bottom:5px;}
-  .hm-field input{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 9px;font-family:'IBM Plex Mono';font-size:13px;background:var(--paper);text-align:center;}
-  .hm-arrow{color:var(--sub);font-size:14px;margin-top:14px;}
-  .hm-total{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center;}
-  .hm-total .t-lbl{font-size:11px;color:var(--sub);}
-  .hm-total .t-val{font-family:'Space Grotesk';font-weight:700;font-size:15px;color:var(--navy);}
+  /* NAV */
+  .navwrap{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);flex-shrink:0;}
+  nav.tabbar{display:flex;background:var(--navy);border-radius:100px;padding:6px;gap:2px;box-shadow:0 8px 24px rgba(20,15,5,.25);}
+  nav.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border:none;background:transparent;color:#9099AD;border-radius:100px;cursor:pointer;}
+  nav.tabbar button.active{background:rgba(255,255,255,.12);color:#F2C98A;}
+  nav.tabbar svg{width:20px;height:20px;}
+  nav.tabbar .lbl{font-size:9.5px;font-weight:700;}
 
-  .stage2{display:flex;gap:10px;padding:12px 0;border-bottom:1px dashed var(--line);align-items:flex-start;}
-  .stage2:last-child{border-bottom:none;}
-  .stage-num{width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Space Grotesk';margin-top:1px;}
-  .stage2.rest .stage-num{background:#B9B2A0;}
-  .stage-body2{flex:1;min-width:0;}
-  .stage-desc{font-size:10px;color:var(--sub);margin-bottom:5px;}
-  .time-chip-row{display:flex;align-items:center;gap:8px;}
-  .time-chip{border:1px solid var(--line);border-radius:9px;background:var(--paper);padding:7px 9px;font-family:'IBM Plex Mono';font-size:13px;font-weight:600;width:60px;text-align:center;color:var(--navy);flex-shrink:0;}
-  .select-input{flex:1;border:1px solid var(--line);border-radius:9px;background:var(--paper);padding:7px 8px;font-size:12px;color:var(--ink);min-width:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237A8296'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:22px;}
-  .plus-btn{width:28px;height:28px;border-radius:8px;background:var(--paper);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--navy);flex-shrink:0;font-weight:700;}
-  .plus-btn.active{background:var(--amber-soft);border-color:var(--amber);color:#8a6414;}
-  .gear-btn{width:26px;height:26px;border-radius:8px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub);flex-shrink:0;}
+  /* DRAWER */
+  .scrim{position:fixed;inset:0;background:rgba(15,10,5,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;bottom:0;left:0;width:80%;max-width:320px;background:var(--surface);z-index:201;transform:translateX(-105%);transition:transform .25s ease;
+    border-radius:0 28px 28px 0;padding:calc(20px + env(safe-area-inset-top,0px)) 16px 20px;overflow-y:auto;}
+  .drawer.show{transform:translateX(0);}
+  .drawer-profile{display:flex;align-items:center;gap:12px;padding:8px 8px 20px;}
+  .avatar{width:44px;height:44px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;}
+  .drawer-name{font-weight:700;font-size:15px;}
+  .drawer-sub{font-size:12px;color:var(--on-surface-variant);}
+  .drawer-group-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--on-surface-variant);padding:14px 12px 6px;}
+  .drawer-item{display:flex;align-items:center;gap:14px;padding:12px 12px;border-radius:100px;color:var(--on-surface);font-size:14.5px;font-weight:600;cursor:pointer;}
+  .drawer-item:active{background:var(--surface-container-high);}
 
-  .subitem-list{margin-top:7px;display:flex;flex-direction:column;gap:6px;}
-  .subitem{display:flex;align-items:center;gap:6px;}
-  .subitem select{flex:1;}
-  .subitem .rm{width:22px;height:22px;border-radius:6px;background:#FBEAE6;color:var(--red);font-size:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  /* BOTTOM SHEET (modal umum) */
+  .sheet-scrim{position:fixed;inset:0;background:rgba(15,10,5,.45);z-index:210;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .sheet-scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{width:100%;max-width:480px;background:var(--surface);border-radius:24px 24px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom,0px));
+    transform:translateY(100%);transition:transform .25s ease;max-height:86vh;overflow-y:auto;}
+  .sheet-scrim.show .sheet{transform:translateY(0);}
+  .sheet-handle{width:36px;height:4px;background:var(--outline);border-radius:100px;margin:8px auto 14px;}
+  .sheet-title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+  .sheet h3{margin:0;font-size:17px;}
+  .sheet .dsub{font-size:12.5px;color:var(--on-surface-variant);margin-bottom:14px;}
+  .sheet-close{background:none;border:none;font-size:18px;color:var(--on-surface-variant);cursor:pointer;padding:4px;}
 
-  .rest-mode-row{display:flex;gap:6px;margin-top:6px;}
-  .rest-mode-btn{flex:1;font-size:11px;font-weight:600;padding:8px 6px;border-radius:9px;background:var(--paper);border:1px solid var(--line);color:var(--sub);}
-  .rest-mode-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-  .rest-duration{font-size:11px;color:var(--sub);margin-top:8px;}
-  .rest-duration b{color:var(--navy);}
-  .rest-manual{margin-top:7px;display:none;}
-  .rest-manual.show{display:flex;gap:8px;align-items:center;}
-  .rest-manual input{flex:1;border:1px solid var(--amber);border-radius:9px;padding:7px 10px;font-size:12px;font-family:'IBM Plex Mono';background:var(--amber-soft);}
+  .list-row{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--outline);}
+  .list-row:last-child{border-bottom:none;}
+  .list-row-name{font-size:14.5px;font-weight:600;}
+  .list-row-actions{display:flex;gap:6px;}
+  .icon-x{width:30px;height:30px;border-radius:50%;border:none;background:var(--danger-bg);color:var(--danger);font-weight:700;cursor:pointer;}
+  .icon-edit{width:30px;height:30px;border-radius:50%;border:none;background:var(--surface-container-high);color:var(--on-surface-variant);font-weight:700;cursor:pointer;}
+  .add-row{display:flex;gap:8px;margin-top:10px;}
+  .add-row input{margin-bottom:0;flex:1;}
+  .add-row button{flex-shrink:0;background:var(--navy);color:#fff;border:none;width:44px;border-radius:12px;font-size:18px;font-weight:700;cursor:pointer;}
 
-  .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600;}
-  .btn-primary{background:var(--navy);color:#fff;width:100%;}
-  .btn-ghost{background:var(--card);border:1px solid var(--line);color:var(--ink);}
-  .btn-amber{background:var(--amber);color:#3a2600;}
-  .btn-sm{padding:7px 12px;font-size:11.5px;border-radius:9px;}
+  .chk-row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--outline);}
+  .chk-row input{width:19px;height:19px;accent-color:var(--primary);}
+  .chk-row label{font-size:14.5px;flex:1;}
+  .export-fmt{display:flex;gap:10px;margin-top:16px;}
+  .fmt-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;border-radius:16px;border:1.5px solid var(--outline);background:#fff;font-weight:700;font-size:13px;color:var(--on-surface);cursor:pointer;}
+  .fmt-btn.pdf{border-color:var(--danger);color:var(--danger);}
+  .fmt-btn.csv{border-color:var(--success);color:var(--success);}
 
-  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;}
-  .stat .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);font-weight:700;}
-  .stat .val{font-family:'Space Grotesk';font-size:20px;font-weight:700;color:var(--navy);margin-top:3px;}
-  .stat .val.amber{color:var(--amber);}
-  .stat .sub2{font-size:10.5px;color:var(--sub);margin-top:1px;}
+  .placeholder-box{text-align:center;padding:60px 20px;color:var(--on-surface-variant);}
+  .placeholder-box .pic{font-size:48px;margin-bottom:10px;}
 
-  .hero-ot{background:linear-gradient(135deg,var(--navy),#233457);border-radius:18px;padding:18px;color:#fff;position:relative;overflow:hidden;}
-  .hero-ot::after{content:"";position:absolute;right:-30px;bottom:-30px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(242,169,59,0.18),transparent 70%);}
-  .hero-ot .lbl{font-size:10.5px;color:#9BA3B8;text-transform:uppercase;letter-spacing:.12em;font-weight:700;}
-  .hero-ot .big{font-family:'Space Grotesk';font-size:28px;font-weight:700;color:var(--amber);margin-top:4px;}
-  .hero-ot .period{font-size:11px;color:#9BA3B8;margin-top:2px;}
+  .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:11px 20px;border-radius:100px;font-size:13.5px;font-weight:600;
+    opacity:0;transition:all .25s ease;z-index:300;pointer-events:none;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  .dot-lg{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-  .bar-track{width:100%;height:7px;background:var(--paper);border-radius:10px;margin-top:5px;overflow:hidden;}
-  .bar-fill{height:100%;border-radius:10px;}
-
-  .holiday-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);}
-  .holiday-item .rm{width:22px;height:22px;border-radius:6px;background:#FBEAE6;color:var(--red);font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .holiday-item:last-child{border-bottom:none;}
-  .holiday-date{width:44px;text-align:center;flex-shrink:0;}
-  .holiday-date .dd{font-family:'Space Grotesk';font-size:16px;font-weight:700;color:var(--red);}
-  .holiday-date .mm{font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;}
-  .holiday-label{flex:1;font-size:12.5px;padding:0 10px;}
-  .holiday-label .name{font-weight:600;color:var(--ink);}
-  .holiday-label .day{font-size:10.5px;color:var(--sub);}
-
-  .range-btn{width:100%;background:var(--navy);color:#fff;border-radius:14px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-  .range-btn .rb-l{display:flex;align-items:center;gap:9px;}
-  .range-btn .rb-txt{font-family:'Space Grotesk';font-size:15px;font-weight:700;}
-  .range-btn .rb-sub{font-size:10px;color:#9BA3B8;margin-top:1px;}
-  .range-btn .rb-icon{font-size:16px;}
-
-  .prog-table{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
-  .prog-head{display:grid;grid-template-columns:.65fr 1fr 1.15fr auto;gap:6px;padding:10px 12px;background:var(--paper);font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--sub);font-weight:700;border-bottom:1px solid var(--line);}
-  .prog-row{display:grid;grid-template-columns:.65fr 1fr 1.15fr auto;gap:6px;padding:12px;border-bottom:1px solid var(--line);align-items:center;}
-  .prog-row:last-child{border-bottom:none;}
-  .prog-row .pbt{font-family:'IBM Plex Mono';font-size:10.5px;font-weight:600;color:var(--sub);background:var(--paper);padding:3px 6px;border-radius:6px;text-align:center;}
-  .prog-row .pname{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .prog-row .pkegiatan{font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .prog-row .pkegiatan-orig{font-size:9.5px;color:#B9A876;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .prog-row .plembur{font-family:'Space Grotesk';font-weight:700;font-size:13px;color:var(--amber);background:var(--amber-soft);padding:3px 8px;border-radius:20px;text-align:center;}
-
-  nav.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--navy);display:flex;border-top:1px solid rgba(255,255,255,0.06);z-index:50;padding-bottom:env(safe-area-inset-bottom,0px);}
-  nav.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 2px 9px;color:#7C86A0;}
-  nav.tabbar button.active{color:var(--amber);}
-  nav.tabbar svg{width:19px;height:19px;}
-  nav.tabbar .lbl{font-size:9.5px;font-weight:600;}
-
-  .empty{text-align:center;padding:34px 14px;color:var(--sub);font-size:12.5px;}
-
-  .modal-bg{position:fixed;inset:0;background:rgba(24,34,56,0.5);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
-  .modal-bg .sheet{width:100%;max-width:480px;background:var(--paper);border-radius:22px 22px 0 0;padding:18px 18px calc(26px + env(safe-area-inset-bottom,0px));max-height:82vh;overflow-y:auto;}
-  .modal-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-  .modal-title h3{margin:0;font-size:15px;}
-  .field-lbl{font-size:11px;color:var(--sub);font-weight:600;margin:10px 0 4px;}
-  .full-input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;background:var(--card);}
-  .field-row{display:flex;gap:8px;}
-  .field-row > div{flex:1;}
-  .opt-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--line);}
-  .opt-row span{flex:1;font-size:12.5px;}
-  .opt-row .rm{width:22px;height:22px;border-radius:6px;background:#FBEAE6;color:var(--red);font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .opt-row .rm.disabled{background:#EFEBE0;color:var(--sub);opacity:.7;}
-  .modal-tabs{display:flex;gap:6px;margin-bottom:10px;}
-  .modal-tab{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--sub);}
-  .modal-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-  .add-row{display:flex;gap:7px;margin-top:10px;}
-  .add-row input{flex:1;}
-
-  /* side drawer settings */
-  .drawer-bg{position:fixed;inset:0;background:rgba(24,34,56,0.5);z-index:150;}
-  .drawer{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:340px;background:var(--paper);z-index:151;padding:calc(20px + env(safe-area-inset-top,0px)) 18px 20px;box-shadow:6px 0 30px rgba(0,0,0,0.2);transform:translateX(0);}
-  .drawer h3{margin:0 0 4px;font-size:16px;}
-  .drawer .dsub{font-size:11px;color:var(--sub);margin-bottom:16px;}
-  .drawer-close{position:absolute;right:14px;top:calc(16px + env(safe-area-inset-top,0px));font-size:18px;color:var(--sub);}
-
-  .fw-entry{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
-  .fw-entry:last-child{margin-bottom:0;}
-  .fw-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-  .fw-type{display:flex;gap:6px;}
-  .fw-type button{font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:20px;background:var(--paper);border:1px solid var(--line);color:var(--sub);}
-  .fw-type button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-  .fw-body input, .fw-body select{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;background:var(--paper);margin-bottom:6px;}
-  .fw-body input:last-child, .fw-body select:last-child{margin-bottom:0;}
-
-  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:24px;font-size:12.5px;font-weight:600;z-index:200;opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.25);}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
-
-  .note-banner{background:var(--amber-soft);border:1px solid #E9CE97;border-radius:12px;padding:10px 12px;font-size:11px;color:#7A5A16;margin-bottom:12px;line-height:1.5;}
+  .badge-mini{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:100px;margin-left:6px;}
+  .badge-saya{background:var(--primary-container);color:var(--on-primary-container);}
+  .badge-partner{background:var(--secondary-container);color:var(--secondary);}
 </style>
 </head>
 <body>
-<div id="app">
+<div class="app">
 
   <div class="topbar">
-    <button class="hamburger" onclick="openSettingsDrawer()"><span></span><span></span><span></span></button>
-    <div class="topbar-right">
-      <button class="cal-btn-top" onclick="openManualDateModal()" title="Pilih tanggal manual">📅</button>
-      <div class="bt-badge-top" id="btBadgeTop">BT.12</div>
+    <button class="icon-btn" onclick="openDrawer()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div class="topbar-title">
+      <div class="topbar-eyebrow" id="topEyebrow">Hari Ini</div>
+      <h1 id="topTitle">—</h1>
     </div>
-    <div class="topbar-inner">
-      <div class="eyebrow">Jadwal &amp; Overtime</div>
-      <h1 id="topTitle">Rabu, 27 Mei 2026</h1>
-      <div class="sub" id="topSub">Sopir: —</div>
-    </div>
+    <button class="bt-chip" id="topBtChip" onclick="showScreen('hari')">—</button>
   </div>
 
-  <main>
+  <!-- HARI INI -->
+  <div class="screen active" id="screen-hari"></div>
+  <!-- PROGRAM -->
+  <div class="screen" id="screen-program"></div>
+  <!-- PETA -->
+  <div class="screen" id="screen-peta">
+    <div class="placeholder-box">
+      <div class="pic">🗺️</div>
+      <div style="font-weight:700;font-size:15px;color:var(--on-surface);margin-bottom:6px;">Peta segera hadir</div>
+      <div style="font-size:13px;">Fitur tandai lokasi di peta kebun sedang disiapkan di update berikutnya.</div>
+    </div>
+  </div>
+  <!-- SERVIS -->
+  <div class="screen" id="screen-servis"></div>
+  <!-- REKAP -->
+  <div class="screen" id="screen-rekap"></div>
 
-    <!-- ================= VIEW: HARI INI ================= -->
-    <section class="view active" id="view-harian">
-      <div class="note-banner">Aplikasi ini masih kosong. Ketuk ⚙ di berbagai bagian untuk mengisi nama partner, kode BT, dan pilihan kegiatan sesuai kondisi kamu — lalu ketuk "↻ Isi dari program" di bawah untuk mengisi jadwal hari ini dari pola mingguan.</div>
-
-      <div class="card tight" style="display:flex;align-items:center;gap:10px;margin-top:2px;">
-        <div style="flex:1;">
-          <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--sub);font-weight:700;">Jam Absen Datang</div>
-          <div style="font-size:10px;color:var(--sub);margin-top:1px;">biasanya sebelum jam berangkat program</div>
-        </div>
-        <input class="time-chip" type="text" id="absenInput" placeholder="--.--" style="width:70px;" onchange="updateAbsen(this.value)">
-      </div>
-      <div class="card tight" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-        <div style="flex:1;">
-          <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--sub);font-weight:700;">Jam Absen Pulang</div>
-          <div style="font-size:10px;color:var(--sub);margin-top:1px;">biasanya sesudah jam pulang program (tahap 5)</div>
-        </div>
-        <input class="time-chip" type="text" id="absenPulangInput" placeholder="--.--" style="width:70px;" onchange="updateAbsenPulang(this.value)">
-      </div>
-
-      <div class="lembur-widget" style="margin-top:10px;">
-        <div>
-          <div class="l-lbl">📅 Potensi Lembur Hari Ini</div>
-          <div class="l-val"><input type="text" id="lemburInput" inputmode="decimal" onchange="setLemburOverride(this.value)"><span style="font-size:14px;color:#9BA3B8;font-weight:600;">jam</span></div>
-          <div class="l-note" id="lemburNote">otomatis dari program</div>
-        </div>
-        <div class="edit-hint">✎ Ketuk angka untuk ubah</div>
-      </div>
-
-      <div class="section-label">BT digunakan hari ini <span class="mono" style="text-transform:none;color:var(--sub);font-weight:500;">otomatis, bisa diubah</span></div>
-      <div class="card tight">
-        <div class="bt-row" id="btRow"></div>
-      </div>
-
-      <div class="section-label">Hour Meter (HM) <span class="mono" style="text-transform:none;color:var(--sub);font-weight:500;" id="hmBtLabel">BT.12</span></div>
-      <div class="card hm-card">
-        <div class="hm-field"><label>HM Awal</label><input type="text" inputmode="decimal" id="hmStart" placeholder="12345" onchange="updateHm('hmStart',this.value)"></div>
-        <div class="hm-arrow">→</div>
-        <div class="hm-field"><label>HM Akhir</label><input type="text" inputmode="decimal" id="hmEnd" placeholder="12353" onchange="updateHm('hmEnd',this.value)"></div>
-      </div>
-      <div class="card tight" style="margin-top:-6px;">
-        <div class="hm-total" style="border-top:none;padding-top:0;">
-          <span class="t-lbl">Total pemakaian hari ini</span>
-          <span class="t-val" id="hmTotal">0 jam</span>
-        </div>
-      </div>
-
-      <div class="section-label" style="margin-top:16px;">
-        BBM &amp; Perbaikan Workshop
-        <button class="btn btn-ghost btn-sm" onclick="addFuelWorkshopEntry()">+ Tambah</button>
-      </div>
-      <div class="card" id="fuelWorkshopList"></div>
-
-      <div class="section-label" style="margin-top:16px;">
-        5 Tahap Kegiatan
-        <div class="sl-actions">
-          <button class="gear-btn" onclick="openOptionsModal()" title="Kelola pilihan Putak & Lokasi">⚙</button>
-          <button class="btn btn-ghost btn-sm" onclick="applyPreset()">↻ Isi dari program</button>
-        </div>
-      </div>
-      <div class="card" id="stageList"></div>
-
-      <button class="btn btn-primary" style="margin-top:14px;" onclick="saveDay()">Simpan catatan hari ini</button>
-    </section>
-
-    <!-- ================= VIEW: PROGRAM MINGGUAN ================= -->
-    <section class="view" id="view-program">
-      <button class="range-btn" onclick="openRangeModal()">
-        <div class="rb-l">
-          <span class="rb-icon">📆</span>
-          <div>
-            <div class="rb-txt" id="rangeLabel">27 – 29 / Juli / 2026</div>
-            <div class="rb-sub">Ketuk untuk ubah periode berlaku</div>
-          </div>
-        </div>
-        <span style="font-size:13px;">›</span>
+  <div class="navwrap">
+    <nav class="tabbar">
+      <button data-tab="hari" onclick="showScreen('hari')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        <span class="lbl">Hari Ini</span>
       </button>
+      <button data-tab="program" onclick="showScreen('program')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        <span class="lbl">Program</span>
+      </button>
+      <button data-tab="peta" onclick="showScreen('peta')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5 3 8v13l6-3 6 3 6-3V5l-6 3-6-3Z"/><path d="M9 5v13M15 8v13"/></svg>
+        <span class="lbl">Peta</span>
+      </button>
+      <button data-tab="servis" onclick="showScreen('servis')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 1.4 0l1.6-1.6a5 5 0 0 1 0 7.1L9.5 20a3.5 3.5 0 0 1-5-5l8.2-8.2a5 5 0 0 1 7.1 0"/></svg>
+        <span class="lbl">Servis</span>
+      </button>
+      <button data-tab="rekap" onclick="showScreen('rekap')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        <span class="lbl">Rekap</span>
+      </button>
+    </nav>
+  </div>
 
-      <div class="section-label">
-        BT, Partner &amp; program periode ini
-        <div class="sl-actions">
-          <button class="gear-btn" onclick="openDataModal()" title="Kelola BT & partner">⚙</button>
-          <button class="btn btn-ghost btn-sm" onclick="openEntryModal()">+ Tambah</button>
-        </div>
+  <div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-profile">
+      <div class="avatar" id="drawerAvatar">?</div>
+      <div>
+        <div class="drawer-name" id="drawerName">—</div>
+        <div class="drawer-sub" id="drawerSub">—</div>
       </div>
-      <div class="prog-table">
-        <div class="prog-head"><span>BT</span><span>Partner</span><span>Kegiatan</span><span>Lembur</span></div>
-        <div id="progTableBody"></div>
-      </div>
+    </div>
+    <div class="drawer-group-label">Akun & Data Utama</div>
+    <div class="drawer-item" onclick="closeDrawer();openSettingSheet()">⚙️&nbsp; Setting Akun</div>
+    <div class="drawer-item" onclick="closeDrawer();openBtPartnerSheet()">🚚&nbsp; Kelola BT & Partner</div>
+    <div class="drawer-item" onclick="closeDrawer();openLiburSheet()">📅&nbsp; Kelola Hari Libur</div>
+    <div class="drawer-item" onclick="closeDrawer();toast('Fitur ganti peta segera hadir')">🗺️&nbsp; Ganti Sumber Peta</div>
+    <div class="drawer-group-label">Lainnya</div>
+    <div class="drawer-item" onclick="closeDrawer();showScreen('rekap');setTimeout(openExportSheet,300)">📤&nbsp; Export Data</div>
+  </div>
 
-      <div class="section-label" style="margin-top:18px;">Riwayat perubahan program</div>
-      <div class="card" id="progHistoryList" style="padding:2px 14px;"></div>
-    </section>
-
-    <!-- ================= VIEW: LIBUR (+ perbandingan) ================= -->
-    <section class="view" id="view-libur">
-      <div class="hero-ot">
-        <div class="lbl">Total Estimasi Lembur — Periode Ini</div>
-        <div class="big" id="periodeTotalLibur">–</div>
-        <div class="period" id="periodeRangeLibur">–</div>
-      </div>
-
-      <div class="stat-grid" style="margin-top:10px;">
-        <div class="stat"><div class="lbl">Tanggal Merah</div><div class="val" id="cntMerah">–</div><div class="sub2">bulan dipilih</div></div>
-        <div class="stat"><div class="lbl">Hari Minggu</div><div class="val" id="cntMinggu">–</div><div class="sub2">bulan dipilih</div></div>
-      </div>
-
-      <div class="section-label">Cari periode</div>
-      <div class="card tight" style="display:flex;gap:8px;">
-        <input class="full-input" type="month" id="monthPicker" value="2026-08" onchange="renderHolidays()">
-      </div>
-
-      <div class="section-label">Tanggal merah nasional 2026 <button class="btn btn-ghost btn-sm" onclick="openHolidayModal()">+ Tambah</button></div>
-      <div class="card tight" id="holidayList" style="padding:2px 12px;"></div>
-
-      <div class="section-label" style="margin-top:16px;">Perbandingan lembur antar partner <span class="mono" style="text-transform:none;color:var(--sub);font-weight:500;">minggu ini</span></div>
-      <div class="card" id="comparisonList"></div>
-    </section>
-
-    <!-- ================= VIEW: REKAP (riwayat pribadi) ================= -->
-    <section class="view" id="view-rekap">
-      <div class="section-label">Rekap Hour Meter bulanan</div>
-      <div class="card tight">
-        <div class="stat-grid">
-          <div class="stat"><div class="lbl">Total Jam HM</div><div class="val" id="hmMonthTotal">–</div><div class="sub2">bulan ini</div></div>
-          <div class="stat"><div class="lbl">Rata-rata / Hari</div><div class="val" id="hmMonthAvg">–</div><div class="sub2">jam</div></div>
-        </div>
-      </div>
-
-      <div class="section-label">Riwayat pekerjaan saya</div>
-      <div class="card" id="historyList" style="padding:2px 14px;"></div>
-
-      <button class="btn btn-amber" style="width:100%;margin-top:14px;" onclick="openExportModal()">⬇ Ekspor riwayat (PDF)</button>
-    </section>
-
-  </main>
-
-  <nav class="tabbar">
-    <button class="tab-btn active" data-view="harian" onclick="switchTab('harian')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-      <span class="lbl">Hari Ini</span>
-    </button>
-    <button class="tab-btn" data-view="program" onclick="switchTab('program')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
-      <span class="lbl">Program</span>
-    </button>
-    <button class="tab-btn" data-view="libur" onclick="switchTab('libur')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><circle cx="8" cy="14" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1.3" fill="currentColor" stroke="none"/></svg>
-      <span class="lbl">Libur</span>
-    </button>
-    <button class="tab-btn" data-view="rekap" onclick="switchTab('rekap')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
-      <span class="lbl">Rekap</span>
-    </button>
-  </nav>
-
-  <div class="toast" id="toast"></div>
   <div id="modalHost"></div>
-  <div id="drawerHost"></div>
+  <div class="toast" id="toast"></div>
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
 <script>
-/* ============ DATA CONTOH (DUMMY) ============ */
+/* ============ STORAGE ============ */
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ /* penuh/diblokir, abaikan */ } }
+};
+let USER = LS.get('mrg_user', {name:'', mainBt:''});
+let BT_CODES = LS.get('mrg_bt', [{id:'bt12',label:'BT.12'},{id:'bt13',label:'BT.13'}]);
+let PARTNERS = LS.get('mrg_partners', []);
+let LIBUR = LS.get('mrg_libur', []); // [{date,label}]
+let ENTRIES = LS.get('mrg_entries', []); // catatan harian gabungan
+let SERVIS = LS.get('mrg_servis', []);
+if(!USER.mainBt && BT_CODES[0]) USER.mainBt = BT_CODES[0].id;
+
+function saveUser(){ LS.set('mrg_user', USER); }
+function saveBt(){ LS.set('mrg_bt', BT_CODES); }
+function savePartners(){ LS.set('mrg_partners', PARTNERS); }
+function saveLibur(){ LS.set('mrg_libur', LIBUR); }
+function saveEntries(){ LS.set('mrg_entries', ENTRIES); }
+function saveServis(){ LS.set('mrg_servis', SERVIS); }
+
+/* ============ HELPERS ============ */
+const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis',"Jumat",'Sabtu'];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const MONTH_NAMES_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const NORMAL_HOURS = {1:7,2:7,3:7,4:7,5:6.5,6:5.5,0:0};
+const JENIS_KATEGORI = ['Angkutan Tenaga Kerja','Angkutan Tebu','Layanan Drone','Lainnya'];
+
+function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function dow(iso){ return new Date(iso+'T00:00:00').getDay(); }
+function monthKey(iso){ return iso.slice(0,7); }
+function fmtLabel(iso){ const d=new Date(iso+'T00:00:00'); return DAY_NAMES[d.getDay()]+', '+d.getDate()+' '+MONTH_NAMES[d.getMonth()]+' '+d.getFullYear(); }
+function isHoliday(iso){ return LIBUR.some(h=>h.date===iso); }
+function btLabel(id){ const b=BT_CODES.find(x=>x.id===id); return b?b.label:'—'; }
+function toMinutes(t){ if(!t) return null; const clean=t.replace(/[^0-9:.]/g,'').replace('.',':'); const parts=clean.split(':'); if(parts.length<2) return null; const h=parseInt(parts[0],10),m=parseInt(parts[1],10); if(isNaN(h)||isNaN(m)) return null; return h*60+m; }
+function fmtHoursNum(mins){ return Math.round((mins/60)*10)/10; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(window._toastT); window._toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+function computeOT(e){
+  const isFullOt = dow(e.date)===0 || isHoliday(e.date);
+  const t1 = toMinutes(e.s1Time), t5 = toMinutes(e.s5Time);
+  let span = (t1!==null && t5!==null) ? Math.max(0, t5-t1) : 0;
+  const rs = toMinutes(e.istMulai), re = toMinutes(e.istSelesai);
+  let restMin = (rs!==null && re!==null) ? Math.max(0, re-rs) : 0;
+  if(e.istLembur) restMin = 0;
+  const totalMin = Math.max(0, span-restMin);
+  const normalMin = isFullOt ? 0 : (NORMAL_HOURS[dow(e.date)]||0)*60;
+  let otMin = isFullOt ? totalMin : Math.max(0, totalMin-normalMin);
+  if(e.otOverride !== null && e.otOverride !== undefined && e.otOverride !== '') otMin = Number(e.otOverride)*60;
+  return {totalMin, otMin, isFullOt};
+}
+function hmPakai(e){ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); if(isNaN(a)||isNaN(b)) return 0; return Math.max(0, b-a); }
+
+/* ============ NAV / SCREENS ============ */
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('nav.tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  const titles = {hari:['Hari Ini', fmtLabel(todayIso())], program:['Program','Jadwal & Riwayat Kerja'], peta:['Peta','Lokasi Kerja'], servis:['Servis','Riwayat Perbaikan'], rekap:['Rekap','Laporan Bulanan']};
+  document.getElementById('topEyebrow').textContent = titles[name][0];
+  document.getElementById('topTitle').textContent = titles[name][1];
+  if(name==='hari') renderHari();
+  if(name==='program') renderProgram();
+  if(name==='servis') renderServis();
+  if(name==='rekap') renderRekap();
+}
+function openDrawer(){
+  document.getElementById('drawerAvatar').textContent = (USER.name||'?').charAt(0).toUpperCase();
+  document.getElementById('drawerName').textContent = USER.name || 'Belum diisi';
+  document.getElementById('drawerSub').textContent = 'BT tanggung jawab: '+btLabel(USER.mainBt);
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('scrim').classList.add('show');
+}
+function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); document.getElementById('scrim').classList.remove('show'); }
+function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
+
+/* ============ FORMAT JAM OTOMATIS ============ */
 document.addEventListener('input', function(e){
   if(e.target.classList && e.target.classList.contains('time-chip')){
     let digits = e.target.value.replace(/\D/g,'').slice(0,4);
-    e.target.value = digits.length > 2 ? digits.slice(0,2) + '.' + digits.slice(2) : digits;
+    e.target.value = digits.length > 2 ? digits.slice(0,2)+'.'+digits.slice(2) : digits;
   }
 });
 
-const CATEGORIES = [
-  {id:'tenaga', name:'Angkutan Tenaga', color:'#5FA8D3'},
-  {id:'tebu', name:'Angkutan Tebu', color:'#4C9A6A'},
-  {id:'drone', name:'Pelayanan Drone', color:'#8B7FD6'},
-  {id:'lain', name:'Lainnya', color:'#E27D60'},
-];
-
-// rekan kerja (partner) — 6 tetap (tidak bisa dihapus) + sementara (bisa diedit/dihapus)
-let partners = [
-  {id:'p1', name:'Partner 1', color:'#F2A93B', tetap:true},
-  {id:'p2', name:'Partner 2', color:'#5FA8D3', tetap:true},
-  {id:'p3', name:'Partner 3', color:'#4C9A6A', tetap:true},
-  {id:'p4', name:'Partner 4', color:'#8B7FD6', tetap:true},
-  {id:'p5', name:'Partner 5', color:'#E27D60', tetap:true},
-  {id:'p6', name:'Partner 6', color:'#D66BA0', tetap:true},
-];
-
-// pengaturan pengguna (laman Setting)
-let USER = { name:'', mainBt:'BT.12' };
-
-// pilihan yang bisa dikelola manual lewat tombol ⚙
-let PUTAK_OPTIONS = ['Putak — kampung → terminal', 'Standby terminal', 'Putak — antar pulang kampung', 'Antar khusus vendor'];
-let LOKASI_OPTIONS = ['Pel. Umum', 'Aj. Putak Spraying Areal', 'Aj. Operator Alat Berat', 'Aj. Operator PMK Selatan Barat', 'Pel. Mekanik & Patroli Irigasi', 'Pel. ZPK', 'Pel. Gleaning Jalan', 'Pel. Prevathone'];
-let BT_CODES = ['BT.12','BT.13','BT.15','BT.16','BT.17','BT.19','BT.20'];
-
-const PRESETS = {
-  sopir:      {s1:'05.00', s1sel:0, s2:[0], s3:{start:'11.00', end:'13.30'}, s4:[0], s5:'17.30', s5sel:2},
-  sopirJumat: {s1:'05.00', s1sel:0, s2:[0], s3:{start:'10.30', end:'13.30'}, s4:[0], s5:'17.00', s5sel:2},
-  sopirSabtu: {s1:'05.00', s1sel:0, s2:[0], s3:{start:'', end:''},           s4:[0], s5:'16.00', s5sel:2},
-  dronePagi:  {s1:'05.00', s1sel:0, s2:[1],  s3:{start:'12.00', end:'13.30'}, s4:[2], s5:'15.30', s5sel:2},
-  droneSiang: {s1:'13.00', s1sel:0, s2:[1],  s3:{start:'', end:''},          s4:[],  s5:'22.00', s5sel:2},
-};
-
-let progEntries = [];
-function addDaysIso(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toIso(d); }
-const _todayIsoForRange = toIso(new Date());
-let progRange = {start:_todayIsoForRange, end:addDaysIso(_todayIsoForRange, 6)};
-
-const STAGE_META = [
-  {n:1, key:'s1', title:'Absen Pagi / Putak', desc:'pilih dari daftar · standby jika tak ada program', simple:true},
-  {n:2, key:'s2', title:'Antar / Kegiatan', desc:'pilih kegiatan', multi:true},
-  {n:3, key:'s3', title:'Istirahat Siang', desc:'otomatis 11.00–13.30 · tandai + jika lembur', rest:true},
-  {n:4, key:'s4', title:'Standby / Kegiatan Sore', desc:'pilih kegiatan', multi:true},
-  {n:5, key:'s5', title:'Antar Pulang / Putak', desc:'pilih dari daftar', simple:true},
-];
-
-let holidays = [
-  {date:'2026-01-01', name:'Tahun Baru Masehi'},
-  {date:'2026-01-16', name:'Isra Mikraj Nabi Muhammad SAW'},
-  {date:'2026-02-17', name:'Tahun Baru Imlek 2577'},
-  {date:'2026-03-19', name:'Hari Suci Nyepi'},
-  {date:'2026-03-21', name:'Idul Fitri 1447 H (1)'},
-  {date:'2026-03-22', name:'Idul Fitri 1447 H (2)'},
-  {date:'2026-04-03', name:'Wafat Yesus Kristus'},
-  {date:'2026-04-05', name:'Kebangkitan Yesus Kristus'},
-  {date:'2026-05-01', name:'Hari Buruh Internasional'},
-  {date:'2026-05-14', name:'Kenaikan Yesus Kristus'},
-  {date:'2026-05-27', name:'Idul Adha 1447 H'},
-  {date:'2026-05-31', name:'Hari Raya Waisak'},
-  {date:'2026-06-01', name:'Hari Lahir Pancasila'},
-  {date:'2026-06-16', name:'1 Muharam / Tahun Baru Islam'},
-  {date:'2026-08-17', name:'Proklamasi Kemerdekaan RI'},
-  {date:'2026-08-25', name:'Maulid Nabi Muhammad SAW'},
-  {date:'2026-12-25', name:'Hari Raya Natal'},
-];
-
-const NORMAL_HOURS = {1:7, 2:7, 3:7, 4:7, 5:6.5, 6:5.5, 0:0};
-const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-const DAY_SHORT = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-const MONTH_NAMES_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-
-/* ============ STATE ============ */
-// TODAY_ANCHOR = tanggal "hari ini" acuan, otomatis memakai tanggal hari ini
-// sungguhan di perangkat (offline, tidak perlu internet untuk cek tanggal).
-const TODAY_ANCHOR = toIso(new Date());
-function buildRollingWindow(anchorIso){
-  const dates = [];
-  const anchor = new Date(anchorIso+'T00:00:00');
-  for(let offset=-2; offset<=4; offset++){
-    const d = new Date(anchor);
-    d.setDate(d.getDate()+offset);
-    dates.push(toIso(d));
-  }
-  return dates;
-}
-function toIso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-
-let currentDate = TODAY_ANCHOR;
-let logs = {};
-const weekDates = buildRollingWindow(TODAY_ANCHOR); // 2 hari sebelum s/d 4 hari sesudah hari ini
-
-function presetForDow(d){
-  if(d===5) return PRESETS.sopirJumat;
-  if(d===6) return PRESETS.sopirSabtu;
-  return PRESETS.sopir;
-}
-function buildLogFromPreset(preset, btCode){
-  return {
-    btCodes: [btCode || USER.mainBt],
-    s1: {time: preset.s1, choice: PUTAK_OPTIONS[preset.s1sel] || PUTAK_OPTIONS[0]},
-    s2: {items: preset.s2.map(idx=>({choice: LOKASI_OPTIONS[idx] || LOKASI_OPTIONS[0]}))},
-    s3: {start: preset.s3.start, end: preset.s3.end, lembur:false, manualText:''},
-    s4: {items: preset.s4.map(idx=>({choice: LOKASI_OPTIONS[idx] || LOKASI_OPTIONS[0]}))},
-    s5: {time: preset.s5, choice: PUTAK_OPTIONS[preset.s5sel] || PUTAK_OPTIONS[0]},
-    otOverride: null,
-    hmStart: '', hmEnd: '',
-    absen: '', absenPulang: '', fw: [],
-  };
-}
-// Hanya hari ini yang otomatis diisi dari pola jadwal mingguan (jam mulai/pulang
-// standar) — jam absen & Hour Meter dibiarkan kosong sampai diisi manual.
-// Tanggal lain baru dibuatkan catatan saat pertama kali dibuka (lihat goToManualDate
-// & applyPreset), jadi tidak ada data contoh yang tersimpan di awal.
-logs[TODAY_ANCHOR] = buildLogFromPreset(presetForDow(dow(TODAY_ANCHOR)), USER.mainBt);
-
-/* ============ HELPERS ============ */
-function toMinutes(t){
-  if(!t) return null;
-  const clean = t.replace(/[^0-9:.]/g,'').replace('.',':');
-  const parts = clean.split(':');
-  if(parts.length<2) return null;
-  const h = parseInt(parts[0],10), m = parseInt(parts[1],10);
-  if(isNaN(h)||isNaN(m)) return null;
-  return h*60+m;
-}
-function fmtHoursNum(mins){ return Math.round((mins/60)*10)/10; }
-function minutesToHHMM(mins){ if(mins<0) mins=0; const h=Math.floor(mins/60), m=mins%60; return String(h).padStart(2,'0')+'.'+String(m).padStart(2,'0'); }
-function fmtHours(mins){ return fmtHoursNum(mins).toString().replace('.', ',') + ' jam'; }
-function dow(iso){ return new Date(iso+'T00:00:00').getDay(); }
-function isHoliday(iso){ return holidays.some(h=>h.date===iso); }
-function fmtLabel(iso){
-  const d = new Date(iso+'T00:00:00');
-  return DAY_NAMES[d.getDay()] + ', ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
-}
-function fmtRangeLabel(range){
-  const s = new Date(range.start+'T00:00:00'), e = new Date(range.end+'T00:00:00');
-  if(s.getMonth()===e.getMonth()) return `${s.getDate()} – ${e.getDate()} / ${MONTH_NAMES_FULL[s.getMonth()]} / ${s.getFullYear()}`;
-  return `${s.getDate()} ${MONTH_NAMES_FULL[s.getMonth()]} – ${e.getDate()} ${MONTH_NAMES_FULL[e.getMonth()]} ${e.getFullYear()}`;
-}
-function partnerById(id){ return partners.find(p=>p.id===id); }
-
-function computeDay(iso){
-  const log = logs[iso];
-  if(!log) return {totalMin:0, otMin:0, normalMin:0, isFullOt:false};
-  const isFullOt = dow(iso)===0 || isHoliday(iso);
-  const t1 = toMinutes(log.s1.time);
-  const t5 = toMinutes(log.s5.time);
-  let span = (t1!==null && t5!==null) ? Math.max(0, t5-t1) : 0;
-  const restStart = toMinutes(log.s3.start), restEnd = toMinutes(log.s3.end);
-  let restMin = (restStart!==null && restEnd!==null) ? Math.max(0, restEnd-restStart) : 0;
-  if(log.s3.lembur) restMin = 0;
-  const totalMin = Math.max(0, span - restMin);
-  const normalMin = isFullOt ? 0 : (NORMAL_HOURS[dow(iso)]||0) * 60;
-  let otMin = isFullOt ? totalMin : Math.max(0, totalMin - normalMin);
-  if(log.otOverride !== null && log.otOverride !== undefined) otMin = log.otOverride * 60;
-  return {totalMin, otMin, normalMin, isFullOt};
-}
-function computeHm(iso){
-  const log = logs[iso];
-  if(!log) return 0;
-  const a = parseFloat((log.hmStart||'').toString().replace(',','.'));
-  const b = parseFloat((log.hmEnd||'').toString().replace(',','.'));
-  if(isNaN(a)||isNaN(b)) return 0;
-  return Math.max(0, b-a);
-}
-
-/* ============ TAB SWITCH ============ */
-function switchTab(name){
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-'+name).classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
-  if(name==='program') renderProgram();
-  if(name==='libur') renderHolidays();
-  if(name==='rekap') renderRekap();
-}
-
 /* ============ HARI INI ============ */
-function renderDayStrip(){
-  // Strip kalender geser sudah dihapus dari tampilan (diganti tombol 📅 di header).
-  // Fungsi ini sengaja dikosongkan tapi tetap ada supaya pemanggil lama tidak error.
-  const strip = document.getElementById('dayStrip');
-  if(!strip) return;
-  strip.innerHTML = '';
-  weekDates.forEach(iso=>{
-    const d = new Date(iso+'T00:00:00');
-    const active = iso===currentDate;
-    const isSun = d.getDay()===0 || isHoliday(iso);
-    const hasOt = logs[iso] && computeDay(iso).otMin > 0;
-    const el = document.createElement('button');
-    el.className = 'day-pill' + (active?' active':'') + (isSun?' sun':'');
-    el.innerHTML = `<div class="d">${DAY_SHORT[d.getDay()]}</div><div class="n">${d.getDate()}</div>${hasOt?'<div class="dot"></div>':''}`;
-    el.onclick = ()=>{ currentDate = iso; renderAll(); };
-    strip.appendChild(el);
-  });
+function entryForToday(){
+  return ENTRIES.find(e=>e.date===todayIso() && e.ownerType==='saya' && e.btId===USER.mainBt);
 }
-function renderHeader(){
-  const log = logs[currentDate];
-  document.getElementById('topTitle').textContent = fmtLabel(currentDate);
-  document.getElementById('topSub').textContent = `Sopir: ${USER.name}`;
-  const codes = log ? log.btCodes : [];
-  document.getElementById('btBadgeTop').textContent = codes.length>1 ? `${codes[0]} +${codes.length-1}` : (codes[0]||'—');
-  document.getElementById('hmBtLabel').textContent = codes.join(' + ') || '—';
+function btOptionsHtml(selId){
+  return BT_CODES.map(b=>`<option value="${b.id}" ${b.id===selId?'selected':''}>${b.label}</option>`).join('');
 }
-function renderBtRow(){
-  const wrap = document.getElementById('btRow');
-  const log = logs[currentDate];
-  if(!log){ wrap.innerHTML = '<div class="empty">Belum ada program.</div>'; return; }
-  wrap.innerHTML = log.btCodes.map((c,i)=>`
-    <div class="bt-chip-edit">
-      <select onchange="updateBtCode(${i},this.value)">${BT_CODES.map(o=>`<option value="${o}" ${o===c?'selected':''}>${o}</option>`).join('')}</select>
-      ${log.btCodes.length>1?`<button class="rm" onclick="removeBtCode(${i})">✕</button>`:''}
-    </div>`).join('') + `<button class="bt-add" onclick="addBtCode()" title="Tambah unit BT lain">+</button>`;
+function jenisOptionsHtml(sel){
+  return JENIS_KATEGORI.map(k=>`<option ${k===sel?'selected':''}>${k}</option>`).join('');
 }
-function updateBtCode(idx, val){
-  logs[currentDate].btCodes[idx] = val;
-  renderHeader();
+function renderHari(){
+  document.getElementById('topBtChip').textContent = btLabel(USER.mainBt);
+  let e = entryForToday();
+  if(!e){
+    e = {id:uid(), date:todayIso(), btId:USER.mainBt, ownerType:'saya', ownerName:USER.name||'Saya',
+      s1Time:'', s5Time:'', kegiatanPagi:'', kegiatanSore:'', istMulai:'11.00', istSelesai:'13.30', istLembur:false,
+      otOverride:null, hmAwal:'', hmAkhir:'', bbmLiter:'', jenisKategori:JENIS_KATEGORI[0], jenisKet:'', catatan:''};
+  }
+  const ot = computeOT(e);
+  const holiday = dow(e.date)===0 || isHoliday(e.date);
+  const host = document.getElementById('screen-hari');
+  host.innerHTML = `
+    <div class="hero-card">
+      <div class="hero-label">Potensi Lembur Hari Ini</div>
+      <div class="hero-num"><input type="text" inputmode="decimal" id="fOtOverride" value="${e.otOverride!==null&&e.otOverride!==undefined?e.otOverride:fmtHoursNum(ot.otMin)}" onchange="quickSaveField('otOverride', this.value===''?null:this.value)"><span>jam</span></div>
+      <div class="hero-sub">${holiday ? 'Hari libur — seluruh jam dihitung lembur' : 'Otomatis dari jam antar & pulang · bisa diubah manual'}</div>
+    </div>
+
+    <div class="section-eyebrow">Truck & Layanan</div>
+    <div class="card">
+      <label class="flabel">Kode BT</label>
+      <select id="fBt" onchange="quickSaveField('btId', this.value)">${btOptionsHtml(e.btId)}</select>
+      <div class="grid2">
+        <div><label class="flabel">Jenis Layanan</label><select id="fJenis" onchange="quickSaveField('jenisKategori', this.value)">${jenisOptionsHtml(e.jenisKategori)}</select></div>
+        <div><label class="flabel">Keterangan/Rute</label><input type="text" value="${e.jenisKet||''}" placeholder="mis. Blok 14 → PKS" onchange="quickSaveField('jenisKet', this.value)"></div>
+      </div>
+    </div>
+
+    <div class="section-eyebrow">5 Tahap Kegiatan</div>
+    <div class="card">
+      <div class="grid2">
+        <div><label class="flabel">1. Absen Pagi / Putak</label><input type="text" class="time-chip" inputmode="numeric" placeholder="0700" value="${e.s1Time||''}" onchange="quickSaveField('s1Time', this.value)"></div>
+        <div><label class="flabel">5. Antar Pulang / Putak</label><input type="text" class="time-chip" inputmode="numeric" placeholder="1730" value="${e.s5Time||''}" onchange="quickSaveField('s5Time', this.value)"></div>
+        <div><label class="flabel">2. Kegiatan Pagi</label><input type="text" value="${e.kegiatanPagi||''}" placeholder="mis. Pel. Umum" onchange="quickSaveField('kegiatanPagi', this.value)"></div>
+        <div><label class="flabel">4. Kegiatan Sore</label><input type="text" value="${e.kegiatanSore||''}" placeholder="mis. Pel. Umum" onchange="quickSaveField('kegiatanSore', this.value)"></div>
+      </div>
+      <label class="flabel" style="margin-top:4px;">3. Istirahat Siang</label>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button type="button" class="btn-sm ${!e.istLembur?'primary':''}" onclick="quickSaveField('istLembur', false)">☕ Istirahat</button>
+        <button type="button" class="btn-sm ${e.istLembur?'primary':''}" onclick="quickSaveField('istLembur', true)">⏱ Lembur, tidak istirahat</button>
+      </div>
+      ${!e.istLembur ? `<div class="grid2">
+        <div><label class="flabel">Mulai Istirahat</label><input type="text" class="time-chip" inputmode="numeric" value="${e.istMulai||''}" onchange="quickSaveField('istMulai', this.value)"></div>
+        <div><label class="flabel">Mulai Kerja Lagi</label><input type="text" class="time-chip" inputmode="numeric" value="${e.istSelesai||''}" onchange="quickSaveField('istSelesai', this.value)"></div>
+      </div>` : ''}
+    </div>
+
+    <div class="section-eyebrow">Hour Meter (HM) & BBM</div>
+    <div class="card">
+      <div class="grid2">
+        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${e.hmAwal||''}" onchange="quickSaveField('hmAwal', this.value)"></div>
+        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" value="${e.hmAkhir||''}" onchange="quickSaveField('hmAkhir', this.value)"></div>
+        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="decimal" value="${e.bbmLiter||''}" onchange="quickSaveField('bbmLiter', this.value)"></div>
+        <div><label class="flabel">Pemakaian HM</label><input type="text" value="${hmPakai(e)} jam" disabled></div>
+      </div>
+      <label class="flabel">Catatan (opsional)</label>
+      <textarea onchange="quickSaveField('catatan', this.value)">${e.catatan||''}</textarea>
+    </div>
+  `;
+  window._todayEntry = e;
 }
-function addBtCode(){
-  const log = logs[currentDate];
-  const unused = BT_CODES.find(c=>!log.btCodes.includes(c)) || BT_CODES[0];
-  log.btCodes.push(unused);
-  renderBtRow(); renderHeader();
-  toast('Unit BT tambahan ditambahkan');
-}
-function removeBtCode(idx){
-  logs[currentDate].btCodes.splice(idx,1);
-  renderBtRow(); renderHeader();
-}
-function renderLemburWidget(){
-  const calc = computeDay(currentDate);
-  const log = logs[currentDate];
-  const input = document.getElementById('lemburInput');
-  const isOverride = log && log.otOverride !== null && log.otOverride !== undefined;
-  input.value = fmtHoursNum(calc.otMin);
-  document.getElementById('lemburNote').textContent = calc.isFullOt
-    ? 'hari libur — seluruh jam dihitung lembur'
-    : (isOverride ? 'diubah manual — ketuk lagi utk kembali otomatis' : 'otomatis dari program, ketuk utk ubah langsung');
-}
-function setLemburOverride(val){
-  const num = parseFloat(val.replace(',','.'));
-  if(!logs[currentDate]) return;
-  logs[currentDate].otOverride = isNaN(num) ? null : num;
-  renderLemburWidget(); renderDayStrip();
-  toast('Potensi lembur diperbarui');
-}
-function renderHm(){
-  const log = logs[currentDate];
-  document.getElementById('hmStart').value = log ? log.hmStart : '';
-  document.getElementById('hmEnd').value = log ? log.hmEnd : '';
-  document.getElementById('hmTotal').textContent = fmtHours(computeHm(currentDate)*60);
-}
-function updateHm(field, val){
-  if(!logs[currentDate]) return;
-  logs[currentDate][field] = val;
-  document.getElementById('hmTotal').textContent = fmtHours(computeHm(currentDate)*60);
-}
-function renderAbsen(){
-  const log = logs[currentDate];
-  document.getElementById('absenInput').value = log ? (log.absen||'') : '';
-  document.getElementById('absenPulangInput').value = log ? (log.absenPulang||'') : '';
-}
-function updateAbsen(val){
-  if(!logs[currentDate]) return;
-  logs[currentDate].absen = val;
-}
-function updateAbsenPulang(val){
-  if(!logs[currentDate]) return;
-  logs[currentDate].absenPulang = val;
+function quickSaveField(key, val){
+  let e = window._todayEntry;
+  const exists = ENTRIES.find(x=>x.id===e.id);
+  e[key] = val;
+  if(!exists){ ENTRIES.push(e); } 
+  saveEntries();
+  renderHari();
 }
 
-/* ---- BBM & Perbaikan Workshop ---- */
-function renderFuelWorkshop(){
-  const wrap = document.getElementById('fuelWorkshopList');
-  const log = logs[currentDate];
-  if(!log){ wrap.innerHTML = '<div class="empty">Belum ada program hari ini.</div>'; return; }
-  if(log.fw.length===0){ wrap.innerHTML = '<div class="empty">Belum ada catatan BBM / perbaikan hari ini.</div>'; return; }
-  wrap.innerHTML = log.fw.map((item,i)=>{
-    if(item.type==='bbm'){
-      return `<div class="fw-entry">
-        <div class="fw-head">
-          <div class="fw-type"><button class="active">⛽ BBM</button><button onclick="switchFwType(${i},'workshop')">🔧 Workshop</button></div>
-          <button class="rm" onclick="removeFwEntry(${i})">✕</button>
+/* ============ ENTRY FORM (dipakai Program & Servis-terkait tambah manual) ============ */
+function openEntryForm(existing){
+  const e = existing || {id:uid(), date:todayIso(), btId:USER.mainBt, ownerType:'partner', ownerName:'', partnerId:'',
+    s1Time:'', s5Time:'', kegiatanPagi:'', kegiatanSore:'', istMulai:'11.00', istSelesai:'13.30', istLembur:false,
+    otOverride:null, hmAwal:'', hmAkhir:'', bbmLiter:'', jenisKategori:JENIS_KATEGORI[0], jenisKet:'', catatan:''};
+  const partnerOpts = PARTNERS.map(p=>`<option value="${p.id}" ${p.id===e.partnerId?'selected':''}>${p.name}</option>`).join('');
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>${existing?'Ubah Catatan':'Tambah Catatan'}</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="dsub">Isi untuk diri sendiri atau partner kerja</div>
+        <div class="grid2">
+          <div><label class="flabel">Tanggal</label><input type="date" id="efDate" value="${e.date}"></div>
+          <div><label class="flabel">Kode BT</label><select id="efBt">${btOptionsHtml(e.btId)}</select></div>
+          <div class="full"><label class="flabel">Untuk siapa?</label>
+            <select id="efOwner" onchange="document.getElementById('efPartnerWrap').style.display=this.value==='partner'?'block':'none'">
+              <option value="saya" ${e.ownerType==='saya'?'selected':''}>Saya (${USER.name||'akun ini'})</option>
+              <option value="partner" ${e.ownerType==='partner'?'selected':''}>Partner</option>
+            </select>
+          </div>
+          <div class="full" id="efPartnerWrap" style="display:${e.ownerType==='partner'?'block':'none'}"><label class="flabel">Pilih Partner</label><select id="efPartner">${partnerOpts}</select></div>
+          <div><label class="flabel">Absen Pagi</label><input type="text" class="time-chip" id="efS1" inputmode="numeric" value="${e.s1Time||''}"></div>
+          <div><label class="flabel">Antar Pulang</label><input type="text" class="time-chip" id="efS5" inputmode="numeric" value="${e.s5Time||''}"></div>
+          <div><label class="flabel">HM Awal</label><input type="text" id="efHmA" inputmode="decimal" value="${e.hmAwal||''}"></div>
+          <div><label class="flabel">HM Akhir</label><input type="text" id="efHmB" inputmode="decimal" value="${e.hmAkhir||''}"></div>
+          <div><label class="flabel">BBM (liter)</label><input type="text" id="efBbm" inputmode="decimal" value="${e.bbmLiter||''}"></div>
+          <div><label class="flabel">Lembur (jam, opsional)</label><input type="text" id="efOt" inputmode="decimal" value="${e.otOverride??''}"></div>
+          <div class="full"><label class="flabel">Keterangan/Rute</label><input type="text" id="efKet" value="${e.jenisKet||''}"></div>
+          <div class="full"><label class="flabel">Catatan</label><textarea id="efCatatan">${e.catatan||''}</textarea></div>
         </div>
-        <div class="fw-body">
-          <input type="text" inputmode="decimal" placeholder="Jumlah liter" value="${item.liter||''}" onchange="updateFwField(${i},'liter',this.value)">
-          <input type="text" placeholder="Keterangan (opsional)" value="${item.ket||''}" onchange="updateFwField(${i},'ket',this.value)">
+        <button class="btn-filled" onclick="saveEntryForm('${e.id}')">Simpan Catatan</button>
+      </div>
+    </div>`;
+}
+function saveEntryForm(id){
+  const ownerType = document.getElementById('efOwner').value;
+  const partnerId = ownerType==='partner' ? document.getElementById('efPartner').value : '';
+  const partnerObj = PARTNERS.find(p=>p.id===partnerId);
+  const data = {
+    id, date: document.getElementById('efDate').value, btId: document.getElementById('efBt').value,
+    ownerType, partnerId, ownerName: ownerType==='saya' ? (USER.name||'Saya') : (partnerObj?partnerObj.name:'Partner'),
+    s1Time: document.getElementById('efS1').value, s5Time: document.getElementById('efS5').value,
+    istMulai:'11.00', istSelesai:'13.30', istLembur:false,
+    otOverride: document.getElementById('efOt').value===''?null:document.getElementById('efOt').value,
+    hmAwal: document.getElementById('efHmA').value, hmAkhir: document.getElementById('efHmB').value,
+    bbmLiter: document.getElementById('efBbm').value, jenisKategori: JENIS_KATEGORI[0],
+    jenisKet: document.getElementById('efKet').value, catatan: document.getElementById('efCatatan').value
+  };
+  const idx = ENTRIES.findIndex(x=>x.id===id);
+  if(idx>=0) ENTRIES[idx] = {...ENTRIES[idx], ...data}; else ENTRIES.push(data);
+  saveEntries(); closeModal(); toast('Catatan disimpan'); renderProgram(); renderHari();
+}
+function deleteEntry(id){
+  if(!confirm('Hapus catatan ini?')) return;
+  ENTRIES = ENTRIES.filter(x=>x.id!==id); saveEntries(); toast('Catatan dihapus'); renderProgram(); renderRekap();
+}
+
+/* ============ RIWAYAT (accordion, dipakai Program & Rekap) ============ */
+let histFilter = 'saya';
+function renderHistoryList(list){
+  if(!list.length) return `<div class="empty-note">Belum ada catatan.</div>`;
+  return list.map(e=>{
+    const ot = computeOT(e);
+    const isSaya = e.ownerType==='saya';
+    return `<div class="hrow" id="hrow-${e.id}">
+      <div class="hrow-head" onclick="toggleRow('${e.id}')">
+        <div class="hrow-dot ${isSaya?'':'partner'}"></div>
+        <div class="hrow-main">
+          <div class="hrow-date">${fmtLabel(e.date)}</div>
+          <div class="hrow-sum">${btLabel(e.btId)} · HM ${e.hmAwal||'-'}→${e.hmAkhir||'-'} · Lembur ${fmtHoursNum(ot.otMin)}j${!isSaya?' · '+e.ownerName:''}</div>
         </div>
-      </div>`;
-    }
-    return `<div class="fw-entry">
-      <div class="fw-head">
-        <div class="fw-type"><button onclick="switchFwType(${i},'bbm')">⛽ BBM</button><button class="active">🔧 Workshop</button></div>
-        <button class="rm" onclick="removeFwEntry(${i})">✕</button>
+        <svg class="hrow-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
-      <div class="fw-body">
-        <input type="text" placeholder="Keterangan perbaikan" value="${item.ket||''}" onchange="updateFwField(${i},'ket',this.value)">
-        <select onchange="updateFwField(${i},'status',this.value)">
-          <option value="proses" ${item.status==='proses'?'selected':''}>Masih proses</option>
-          <option value="selesai" ${item.status==='selesai'?'selected':''}>Selesai</option>
-        </select>
-      </div>
+      <div class="hrow-body"><div class="hrow-body-inner" onclick="event.stopPropagation()">
+        <div class="grid2">
+          <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${e.hmAwal||''}"></div>
+          <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" value="${e.hmAkhir||''}"></div>
+          <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" value="${e.bbmLiter||''}"></div>
+          <div><label class="flabel">Lembur (jam)</label><input type="text" id="ed-ot-${e.id}" value="${e.otOverride??''}"></div>
+          <div class="full"><label class="flabel">Catatan</label><input type="text" id="ed-cat-${e.id}" value="${e.catatan||''}"></div>
+        </div>
+        <div class="hrow-actions">
+          <button class="btn-save" onclick="saveRowEdit('${e.id}')">Simpan Perubahan</button>
+          <button class="btn-del" onclick="deleteEntry('${e.id}')">Hapus</button>
+        </div>
+      </div></div>
     </div>`;
   }).join('');
 }
-function addFuelWorkshopEntry(){
-  if(!logs[currentDate]) return;
-  logs[currentDate].fw.push({type:'bbm', liter:'', ket:''});
-  renderFuelWorkshop();
+function toggleRow(id){ document.getElementById('hrow-'+id).classList.toggle('open'); }
+function saveRowEdit(id){
+  const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
+  ENTRIES[idx].hmAwal = document.getElementById('ed-hmA-'+id).value;
+  ENTRIES[idx].hmAkhir = document.getElementById('ed-hmB-'+id).value;
+  ENTRIES[idx].bbmLiter = document.getElementById('ed-bbm-'+id).value;
+  ENTRIES[idx].otOverride = document.getElementById('ed-ot-'+id).value===''?null:document.getElementById('ed-ot-'+id).value;
+  ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
+  saveEntries(); toast('Perubahan disimpan'); renderProgram(); renderRekap(); renderHari();
 }
-function switchFwType(i, type){
-  const item = logs[currentDate].fw[i];
-  logs[currentDate].fw[i] = type==='bbm' ? {type:'bbm', liter:'', ket:item.ket||''} : {type:'workshop', ket:item.ket||'', status:'proses'};
-  renderFuelWorkshop();
-}
-function updateFwField(i, field, val){ logs[currentDate].fw[i][field] = val; }
-function removeFwEntry(i){ logs[currentDate].fw.splice(i,1); renderFuelWorkshop(); }
-
-/* ---- kalender manual ---- */
-function openManualDateModal(){
-  const host = document.getElementById('modalHost');
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="modal-title"><h3>Pilih tanggal manual</h3><button onclick="closeModal()" style="font-size:18px;color:var(--sub);">✕</button></div>
-        <div class="field-lbl">Tanggal</div>
-        <input class="full-input" type="date" id="manualDateInput" value="${currentDate}">
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="goToManualDate()">Buka tanggal ini</button>
-      </div>
-    </div>`;
-}
-function goToManualDate(){
-  const val = document.getElementById('manualDateInput').value;
-  if(!val) return;
-  currentDate = val;
-  if(!logs[currentDate]){
-    const d = new Date(currentDate+'T00:00:00').getDay();
-    logs[currentDate] = buildLogFromPreset(presetForDow(d), USER.mainBt);
-  }
-  closeModal(); renderAll();
-  toast('Pindah ke tanggal terpilih');
-}
-
-/* ---- ekspor riwayat (custom) ---- */
-const EXPORT_FIELDS = [
-  {key:'tanggal', label:'Tanggal & Hari', locked:true},
-  {key:'bt', label:'Kode BT', checked:true},
-  {key:'kegiatan', label:'Kegiatan (5 tahap)', checked:true},
-  {key:'jamkerja', label:'Jam kerja & lembur', checked:true},
-  {key:'absen', label:'Jam absen datang/pulang', checked:false},
-  {key:'hm', label:'Hour Meter (HM)', checked:false},
-  {key:'bbm', label:'Catatan BBM', checked:false},
-  {key:'workshop', label:'Catatan perbaikan workshop', checked:false},
-];
-function openExportModal(){
-  const host = document.getElementById('modalHost');
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="modal-title"><h3>Ekspor riwayat</h3><button onclick="closeModal()" style="font-size:18px;color:var(--sub);">✕</button></div>
-        <div class="dsub" style="font-size:11.5px;color:var(--sub);margin-bottom:8px;">Pilih data yang mau disertakan di PDF</div>
-        <div id="exportFieldList"></div>
-        <div class="field-row" style="margin-top:14px;">
-          <div><div class="field-lbl">Dari tanggal</div><input class="full-input" type="date" id="exStart" value="${weekDates[0]}"></div>
-          <div><div class="field-lbl">Sampai tanggal</div><input class="full-input" type="date" id="exEnd" value="${weekDates[weekDates.length-1]}"></div>
-        </div>
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="doExport()">⬇ Ekspor PDF</button>
-      </div>
-    </div>`;
-  renderExportFields();
-}
-function renderExportFields(){
-  document.getElementById('exportFieldList').innerHTML = EXPORT_FIELDS.map((f,i)=>`
-    <label class="opt-row" style="cursor:pointer;">
-      <input type="checkbox" ${f.checked?'checked':''} ${f.locked?'disabled':''} onchange="toggleExportField(${i},this.checked)" style="accent-color:var(--navy);width:16px;height:16px;">
-      <span>${f.label}${f.locked?' <span style="color:var(--sub);font-size:10px;">(selalu ikut)</span>':''}</span>
-    </label>`).join('');
-}
-function toggleExportField(i, val){ EXPORT_FIELDS[i].checked = val; }
-function doExport(){
-  const start = document.getElementById('exStart').value;
-  const end = document.getElementById('exEnd').value;
-  if(!start || !end || start>end){ toast('Cek lagi rentang tanggalnya'); return; }
-  const fields = EXPORT_FIELDS.filter(f=>f.checked||f.locked).map(f=>f.key);
-  const dates = weekDates.filter(iso=>iso>=start && iso<=end);
-  if(dates.length===0){ toast('Tidak ada data pada rentang ini'); return; }
-  if(!window.jspdf){ toast('Pustaka PDF gagal dimuat, cek koneksi internet'); return; }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({unit:'pt', format:'a4'});
-  const marginX = 40; let y = 50;
-  doc.setFont('helvetica','bold'); doc.setFontSize(14);
-  doc.text('Riwayat Kegiatan & Overtime', marginX, y); y += 18;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text(`${USER.name} · ${start} s/d ${end}`, marginX, y); y += 22;
-
-  dates.forEach(iso=>{
-    const log = logs[iso]; if(!log) return;
-    const calc = computeDay(iso);
-    if(y > 760){ doc.addPage(); y = 50; }
-    doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.text(fmtLabel(iso), marginX, y); y += 14;
-    doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-
-    if(fields.includes('bt')) { doc.text('BT: ' + log.btCodes.join(' + '), marginX, y); y += 12; }
-    if(fields.includes('kegiatan')) {
-      const s2 = log.s2.items.map(it=>it.choice).join(', ') || '-';
-      const s4 = log.s4.items.map(it=>it.choice).join(', ') || '-';
-      doc.text(`Tahap 1: ${log.s1.time||'-'} ${log.s1.choice}`, marginX, y); y += 12;
-      doc.text(`Tahap 2: ${s2}`, marginX, y); y += 12;
-      doc.text(`Tahap 3 (istirahat): ${log.s3.lembur ? (log.s3.manualText||'lembur') : ((log.s3.start&&log.s3.end)?log.s3.start+'–'+log.s3.end:'standby')}`, marginX, y); y += 12;
-      doc.text(`Tahap 4: ${s4}`, marginX, y); y += 12;
-      doc.text(`Tahap 5: ${log.s5.time||'-'} ${log.s5.choice}`, marginX, y); y += 12;
-    }
-    if(fields.includes('jamkerja')) { doc.text(`Jam kerja: ${fmtHours(calc.totalMin)} · Lembur: ${fmtHours(calc.otMin)}`, marginX, y); y += 12; }
-    if(fields.includes('absen')) { doc.text(`Absen: ${log.absen||'-'} → ${log.absenPulang||'-'}`, marginX, y); y += 12; }
-    if(fields.includes('hm')) { doc.text(`HM: ${log.hmStart||'-'} → ${log.hmEnd||'-'} (${computeHm(iso)} jam)`, marginX, y); y += 12; }
-    if(fields.includes('bbm')) {
-      const bbm = log.fw.filter(f=>f.type==='bbm').map(f=>`${f.liter||'-'} L ${f.ket?'('+f.ket+')':''}`).join('; ') || '-';
-      doc.text(`BBM: ${bbm}`, marginX, y); y += 12;
-    }
-    if(fields.includes('workshop')) {
-      const ws = log.fw.filter(f=>f.type==='workshop').map(f=>`${f.ket||'-'} [${f.status}]`).join('; ') || '-';
-      doc.text(`Workshop: ${ws}`, marginX, y); y += 12;
-    }
-    y += 8;
-  });
-
-  doc.save(`riwayat-BT-${start}_${end}.pdf`);
-  closeModal();
-  toast('PDF berhasil diunduh');
-}
-
-function selectOptions(list, selected){
-  return list.map(o=>`<option value="${o}" ${o===selected?'selected':''}>${o}</option>`).join('');
-}
-function renderStages(){
-  const list = document.getElementById('stageList');
-  list.innerHTML = '';
-  const log = logs[currentDate];
-  if(!log){ list.innerHTML = '<div class="empty">Belum ada program untuk hari ini.</div>'; return; }
-  STAGE_META.forEach((meta)=>{
-    const row = document.createElement('div');
-    row.className = 'stage2' + (meta.rest ? ' rest' : '');
-    if(meta.simple){
-      const s = log[meta.key];
-      row.innerHTML = `
-        <div class="stage-num">${meta.n}</div>
-        <div class="stage-body2">
-          <div class="stage-desc">${meta.title} · ${meta.desc}</div>
-          <div class="time-chip-row">
-            <input class="time-chip" type="text" value="${s.time||''}" placeholder="--.--" onchange="updateSimpleTime('${meta.key}',this.value)">
-            <select class="select-input" onchange="updateSimpleChoice('${meta.key}',this.value)">${selectOptions(PUTAK_OPTIONS, s.choice)}</select>
-          </div>
-        </div>`;
-    } else if(meta.multi){
-      const items = log[meta.key].items;
-      row.innerHTML = `
-        <div class="stage-num">${meta.n}</div>
-        <div class="stage-body2">
-          <div class="stage-desc">${meta.title} · ${meta.desc}</div>
-          <div class="subitem-list" id="multi-${meta.key}">
-            ${items.map((it,i)=>`
-              <div class="subitem">
-                <select class="select-input" onchange="updateMultiItem('${meta.key}',${i},this.value)">${selectOptions(LOKASI_OPTIONS, it.choice)}</select>
-                <button class="rm" onclick="removeMultiItem('${meta.key}',${i})">✕</button>
-              </div>`).join('')}
-          </div>
-          <button class="plus-btn" style="margin-top:7px;width:auto;padding:5px 10px;font-size:11px;gap:4px;display:inline-flex;align-items:center;" onclick="addMultiItem('${meta.key}')">+ Tambah kegiatan</button>
-        </div>`;
-    } else if(meta.rest){
-      const s3 = log.s3;
-      const restMin = (toMinutes(s3.start)!==null && toMinutes(s3.end)!==null) ? Math.max(0, toMinutes(s3.end)-toMinutes(s3.start)) : 0;
-      row.innerHTML = `
-        <div class="stage-num">${meta.n}</div>
-        <div class="stage-body2">
-          <div class="stage-desc">${meta.title} · atur jam istirahat, atau tandai lembur kalau tidak istirahat</div>
-          <div class="rest-mode-row">
-            <button class="rest-mode-btn ${!s3.lembur?'active':''}" onclick="setRestMode(false)">☕ Istirahat</button>
-            <button class="rest-mode-btn ${s3.lembur?'active':''}" onclick="setRestMode(true)">⏱ Lembur, tidak istirahat</button>
-          </div>
-          ${!s3.lembur ? `
-            <div class="time-chip-row" style="margin-top:8px;">
-              <div class="hm-field" style="flex:1;">
-                <label style="font-size:9px;color:var(--sub);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px;">Mulai istirahat</label>
-                <input class="time-chip" style="width:100%;" type="text" placeholder="11.00" value="${s3.start||''}" onchange="updateRestTime('start',this.value)">
-              </div>
-              <div class="hm-arrow">→</div>
-              <div class="hm-field" style="flex:1;">
-                <label style="font-size:9px;color:var(--sub);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px;">Mulai kerja lagi</label>
-                <input class="time-chip" style="width:100%;" type="text" placeholder="13.30" value="${s3.end||''}" onchange="updateRestTime('end',this.value)">
-              </div>
-            </div>
-            <div class="rest-duration">Durasi istirahat: <b>${fmtHours(restMin)}</b> — otomatis dikurangi dari jam kerja</div>
-          ` : `
-            <div class="rest-manual show" style="margin-top:8px;">
-              <input type="text" placeholder="Keterangan (opsional), mis. antar barang khusus" value="${s3.manualText||''}" onchange="updateRestText(this.value)">
-            </div>
-            <div class="rest-duration">Tidak ada waktu istirahat dikurangi — seluruh jam dihitung kerja/lembur</div>
-          `}
-        </div>`;
-    }
-    list.appendChild(row);
-  });
-}
-function updateSimpleTime(key, val){ logs[currentDate][key].time = val; renderLemburWidget(); renderDayStrip(); saveState(); }
-function updateSimpleChoice(key, val){ logs[currentDate][key].choice = val; saveState(); }
-function updateMultiItem(key, idx, val){ logs[currentDate][key].items[idx].choice = val; saveState(); }
-function addMultiItem(key){ logs[currentDate][key].items.push({choice: LOKASI_OPTIONS[0]}); renderStages(); saveState(); }
-function removeMultiItem(key, idx){ logs[currentDate][key].items.splice(idx,1); renderStages(); saveState(); }
-function setRestMode(isLembur){
-  const s3 = logs[currentDate].s3;
-  s3.lembur = isLembur;
-  renderStages(); renderLemburWidget(); renderDayStrip(); saveState();
-}
-function updateRestTime(field, val){
-  logs[currentDate].s3[field] = val;
-  renderStages(); renderLemburWidget(); renderDayStrip(); saveState();
-}
-function updateRestText(val){ logs[currentDate].s3.manualText = val; renderLemburWidget(); saveState(); }
-
-
-function applyPreset(){
-  const d = dow(currentDate);
-  const preset = presetForDow(d);
-  const old = logs[currentDate] || {};
-  logs[currentDate] = buildLogFromPreset(preset, old.btCodes ? old.btCodes[0] : undefined);
-  logs[currentDate].hmStart = old.hmStart||''; logs[currentDate].hmEnd = old.hmEnd||'';
-  renderAll();
-  toast('Terisi ulang dari program mingguan');
-}
-function saveDay(){ toast('Catatan hari ini disimpan'); renderDayStrip(); }
-
-/* ---- modal: kelola pilihan Putak & Lokasi ---- */
-let optionsTab = 'putak';
-function openOptionsModal(){
-  const host = document.getElementById('modalHost');
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="modal-title"><h3>Kelola pilihan tahap kegiatan</h3><button onclick="closeModal()" style="font-size:18px;color:var(--sub);">✕</button></div>
-        <div class="modal-tabs">
-          <div class="modal-tab ${optionsTab==='putak'?'active':''}" onclick="switchOptionsTab('putak')">Pilihan Putak</div>
-          <div class="modal-tab ${optionsTab==='lokasi'?'active':''}" onclick="switchOptionsTab('lokasi')">Pilihan Kegiatan</div>
-        </div>
-        <div id="optListWrap"></div>
-        <div class="add-row">
-          <input class="full-input" id="newOptInput" type="text" placeholder="${optionsTab==='putak'?'mis. Antar tenaga vendor khusus':'mis. Pel. Umum'}">
-          <button class="btn btn-primary" style="width:auto;padding:9px 14px;" onclick="addOption()">+</button>
-        </div>
-      </div>
-    </div>`;
-  renderOptList();
-}
-function switchOptionsTab(t){ optionsTab = t; openOptionsModal(); }
-function renderOptList(){
-  const list = optionsTab==='putak' ? PUTAK_OPTIONS : LOKASI_OPTIONS;
-  document.getElementById('optListWrap').innerHTML = list.map((o,i)=>`<div class="opt-row"><span>${o}</span><button class="rm" onclick="removeOption(${i})">✕</button></div>`).join('') || '<div class="empty">Belum ada pilihan.</div>';
-}
-function addOption(){
-  const val = document.getElementById('newOptInput').value.trim();
-  if(!val) return;
-  if(optionsTab==='putak') PUTAK_OPTIONS.push(val); else LOKASI_OPTIONS.push(val);
-  openOptionsModal(); toast('Pilihan ditambahkan');
-}
-function removeOption(i){
-  if(optionsTab==='putak') PUTAK_OPTIONS.splice(i,1); else LOKASI_OPTIONS.splice(i,1);
-  renderOptList(); toast('Pilihan dihapus');
-}
+function setHistFilter(f){ histFilter = f; renderProgram(); renderRekap(); }
 
 /* ============ PROGRAM ============ */
 function renderProgram(){
-  document.getElementById('rangeLabel').textContent = fmtRangeLabel(progRange);
-  const body = document.getElementById('progTableBody');
-  body.innerHTML = '';
-  if(progEntries.length===0){ body.innerHTML = '<div class="empty">Belum ada entri program periode ini.</div>'; return; }
-  progEntries.forEach(e=>{
-    const p = partnerById(e.partnerId);
-    const changed = e.original && (e.original.kegiatan!==e.kegiatan || e.original.lembur!==e.lembur);
-    const periodTxt = (e.periodStart && e.periodEnd) ? fmtRangeShort(e.periodStart, e.periodEnd) : '';
-    const row = document.createElement('div');
-    row.className = 'prog-row';
-    row.onclick = ()=>openEntryModal(e.id);
-    row.innerHTML = `
-      <div class="pbt">${e.bt||'—'}</div>
-      <div class="pname">${p?p.name:'-'}${periodTxt?`<div class="pkegiatan-orig">${periodTxt}</div>`:''}</div>
-      <div class="pkegiatan">${e.kegiatan}${changed?`<div class="pkegiatan-orig">awal: ${e.original.kegiatan}</div>`:''}</div>
-      <div class="plembur">${e.lembur}</div>
-    `;
-    body.appendChild(row);
-  });
-  renderProgHistory();
+  const host = document.getElementById('screen-program');
+  const list = ENTRIES.filter(e=>e.ownerType===histFilter).sort((a,b)=>b.date.localeCompare(a.date));
+  host.innerHTML = `
+    <div class="section-eyebrow">Riwayat Program<button class="pill-btn" onclick="openEntryForm(null)">+ Tambah</button></div>
+    <div class="hist-tabs">
+      <div class="hist-tab ${histFilter==='saya'?'active-saya':''}" onclick="setHistFilter('saya')">🟠 Saya</div>
+      <div class="hist-tab ${histFilter==='partner'?'active-partner':''}" onclick="setHistFilter('partner')">🔵 Partner</div>
+    </div>
+    ${renderHistoryList(list)}
+  `;
 }
-function fmtRangeShort(startIso, endIso){
-  const s = new Date(startIso+'T00:00:00'), e = new Date(endIso+'T00:00:00');
-  if(s.getMonth()===e.getMonth()) return `${s.getDate()}–${e.getDate()} ${MONTH_NAMES[s.getMonth()]}`;
-  return `${s.getDate()} ${MONTH_NAMES[s.getMonth()]} – ${e.getDate()} ${MONTH_NAMES[e.getMonth()]}`;
+
+/* ============ SERVIS ============ */
+function renderServis(){
+  const host = document.getElementById('screen-servis');
+  const list = [...SERVIS].sort((a,b)=>b.date.localeCompare(a.date));
+  host.innerHTML = `
+    <div class="section-eyebrow">Riwayat Servis<button class="pill-btn" onclick="openServisForm(null)">+ Tambah</button></div>
+    ${list.length===0 ? '<div class="empty-note">Belum ada catatan servis.</div>' : list.map(s=>`
+      <div class="hrow" id="srow-${s.id}">
+        <div class="hrow-head" onclick="toggleSRow('${s.id}')">
+          <div class="hrow-dot" style="background:var(--success);"></div>
+          <div class="hrow-main"><div class="hrow-date">${fmtLabel(s.date)}</div><div class="hrow-sum">${btLabel(s.btId)} · HM ${s.hm||'-'}</div></div>
+          <svg class="hrow-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="hrow-body"><div class="hrow-body-inner" onclick="event.stopPropagation()">
+          <div class="field-label">Catatan Perbaikan</div>
+          <div style="font-size:14px;margin-bottom:12px;">${s.catatan||'—'}</div>
+          <div class="hrow-actions"><button class="btn-del" style="flex:1;" onclick="deleteServis('${s.id}')">Hapus</button></div>
+        </div></div>
+      </div>`).join('')}
+  `;
 }
-function fmtDateTime(iso){
-  const d = new Date(iso);
-  const dd = d.getDate(), mm = MONTH_NAMES[d.getMonth()], yy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2,'0'), mi = String(d.getMinutes()).padStart(2,'0');
-  return `${dd} ${mm} ${yy}, ${hh}.${mi}`;
+function toggleSRow(id){ document.getElementById('srow-'+id).classList.toggle('open'); }
+function openServisForm(){
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Tambah Servis</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <label class="flabel">Tanggal</label><input type="date" id="svDate" value="${todayIso()}">
+        <label class="flabel">Kode BT</label><select id="svBt">${btOptionsHtml(USER.mainBt)}</select>
+        <label class="flabel">HM saat servis</label><input type="text" id="svHm" inputmode="decimal">
+        <label class="flabel">Catatan Perbaikan</label><textarea id="svCatatan" placeholder="mis. Ganti oli & filter"></textarea>
+        <button class="btn-filled" onclick="saveServisForm()">Simpan</button>
+      </div>
+    </div>`;
 }
-function renderProgHistory(){
-  const wrap = document.getElementById('progHistoryList');
-  if(!wrap) return;
-  const rows = [];
-  progEntries.forEach(e=>{
-    const p = partnerById(e.partnerId);
-    (e.history||[]).forEach(h=>{
-      rows.push({...h, bt:e.bt, partnerName: p?p.name:'-'});
+function saveServisForm(){
+  SERVIS.push({id:uid(), date:document.getElementById('svDate').value, btId:document.getElementById('svBt').value,
+    hm:document.getElementById('svHm').value, catatan:document.getElementById('svCatatan').value});
+  saveServis(); closeModal(); toast('Catatan servis disimpan'); renderServis();
+}
+function deleteServis(id){ if(!confirm('Hapus catatan servis ini?')) return; SERVIS = SERVIS.filter(x=>x.id!==id); saveServis(); toast('Dihapus'); renderServis(); }
+
+/* ============ REKAP ============ */
+let rekapMonth = todayIso().slice(0,7);
+function renderRekap(){
+  const host = document.getElementById('screen-rekap');
+  const monthEntries = ENTRIES.filter(e=>monthKey(e.date)===rekapMonth);
+  const totalHm = monthEntries.reduce((s,e)=>s+hmPakai(e),0);
+  const totalBbm = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
+  const totalOt = monthEntries.reduce((s,e)=>s+computeOT(e).otMin,0)/60;
+  const ratio = totalHm>0 ? (totalBbm/totalHm).toFixed(2) : '0.00';
+  const list = monthEntries.filter(e=>e.ownerType===histFilter).sort((a,b)=>b.date.localeCompare(a.date));
+  host.innerHTML = `
+    <div class="section-eyebrow">Ringkasan
+      <input type="month" value="${rekapMonth}" style="width:auto;margin:0;padding:6px 10px;font-size:12.5px;" onchange="rekapMonth=this.value;renderRekap()">
+    </div>
+    <div class="row-2" style="margin-bottom:12px;">
+      <div class="card"><div class="field-label">Total HM</div><div class="field-value">${totalHm.toFixed(1)}</div></div>
+      <div class="card"><div class="field-label">Total BBM</div><div class="field-value">${totalBbm.toFixed(0)} L</div></div>
+    </div>
+    <div class="row-2" style="margin-bottom:12px;">
+      <div class="card"><div class="field-label">Rasio L/HM</div><div class="field-value" style="font-size:17px;">${ratio}</div></div>
+      <div class="card"><div class="field-label">Total Lembur</div><div class="field-value" style="font-size:17px;">${totalOt.toFixed(1)}j</div></div>
+    </div>
+    <div class="section-eyebrow">Riwayat</div>
+    <div class="hist-tabs">
+      <div class="hist-tab ${histFilter==='saya'?'active-saya':''}" onclick="setHistFilter('saya')">🟠 Saya</div>
+      <div class="hist-tab ${histFilter==='partner'?'active-partner':''}" onclick="setHistFilter('partner')">🔵 Partner</div>
+    </div>
+    ${renderHistoryList(list)}
+    <button class="pill-btn" style="margin:16px 0 4px;width:100%;justify-content:center;" onclick="openExportSheet()">⬇ Export Laporan</button>
+  `;
+}
+
+/* ============ EXPORT ============ */
+const EXPORT_COLS = [
+  {key:'date', label:'Tanggal', checked:true},
+  {key:'btId', label:'Kode BT', checked:true},
+  {key:'hm', label:'HM Awal / Akhir', checked:true},
+  {key:'bbm', label:'BBM (liter)', checked:true},
+  {key:'jenis', label:'Jenis Layanan & Rute', checked:false},
+  {key:'ot', label:'Jam Lembur', checked:true},
+  {key:'catatan', label:'Catatan', checked:false},
+];
+function openExportSheet(){
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Export Laporan</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="dsub">Bulan ${MONTH_NAMES_FULL[parseInt(rekapMonth.split('-')[1])-1]} ${rekapMonth.split('-')[0]} · pilih kolom yang ingin disertakan</div>
+        ${EXPORT_COLS.map(c=>`<div class="chk-row"><input type="checkbox" id="exp-${c.key}" ${c.checked?'checked':''}><label for="exp-${c.key}">${c.label}</label></div>`).join('')}
+        <div class="export-fmt">
+          <button class="fmt-btn pdf" onclick="doExport('pdf')">📄 PDF</button>
+          <button class="fmt-btn csv" onclick="doExport('csv')">📊 Excel (CSV)</button>
+        </div>
+      </div>
+    </div>`;
+}
+function getExportRows(){
+  const cols = EXPORT_COLS.filter(c=>document.getElementById('exp-'+c.key).checked);
+  const monthEntries = ENTRIES.filter(e=>monthKey(e.date)===rekapMonth).sort((a,b)=>a.date.localeCompare(b.date));
+  const rows = monthEntries.map(e=>{
+    const ot = computeOT(e); const o={};
+    cols.forEach(c=>{
+      if(c.key==='date') o[c.label]=fmtLabel(e.date);
+      if(c.key==='btId') o[c.label]=btLabel(e.btId)+(e.ownerType==='partner'?' ('+e.ownerName+')':'');
+      if(c.key==='hm') o[c.label]=(e.hmAwal||'-')+' → '+(e.hmAkhir||'-')+' ('+hmPakai(e)+' jam)';
+      if(c.key==='bbm') o[c.label]=(e.bbmLiter||0)+' L';
+      if(c.key==='jenis') o[c.label]=(e.jenisKategori||'-')+' — '+(e.jenisKet||'-');
+      if(c.key==='ot') o[c.label]=fmtHoursNum(ot.otMin)+' jam';
+      if(c.key==='catatan') o[c.label]=e.catatan||'-';
     });
+    return o;
   });
-  rows.sort((a,b)=> b.at.localeCompare(a.at));
-  if(rows.length===0){ wrap.innerHTML = '<div class="empty">Belum ada perubahan program yang tercatat.</div>'; return; }
-  wrap.innerHTML = rows.map(h=>`
-    <div class="holiday-item">
-      <div class="holiday-label" style="padding:0;">
-        <div class="name">${h.partnerName} · ${h.bt}</div>
-        <div class="day">${h.from.kegiatan} → <b style="color:var(--navy);">${h.to.kegiatan}</b>${h.from.lembur!==h.to.lembur?` · lembur ${h.from.lembur} → ${h.to.lembur} jam`:''}</div>
-      </div>
-      <span class="chip" style="background:var(--paper);color:var(--sub);font-size:9.5px;white-space:nowrap;">${fmtDateTime(h.at)}</span>
-    </div>`).join('');
+  return {cols, rows};
 }
-
-function openEntryModal(entryId){
-  const editing = progEntries.find(e=>e.id===entryId);
-  const host = document.getElementById('modalHost');
-  const partnerOpts = partners.map(p=>`<option value="${p.id}" ${editing&&editing.partnerId===p.id?'selected':''}>${p.name}</option>`).join('');
-  const btOpts = BT_CODES.map(c=>`<option value="${c}" ${editing&&editing.bt===c?'selected':''}>${c}</option>`).join('');
-  const pStart = editing ? (editing.periodStart||progRange.start) : progRange.start;
-  const pEnd = editing ? (editing.periodEnd||progRange.end) : progRange.end;
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="modal-title"><h3>${editing?'Edit entri program':'Tambah entri program'}</h3><button onclick="closeModal()" style="font-size:18px;color:var(--sub);">✕</button></div>
-        <div class="field-row">
-          <div><div class="field-lbl">Kode BT</div><select class="full-input" id="mBt">${btOpts}</select></div>
-          <div><div class="field-lbl">Partner</div><select class="full-input" id="mPartner">${partnerOpts}</select></div>
-        </div>
-        <div class="field-lbl">Kegiatan</div>
-        <input class="full-input" id="mKegiatan" type="text" placeholder="mis. Putak, Operator, ZPK" value="${editing?editing.kegiatan:''}">
-        <div class="field-lbl">Potensi lembur (jam)</div>
-        <input class="full-input" id="mLembur" type="text" inputmode="decimal" placeholder="mis. 2" value="${editing?editing.lembur:''}">
-        <div class="field-row" style="margin-top:2px;">
-          <div><div class="field-lbl">Berlaku mulai tanggal</div><input class="full-input" type="date" id="mPeriodStart" value="${pStart}"></div>
-          <div><div class="field-lbl">Sampai tanggal</div><input class="full-input" type="date" id="mPeriodEnd" value="${pEnd}"></div>
-        </div>
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="saveEntry(${editing?`'${editing.id}'`:'null'})">Simpan</button>
-        ${editing?`<button class="btn btn-ghost" style="width:100%;margin-top:8px;color:var(--red);" onclick="deleteEntry('${editing.id}')">Hapus entri</button>`:''}
-      </div>
-    </div>`;
-}
-function saveEntry(id){
-  const bt = document.getElementById('mBt').value;
-  const partnerId = document.getElementById('mPartner').value;
-  const kegiatan = document.getElementById('mKegiatan').value.trim() || 'Kegiatan';
-  const lembur = parseFloat((document.getElementById('mLembur').value||'0').replace(',','.')) || 0;
-  const periodStart = document.getElementById('mPeriodStart').value || progRange.start;
-  const periodEnd = document.getElementById('mPeriodEnd').value || progRange.end;
-  let msg = 'Entri program disimpan';
-  if(id){
-    const e = progEntries.find(x=>x.id===id);
-    if(e.kegiatan!==kegiatan || e.lembur!==lembur){
-      if(!e.history) e.history = [];
-      e.history.push({ from:{kegiatan:e.kegiatan, lembur:e.lembur}, to:{kegiatan, lembur}, at: new Date().toISOString() });
-      msg = 'Perubahan dicatat ke riwayat';
-    }
-    e.bt=bt; e.partnerId=partnerId; e.kegiatan=kegiatan; e.lembur=lembur; e.periodStart=periodStart; e.periodEnd=periodEnd;
-  } else {
-    // Partner ini sudah punya entri di periode ini? Gabungkan jadi satu baris,
-    // nilai lama otomatis pindah ke Riwayat Perubahan Program — bukan bikin baris baru.
-    const dup = progEntries.find(x=>x.partnerId===partnerId);
-    if(dup){
-      if(!dup.history) dup.history = [];
-      if(dup.kegiatan!==kegiatan || dup.lembur!==lembur){
-        dup.history.push({ from:{kegiatan:dup.kegiatan, lembur:dup.lembur}, to:{kegiatan, lembur}, at: new Date().toISOString() });
-      }
-      dup.bt = bt; dup.kegiatan = kegiatan; dup.lembur = lembur; dup.periodStart=periodStart; dup.periodEnd=periodEnd;
-      msg = 'Partner ini sudah ada di program — perubahan digabung ke riwayat';
-    } else {
-      progEntries.push({id:'e'+Date.now(), bt, partnerId, kegiatan, lembur, periodStart, periodEnd, original:{kegiatan, lembur}, history:[]});
-    }
+function doExport(fmt){
+  const {cols, rows} = getExportRows();
+  if(rows.length===0){ toast('Tidak ada data di bulan ini'); return; }
+  const headers = cols.map(c=>c.label);
+  if(fmt==='csv'){
+    let csv = headers.join(';')+'\n';
+    rows.forEach(r=>{ csv += headers.map(h=>'"'+String(r[h]).replace(/"/g,'""')+'"').join(';')+'\n'; });
+    const blob = new Blob(["\ufeff"+csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'rekap-'+rekapMonth+'.csv'; a.click();
+    toast('Excel (CSV) diunduh'); closeModal(); return;
   }
-  closeModal(); renderProgram(); saveState(); toast(msg);
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(14); doc.text('Laporan Bulanan — '+rekapMonth, 14, 16);
+    let y = 28;
+    doc.setFontSize(9);
+    rows.forEach((r,i)=>{
+      let line = headers.map(h=>h+': '+r[h]).join('  |  ');
+      const split = doc.splitTextToSize(line, 180);
+      doc.text(split, 14, y); y += split.length*5 + 3;
+      if(y > 280){ doc.addPage(); y=16; }
+    });
+    doc.save('rekap-'+rekapMonth+'.pdf');
+    toast('PDF diunduh'); closeModal();
+  }catch(err){ toast('Gagal membuat PDF'); }
 }
-function deleteEntry(id){ progEntries = progEntries.filter(e=>e.id!==id); closeModal(); renderProgram(); toast('Entri dihapus'); }
 
-function openRangeModal(){
-  const host = document.getElementById('modalHost');
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) closeModal()">
+/* ============ SETTING SHEET ============ */
+function openSettingSheet(){
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
       <div class="sheet">
-        <div class="modal-title"><h3>Periode program berlaku</h3><button onclick="closeModal()" style="font-size:18px;color:var(--sub);">✕</button></div>
-        <div class="field-row">
-          <div><div class="field-lbl">Dari</div><input class="full-input" type="date" id="rStart" value="${progRange.start}"></div>
-          <div><div class="field-lbl">Sampai</div><input class="full-input" type="date" id="rEnd" value="${progRange.end}"></div>
-        </div>
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="saveRange()">Simpan periode</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Setting Akun</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <label class="flabel">Nama Pengguna</label><input type="text" id="stName" value="${USER.name||''}">
+        <label class="flabel">BT Tanggung Jawab Utama</label><select id="stBt">${btOptionsHtml(USER.mainBt)}</select>
+        <button class="btn-filled" onclick="saveSetting()">Simpan</button>
       </div>
     </div>`;
 }
-function saveRange(){
-  progRange.start = document.getElementById('rStart').value;
-  progRange.end = document.getElementById('rEnd').value;
-  closeModal(); renderProgram(); toast('Periode program diperbarui');
+function saveSetting(){
+  USER.name = document.getElementById('stName').value;
+  USER.mainBt = document.getElementById('stBt').value;
+  saveUser(); closeModal(); toast('Setting disimpan'); renderHari();
 }
 
-/* ---- modal: kelola BT & partner sementara ---- */
-let dataTab = 'bt';
-function openDataModal(){
-  dataTab = 'bt';
-  renderDataModal();
-}
-function renderDataModal(){
-  const host = document.getElementById('modalHost');
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) closeModal()">
+/* ============ KELOLA BT & PARTNER ============ */
+let bpTab = 'bt';
+function openBtPartnerSheet(){ bpTab='bt'; renderBtPartnerSheet(); }
+function renderBtPartnerSheet(){
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
       <div class="sheet">
-        <div class="modal-title"><h3>Kelola BT &amp; Partner</h3><button onclick="closeModal()" style="font-size:18px;color:var(--sub);">✕</button></div>
-        <div class="modal-tabs">
-          <div class="modal-tab ${dataTab==='bt'?'active':''}" onclick="switchDataTab('bt')">Kode BT</div>
-          <div class="modal-tab ${dataTab==='partner'?'active':''}" onclick="switchDataTab('partner')">Partner</div>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Kelola BT & Partner</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="hist-tabs">
+          <div class="hist-tab ${bpTab==='bt'?'active-saya':''}" onclick="bpTab='bt';renderBtPartnerSheet()">Kode BT</div>
+          <div class="hist-tab ${bpTab==='partner'?'active-partner':''}" onclick="bpTab='partner';renderBtPartnerSheet()">Partner</div>
         </div>
-        <div id="dataListWrap"></div>
+        ${bpTab==='bt' ? BT_CODES.map(b=>`
+          <div class="list-row"><div class="list-row-name" onclick="renameBt('${b.id}')">${b.label}</div>
+            <div class="list-row-actions"><button class="icon-x" onclick="removeBt('${b.id}')">✕</button></div></div>
+        `).join('') : (PARTNERS.length===0 ? '<div class="empty-note">Belum ada partner.</div>' : PARTNERS.map(p=>`
+          <div class="list-row"><div class="list-row-name" onclick="renamePartner('${p.id}')">${p.name}</div>
+            <div class="list-row-actions"><button class="icon-x" onclick="removePartner('${p.id}')">✕</button></div></div>
+        `).join(''))}
         <div class="add-row">
-          <input class="full-input" id="newDataInput" type="text" placeholder="${dataTab==='bt'?'mis. BT.21':'mis. Rekan baru'}">
-          <button class="btn btn-primary" style="width:auto;padding:9px 14px;" onclick="addDataItem()">+</button>
+          <input type="text" id="bpNewInput" placeholder="${bpTab==='bt'?'mis. BT.21':'mis. Rekan baru'}">
+          <button onclick="addBtOrPartner()">+</button>
         </div>
       </div>
     </div>`;
-  renderDataList();
 }
-function switchDataTab(t){ dataTab = t; renderDataModal(); }
-function renderDataList(){
-  const wrap = document.getElementById('dataListWrap');
-  if(dataTab==='bt'){
-    wrap.innerHTML = BT_CODES.map((c,i)=>`
-      <div class="opt-row">
-        <span class="mono" style="cursor:pointer;" onclick="renameBt(${i})" title="Ketuk untuk ubah nama">${c}</span>
-        <button class="rm" onclick="confirmRemoveBt(${i})">✕</button>
-      </div>`).join('') || '<div class="empty">Belum ada kode BT.</div>';
-  } else {
-    wrap.innerHTML = partners.map((p)=>`
-      <div class="opt-row">
-        <span class="dot-lg" style="background:${p.color};display:inline-block;margin-right:7px;"></span>
-        <span style="cursor:pointer;" onclick="renamePartner('${p.id}')" title="Ketuk untuk ubah nama">${p.name}${p.tetap?' · tetap':''}</span>
-        <button class="rm" onclick="confirmRemovePartner('${p.id}')">✕</button>
-      </div>`).join('');
-  }
+function addBtOrPartner(){
+  const val = document.getElementById('bpNewInput').value.trim();
+  if(!val) return;
+  if(bpTab==='bt') BT_CODES.push({id:uid(), label:val}); else PARTNERS.push({id:uid(), name:val});
+  saveBt(); savePartners(); renderBtPartnerSheet(); toast('Ditambahkan');
 }
-function renameBt(i){
-  const val = (prompt('Ubah kode BT:', BT_CODES[i])||'').trim();
-  if(!val || val===BT_CODES[i]) return;
-  if(BT_CODES.some((c,idx)=>idx!==i && c.toLowerCase()===val.toLowerCase())){ toast('Kode BT itu sudah ada'); return; }
-  BT_CODES[i] = val;
-  renderDataList(); saveState(); toast('Kode BT diperbarui');
+function renameBt(id){
+  const b = BT_CODES.find(x=>x.id===id); const val = prompt('Ubah nama kode BT', b.label);
+  if(val && val.trim()){ b.label = val.trim(); saveBt(); renderBtPartnerSheet(); renderHari(); toast('Kode BT diperbarui'); }
+}
+function removeBt(id){
+  if(!confirm('Hapus kode BT ini?')) return;
+  BT_CODES = BT_CODES.filter(x=>x.id!==id); saveBt(); renderBtPartnerSheet(); toast('Kode BT dihapus');
 }
 function renamePartner(id){
-  const p = partnerById(id);
-  if(!p) return;
-  const val = (prompt('Ubah nama partner:', p.name)||'').trim();
-  if(!val || val===p.name) return;
-  if(partners.some(x=>x.id!==id && x.name.toLowerCase()===val.toLowerCase())){ toast('Nama partner itu sudah ada'); return; }
-  p.name = val;
-  renderDataList(); renderProgram(); saveState(); toast('Nama partner diperbarui');
+  const p = PARTNERS.find(x=>x.id===id); const val = prompt('Ubah nama partner', p.name);
+  if(val && val.trim()){ p.name = val.trim(); savePartners(); renderBtPartnerSheet(); toast('Partner diperbarui'); }
 }
-function addDataItem(){
-  const val = document.getElementById('newDataInput').value.trim();
-  if(!val) return;
-  if(dataTab==='bt'){
-    if(BT_CODES.some(c=>c.toLowerCase()===val.toLowerCase())){ toast('Kode BT itu sudah ada — ketuk nama di daftar untuk mengubahnya'); return; }
-    BT_CODES.push(val); toast('Kode BT ditambahkan');
-  } else {
-    if(partners.some(p=>p.name.toLowerCase()===val.toLowerCase())){ toast('Nama partner itu sudah ada — ketuk nama di daftar untuk mengubahnya'); return; }
-    partners.push({id:'p'+Date.now(), name:val, color:'#9AA6BF', tetap:false}); toast('Partner sementara ditambahkan');
-  }
-  renderDataModal();
-  saveState();
+function removePartner(id){
+  if(!confirm('Hapus partner ini?')) return;
+  PARTNERS = PARTNERS.filter(x=>x.id!==id); savePartners(); renderBtPartnerSheet(); toast('Partner dihapus');
 }
-function removeBt(i){ BT_CODES.splice(i,1); renderDataList(); saveState(); toast('Kode BT dihapus'); }
-function removePartner(id){ partners = partners.filter(p=>p.id!==id); renderDataList(); saveState(); toast('Partner dihapus'); }
 
-/* ---- dialog konfirmasi hapus (dipakai untuk BT & Partner) ---- */
-function confirmRemoveBt(i){
-  openConfirmDialog(`Hapus kode ${BT_CODES[i]}?`, 'Data ini tidak bisa dikembalikan.', ()=>{ removeBt(i); closeModal(); });
-}
-function confirmRemovePartner(id){
-  const p = partnerById(id);
-  if(!p) return;
-  openConfirmDialog(`Hapus partner "${p.name}"?`, 'Data ini tidak bisa dikembalikan.', ()=>{ removePartner(id); closeModal(); });
-}
-let pendingConfirmAction = null;
-function openConfirmDialog(title, desc, onConfirm){
-  pendingConfirmAction = onConfirm;
-  const host = document.getElementById('modalHost');
-  const prevModal = host.innerHTML;
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) cancelConfirmDialog()">
-      <div class="sheet" style="max-height:none;">
-        <div class="modal-title"><h3>${title}</h3></div>
-        <div class="dsub" style="font-size:12px;color:var(--sub);margin-bottom:16px;">${desc}</div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" style="flex:1;" onclick="cancelConfirmDialog()">Batal</button>
-          <button class="btn" style="flex:1;background:var(--red);color:#fff;" onclick="runConfirmDialog()">Hapus</button>
+/* ============ KELOLA LIBUR ============ */
+function openLiburSheet(){ renderLiburSheet(); }
+function renderLiburSheet(){
+  const sorted = [...LIBUR].sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row"><h3>Kelola Hari Libur</h3><button class="sheet-close" onclick="closeModal()">✕</button></div>
+        <div class="dsub">Tanggal libur otomatis dihitung lembur penuh</div>
+        ${sorted.length===0 ? '<div class="empty-note">Belum ada tanggal libur.</div>' : sorted.map(h=>`
+          <div class="list-row"><div class="list-row-name">${fmtLabel(h.date)}${h.label?' — '+h.label:''}</div>
+            <div class="list-row-actions"><button class="icon-x" onclick="removeLibur('${h.date}')">✕</button></div></div>
+        `).join('')}
+        <div class="add-row">
+          <input type="date" id="liburDateInput" style="flex:1;">
+          <input type="text" id="liburLabelInput" placeholder="Keterangan (opsional)" style="flex:1;">
+          <button onclick="addLibur()">+</button>
         </div>
       </div>
     </div>`;
-  host.dataset.prevModal = encodeURIComponent(prevModal);
 }
-function runConfirmDialog(){
-  if(pendingConfirmAction) pendingConfirmAction();
-  pendingConfirmAction = null;
+function addLibur(){
+  const date = document.getElementById('liburDateInput').value;
+  if(!date) return;
+  if(LIBUR.some(h=>h.date===date)){ toast('Tanggal ini sudah ditandai libur'); return; }
+  LIBUR.push({date, label:document.getElementById('liburLabelInput').value});
+  saveLibur(); renderLiburSheet(); toast('Hari libur ditambahkan');
 }
-function cancelConfirmDialog(){
-  const host = document.getElementById('modalHost');
-  const prev = host.dataset.prevModal;
-  pendingConfirmAction = null;
-  host.innerHTML = prev ? decodeURIComponent(prev) : '';
+function removeLibur(date){
+  LIBUR = LIBUR.filter(x=>x.date!==date); saveLibur(); renderLiburSheet(); toast('Ditandai bukan libur lagi');
 }
-
-function closeModal(){ document.getElementById('modalHost').innerHTML = ''; }
-function openHolidayModal(){
-  const host = document.getElementById('modalHost');
-  host.innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="modal-title"><h3>Tambah tanggal merah</h3><button onclick="closeModal()" style="font-size:18px;color:var(--sub);">✕</button></div>
-        <div class="field-lbl">Tanggal</div>
-        <input class="full-input" type="date" id="newHolDate">
-        <div class="field-lbl">Nama libur</div>
-        <input class="full-input" id="newHolName" type="text" placeholder="mis. Cuti Bersama">
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="addHoliday()">Simpan</button>
-      </div>
-    </div>`;
-}
-function addHoliday(){
-  const date = document.getElementById('newHolDate').value;
-  const name = document.getElementById('newHolName').value.trim();
-  if(!date || !name){ toast('Isi tanggal dan nama libur dulu'); return; }
-  if(holidays.some(h=>h.date===date)){ toast('Tanggal ini sudah ada di daftar'); return; }
-  holidays.push({date, name});
-  closeModal();
-  renderHolidays();
-  renderDayStrip();
-  saveState();
-  toast('Tanggal merah ditambahkan');
-}
-function confirmRemoveHoliday(date){
-  const h = holidays.find(x=>x.date===date);
-  if(!h) return;
-  const d = new Date(date+'T00:00:00');
-  openConfirmDialog(`Hapus "${h.name}"?`, `Tanggal ${d.getDate()} ${MONTH_NAMES_FULL[d.getMonth()]} ${d.getFullYear()} akan dihapus dari daftar tanggal merah.`, ()=>{ removeHoliday(date); closeModal(); });
-}
-function removeHoliday(date){
-  holidays = holidays.filter(h=>h.date!==date);
-  renderHolidays();
-  renderDayStrip();
-  saveState();
-  toast('Tanggal merah dihapus');
-}
-
-/* ---- drawer: Setting (hamburger) ---- */
-function openSettingsDrawer(){
-  const host = document.getElementById('drawerHost');
-  host.innerHTML = `
-    <div class="drawer-bg" onclick="closeDrawer()"></div>
-    <div class="drawer">
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
-      <h3>⚙ Setting</h3>
-      <div class="dsub">Pengaturan akun untuk aplikasi ini</div>
-      <div class="field-lbl">Nama pengguna</div>
-      <input class="full-input" id="setName" type="text" value="${USER.name}">
-      <div class="field-lbl">BT tanggung jawab utama</div>
-      <select class="full-input" id="setBt">${BT_CODES.map(c=>`<option value="${c}" ${USER.mainBt===c?'selected':''}>${c}</option>`).join('')}</select>
-      <div class="dsub" style="margin-top:4px;">Kamu tetap bisa ganti BT harian lewat dropdown di pojok kanan atas.</div>
-      <button class="btn btn-primary" style="margin-top:18px;" onclick="saveSettings()">Simpan</button>
-    </div>`;
-}
-function saveSettings(){
-  USER.name = document.getElementById('setName').value.trim() || USER.name;
-  USER.mainBt = document.getElementById('setBt').value;
-  closeDrawer(); renderHeader();
-  toast('Pengaturan disimpan');
-}
-function closeDrawer(){ document.getElementById('drawerHost').innerHTML = ''; }
-
-/* ============ LIBUR (+ perbandingan) ============ */
-function renderHolidays(){
-  const monthVal = document.getElementById('monthPicker').value;
-  const [y,m] = monthVal.split('-').map(Number);
-  const daysInMonth = new Date(y, m, 0).getDate();
-  let merah = 0, minggu = 0;
-  const items = [];
-  for(let d=1; d<=daysInMonth; d++){
-    const iso = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dd = new Date(iso+'T00:00:00').getDay();
-    const hol = holidays.find(h=>h.date===iso);
-    if(dd===0) minggu++;
-    if(hol) merah++;
-    if(hol) items.push({date:iso, name:hol.name, dow:dd});
-  }
-  document.getElementById('cntMerah').textContent = merah;
-  document.getElementById('cntMinggu').textContent = minggu;
-
-  const list = document.getElementById('holidayList');
-  list.innerHTML = '';
-  if(items.length===0){ list.innerHTML = '<div class="empty">Tidak ada tanggal merah bulan ini.</div>'; }
-  items.forEach(it=>{
-    const d = new Date(it.date+'T00:00:00');
-    const row = document.createElement('div');
-    row.className = 'holiday-item';
-    row.innerHTML = `
-      <div class="holiday-date"><div class="dd">${d.getDate()}</div><div class="mm">${MONTH_NAMES[d.getMonth()]}</div></div>
-      <div class="holiday-label"><div class="name">${it.name}</div><div class="day">${DAY_NAMES[it.dow]}</div></div>
-      <span class="chip" style="background:#FBEAE6;color:var(--red);font-size:10px;">Merah</span>
-      <button class="rm" style="margin-left:8px;" onclick="confirmRemoveHoliday('${it.date}')" title="Hapus tanggal ini">✕</button>
-    `;
-    list.appendChild(row);
-  });
-
-  let weekOt = 0;
-  weekDates.forEach(iso=>{ weekOt += computeDay(iso).otMin; });
-  document.getElementById('periodeTotalLibur').textContent = fmtHours(weekOt);
-  document.getElementById('periodeRangeLibur').textContent = fmtRangeLabel({start: weekDates[0], end: weekDates[weekDates.length-1]});
-
-  const totals = {};
-  progEntries.forEach(e=>{ totals[e.partnerId] = (totals[e.partnerId]||0) + (e.lembur*60); });
-  const maxOt = Math.max(1, ...Object.values(totals));
-  const compWrap = document.getElementById('comparisonList');
-  compWrap.innerHTML = '';
-  const sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
-  if(sorted.length===0){ compWrap.innerHTML = '<div class="empty">Belum ada data lembur minggu ini.</div>'; }
-  sorted.forEach(([pid, mins])=>{
-    const p = partnerById(pid);
-    const row = document.createElement('div');
-    row.style.marginBottom = '10px';
-    row.innerHTML = `
-      <div style="display:flex;justify-content:space-between;font-size:12px;">
-        <span style="font-weight:600;">${p?p.name:'-'}</span>
-        <span class="mono" style="color:var(--sub)">${fmtHours(mins)}</span>
-      </div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(mins/maxOt*100)}%;background:${p?p.color:'#ccc'}"></div></div>
-    `;
-    compWrap.appendChild(row);
-  });
-}
-
-/* ============ REKAP (riwayat pribadi + HM bulanan) ============ */
-function renderRekap(){
-  let hmTotal = 0;
-  weekDates.forEach(iso=>{ hmTotal += computeHm(iso); });
-  document.getElementById('hmMonthTotal').textContent = fmtHours(hmTotal*60);
-  document.getElementById('hmMonthAvg').textContent = (Math.round((hmTotal/weekDates.length)*10)/10).toString().replace('.',',');
-
-  const hist = document.getElementById('historyList');
-  hist.innerHTML = '';
-  [...weekDates].reverse().forEach(iso=>{
-    const log = logs[iso];
-    const calc = computeDay(iso);
-    const d = new Date(iso+'T00:00:00');
-    const row = document.createElement('div');
-    row.className = 'holiday-item';
-    row.style.cursor = 'pointer';
-    row.onclick = ()=>{ currentDate = iso; switchTab('harian'); renderAll(); };
-    row.innerHTML = `
-      <div class="holiday-date"><div class="dd" style="color:var(--navy)">${d.getDate()}</div><div class="mm">${MONTH_NAMES[d.getMonth()]}</div></div>
-      <div class="holiday-label"><div class="name">${log?log.btCodes.join(' + '):'-'} · ${fmtHours(calc.totalMin)} kerja</div><div class="day">HM: ${computeHm(iso)} jam</div></div>
-      ${calc.otMin>0 ? `<span class="chip" style="background:var(--amber-soft);color:#8a6414;font-size:10px;">+${fmtHours(calc.otMin)}</span>` : `<span class="chip" style="background:#EEEAE0;color:var(--sub);font-size:10px;">Normal</span>`}
-    `;
-    hist.appendChild(row);
-  });
-}
-
-/* ============ TOAST ============ */
-let toastTimer;
-function toast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
-}
-
-/* ============ SIMPAN OTOMATIS (localStorage) ============ */
-// Catatan: TODAY_ANCHOR sudah memakai tanggal hari ini yang sesungguhnya
-// dari perangkat (toIso(new Date())) — bukan tanggal contoh yang dikunci.
-const STORAGE_KEY = 'jadwalBT_state_v1';
-function saveState(){
-  try{
-    const state = { logs, progEntries, progRange, partners, BT_CODES, PUTAK_OPTIONS, LOKASI_OPTIONS, USER, holidays, currentDate };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }catch(e){ /* localStorage penuh/diblokir — abaikan, data tetap ada selama sesi ini */ }
-}
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return false;
-    const s = JSON.parse(raw);
-    if(s.logs) logs = s.logs;
-    if(s.progEntries) progEntries = s.progEntries;
-    if(s.progRange) progRange = s.progRange;
-    if(s.partners) partners = s.partners;
-    if(s.BT_CODES) BT_CODES = s.BT_CODES;
-    if(s.PUTAK_OPTIONS) PUTAK_OPTIONS = s.PUTAK_OPTIONS;
-    if(s.LOKASI_OPTIONS) LOKASI_OPTIONS = s.LOKASI_OPTIONS;
-    if(s.USER) USER = s.USER;
-    if(s.holidays) holidays = s.holidays;
-    if(s.currentDate && logs[s.currentDate]) currentDate = s.currentDate;
-    return true;
-  }catch(e){ return false; }
-}
-const hadSavedData = loadState();
-
-// Bersihkan data lama yang mungkin sudah kadung dobel (baris partner sama > 1x)
-// akibat perilaku sebelum perbaikan ini — digabung jadi satu baris + riwayat.
-function dedupeProgEntries(){
-  const seen = {}; // partnerId -> entri yang dipertahankan
-  const result = [];
-  let mergedAny = false;
-  progEntries.forEach(e=>{
-    if(!e.original) e.original = {kegiatan:e.kegiatan, lembur:e.lembur};
-    if(!e.history) e.history = [];
-    if(!e.periodStart) e.periodStart = progRange.start;
-    if(!e.periodEnd) e.periodEnd = progRange.end;
-    const existing = seen[e.partnerId];
-    if(existing){
-      mergedAny = true;
-      if(existing.kegiatan!==e.kegiatan || existing.lembur!==e.lembur){
-        existing.history.push({ from:{kegiatan:existing.kegiatan, lembur:existing.lembur}, to:{kegiatan:e.kegiatan, lembur:e.lembur}, at: new Date().toISOString() });
-      }
-      if(e.history.length) existing.history = existing.history.concat(e.history);
-      existing.bt = e.bt; existing.kegiatan = e.kegiatan; existing.lembur = e.lembur;
-    } else {
-      seen[e.partnerId] = e;
-      result.push(e);
-    }
-  });
-  progEntries = result;
-  if(mergedAny) saveState();
-}
-dedupeProgEntries();
 
 /* ============ INIT ============ */
-function renderAll(){ renderDayStrip(); renderHeader(); renderBtRow(); renderAbsen(); renderLemburWidget(); renderHm(); renderFuelWorkshop(); renderStages(); }
-renderAll();
-if(hadSavedData) toast('Data tersimpan dimuat kembali');
-setInterval(saveState, 2000);
-window.addEventListener('beforeunload', saveState);
-window.addEventListener('pagehide', saveState);
-
-/* ============ MODE OFFLINE / INSTALL APLIKASI ============ */
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{ /* offline pertama kali, abaikan */ });
-  });
-}
+showScreen('hari');
 </script>
 </body>
 </html>
