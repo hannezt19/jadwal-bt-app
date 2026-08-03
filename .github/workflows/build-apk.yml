@@ -1,74 +1,50 @@
-name: Build Capacitor APK
+name: Build APK
 
 on:
-  workflow_dispatch:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Ambil kode dari repo
+      - name: Clone repo
         uses: actions/checkout@v4
 
-      - name: Siapkan Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Siapkan Java (JDK 17)
+      - name: Setup JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
 
-      - name: Susun folder www/ dari file web yang sudah ada di repo
+      - name: Kumpulkan file web ke folder www
         run: |
-          mkdir -p www
-          cp index.html www/
-          cp manifest.json www/ || true
-          cp service-worker.js www/ || true
-          cp -r icons www/ || true
-          cp -r fonts www/ || true
-          cp -r vendor www/ || true
+          mkdir www
+          cp index.html manifest.json service-worker.js www/
+          cp -r fonts www/fonts
+          cp -r icons www/icons
+          cp -r vendor www/vendor
 
-      - name: Buat identitas proyek (package.json)
-        run: npm init -y
+      - name: Init Capacitor project
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "Jadwal BT" "com.hannezt19.jadwalbt" --web-dir=www
+          npx cap add android
 
-      - name: Pasang Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
-
-      - name: Inisialisasi Capacitor
-        run: npx cap init "Jadwal BT" "com.yohanes.jadwalbt" --web-dir=www
-
-      - name: Tambahkan platform Android
-        run: npx cap add android
-
-      - name: Sinkronkan file web ke proyek Android
+      - name: Sync web assets
         run: npx cap sync android
-      - name: Perbaiki konflik versi Kotlin
-        run: |
-          cat >> android/build.gradle << 'EOF'
 
-          allprojects {
-              configurations.all {
-                  resolutionStrategy {
-                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.24"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24"
-                  }
-              }
-          }
-          EOF
-      - name: Build APK versi uji coba (debug)
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+      - name: Build APK (debug, unsigned)
+        run: cd android && ./gradlew assembleDebug
 
-      - name: Unggah hasil APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: jadwal-bt-apk
