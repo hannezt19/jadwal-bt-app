@@ -1,0 +1,85 @@
+name: Build Capacitor APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil kode dari repo
+        uses: actions/checkout@v4
+
+      - name: Siapkan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Siapkan Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Susun folder www/ dari file web
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp manifest.json www/ || true
+          cp service-worker.js www/ || true
+          cp -r icons www/ || true
+          cp -r fonts www/ || true
+          cp -r vendor www/ || true
+
+      - name: Buat identitas proyek (package.json)
+        run: npm init -y
+
+      - name: Pasang Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Init Capacitor project
+        run: npx cap init "Jadwal BT" "com.hannezt19.jadwalbt" --web-dir=www
+
+      - name: Tambah platform Android
+        run: npx cap add android
+
+      - name: Sync web assets
+        run: npx cap sync android
+
+      - name: Tambah izin akses internal storage
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q "WRITE_EXTERNAL_STORAGE" "$MANIFEST"; then
+            sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />#' "$MANIFEST"
+          fi
+
+      - name: Perbaiki konflik versi Kotlin
+        run: |
+          cat >> android/build.gradle << 'EOF'
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.24"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24"
+                  }
+              }
+          }
+          EOF
+
+      - name: Build APK (debug, unsigned)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jadwal-bt-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          
