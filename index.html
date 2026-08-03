@@ -305,11 +305,21 @@ function showScreen(name){
   const titles = {hari:['Hari Ini', fmtLabel(todayIso())], program:['Program','Jadwal & Riwayat Kerja'], peta:['Peta','Lokasi Kerja'], servis:['Servis','Riwayat Perbaikan'], rekap:['Rekap','Laporan Bulanan']};
   document.getElementById('topEyebrow').textContent = titles[name][0];
   document.getElementById('topTitle').textContent = titles[name][1];
-  if(name==='hari') renderHari();
-  if(name==='program') renderProgram();
-  if(name==='peta') renderPeta();
-  if(name==='servis') renderServis();
-  if(name==='rekap') renderRekap();
+  try{
+    if(name==='hari') renderHari();
+    if(name==='program') renderProgram();
+    if(name==='peta') renderPeta();
+    if(name==='servis') renderServis();
+    if(name==='rekap') renderRekap();
+  }catch(err){
+    const host = document.getElementById('screen-'+name);
+    host.innerHTML = `
+      <div class="card" style="border-color:var(--danger);">
+        <div class="field-label" style="color:var(--danger);">Ada masalah menampilkan halaman ini</div>
+        <div class="field-sub" style="margin:8px 0;">Pesan teknis: ${(err && err.message) ? err.message : 'error tidak diketahui'}</div>
+        <button class="btn-outline" onclick="location.reload()">🔄 Muat Ulang Aplikasi</button>
+      </div>`;
+  }
 }
 function openDrawer(){
   document.getElementById('drawerAvatar').textContent = (USER.name||'?').charAt(0).toUpperCase();
