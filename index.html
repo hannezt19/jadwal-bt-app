@@ -97,7 +97,7 @@
   .box-truck-table tr:nth-child(even) td{background:var(--surface-container);}
 
   /* NAV */
-  .navwrap{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:456px;z-index:50;padding:0;background:transparent;}
+  .navwrap{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:456px;z-index:50;padding:0;background:transparent;}
   .screen{padding-bottom:110px;}
   nav.tabbar{display:flex;background:var(--navy);border-radius:100px;padding:6px;gap:2px;box-shadow:0 8px 24px rgba(20,15,5,.25);}
   nav.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border:none;background:transparent;color:#9099AD;border-radius:100px;cursor:pointer;}
@@ -268,6 +268,9 @@ const LS = {
 let USER = LS.get('mrg_user', {name:'', mainBt:''});
 let BT_CODES = LS.get('mrg_bt', [{id:'bt12',label:'BT.12'},{id:'bt13',label:'BT.13'}]);
 let PARTNERS = LS.get('mrg_partners', []);
+let WEEKPLAN = LS.get('mrg_weekplan', {from:'', to:'', rows:[]});
+let weekPlanBtFilter = 'all';
+function saveWeekPlan(){ LS.set('mrg_weekplan', WEEKPLAN); }
 let LIBUR = LS.get('mrg_libur', []); // [{date,label}]
 let ENTRIES = LS.get('mrg_entries', []); // catatan harian gabungan
 let SERVIS = LS.get('mrg_servis', []);
@@ -420,46 +423,6 @@ function openDrawer(){
 function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); document.getElementById('scrim').classList.remove('show'); }
 function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
 
-/* ============ DIALOG KUSTOM (pengganti confirm()/prompt() bawaan — tidak semua WebView APK mendukungnya) ============ */
-function showConfirm(message, onYes){
-  window._pendingConfirmCb = onYes;
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div style="font-size:15px;font-weight:700;margin-bottom:18px;">${message}</div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn-outline" style="flex:1;" onclick="closeModal()">Batal</button>
-          <button class="btn-filled" style="flex:1;background:var(--danger);" onclick="runConfirmYes()">Hapus</button>
-        </div>
-      </div>
-    </div>`;
-}
-function runConfirmYes(){ const cb = window._pendingConfirmCb; closeModal(); if(cb) cb(); }
-function showPrompt(message, defaultValue, onSubmit){
-  window._pendingPromptCb = onSubmit;
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div style="font-size:15px;font-weight:700;margin-bottom:12px;">${message}</div>
-        <input type="text" id="promptInputVal" value="${(defaultValue||'').replace(/"/g,'&quot;')}">
-        <div style="display:flex;gap:10px;margin-top:4px;">
-          <button class="btn-outline" style="flex:1;" onclick="closeModal()">Batal</button>
-          <button class="btn-filled" style="flex:1;" onclick="runPromptSubmit()">Simpan</button>
-        </div>
-      </div>
-    </div>`;
-  setTimeout(()=>{ const el=document.getElementById('promptInputVal'); if(el){ el.focus(); el.select(); } }, 60);
-}
-function runPromptSubmit(){
-  const el = document.getElementById('promptInputVal');
-  const val = el ? el.value : '';
-  const cb = window._pendingPromptCb;
-  closeModal();
-  if(cb) cb(val);
-}
-
 /* ============ FORMAT JAM OTOMATIS ============ */
 document.addEventListener('input', function(e){
   if(e.target.classList && e.target.classList.contains('time-chip')){
@@ -473,7 +436,41 @@ document.addEventListener('input', function(e){
 
 /* ============ HARI INI ============ */
 function entryForToday(){
-  return ENTRIES.find(e=>e.date===todayIso() && e.ownerType==='saya' && e.btId===USER.mainBt);
+  return ENTRIES.find(e=>e.date===todayIso() && e.ownerType==='saya');
+}
+function isEmptyVal(v){ return v===undefined || v===null || v===''; }
+function mergeDuplicateEntries(){
+  const groups = {};
+  const order = [];
+  ENTRIES.forEach(e=>{
+    const key = e.date+'|'+e.ownerType+'|'+(e.ownerName||'');
+    if(!groups[key]){ groups[key]=[]; order.push(key); }
+    groups[key].push(e);
+  });
+  let mergedCount = 0;
+  const result = [];
+  order.forEach(key=>{
+    const list = groups[key];
+    if(list.length===1){ result.push(list[0]); return; }
+    mergedCount += list.length-1;
+    const base = Object.assign({}, list[0]);
+    const scalarKeys = ['btId','s1Time','s5Time','istMulai','istSelesai','istLembur','otOverride','hmAwal','hmAkhir','bbmLiter','jenisKategori','jenisKet','catatan','antarTipe','antarKegiatan','muatTipe','tonaseKg','lokasiMuat','lokasiBongkar','droneJenis','operatorShift'];
+    scalarKeys.forEach(k=>{
+      list.forEach(e=>{ if(!isEmptyVal(e[k])) base[k]=e[k]; });
+    });
+    ['kegiatanPagi','kegiatanSore'].forEach(k=>{
+      const seen = [];
+      list.forEach(e=>{
+        let arr = e[k];
+        if(typeof arr==='string') arr = arr?[arr]:[];
+        (arr||[]).forEach(v=>{ if(v && !seen.includes(v)) seen.push(v); });
+      });
+      base[k] = seen.length ? seen : [''];
+    });
+    result.push(base);
+  });
+  if(mergedCount>0){ ENTRIES = result; saveEntries(); }
+  return mergedCount;
 }
 function normKegiatan(e){
   ['kegiatanPagi','kegiatanSore'].forEach(k=>{
@@ -518,26 +515,24 @@ function extendableOptionsHtml(list, sel){
 }
 function handleAntarKegiatanChange(selectEl){
   if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan kegiatan baru:', '', function(val){
-      if(val && val.trim()){
-        KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
-        saveKegiatanAntar();
-        quickSaveField('antarKegiatan', val.trim());
-      } else { renderHari(); }
-    });
+    const val = prompt('Tambahkan kegiatan baru:');
+    if(val && val.trim()){
+      KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
+      saveKegiatanAntar();
+      quickSaveField('antarKegiatan', val.trim());
+    } else { renderHari(); }
   } else {
     quickSaveField('antarKegiatan', selectEl.value);
   }
 }
 function handleDroneJenisChange(selectEl){
   if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan jenis drone baru:', '', function(val){
-      if(val && val.trim()){
-        DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
-        saveDroneJenis();
-        quickSaveField('droneJenis', val.trim());
-      } else { renderHari(); }
-    });
+    const val = prompt('Tambahkan jenis drone baru:');
+    if(val && val.trim()){
+      DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
+      saveDroneJenis();
+      quickSaveField('droneJenis', val.trim());
+    } else { renderHari(); }
   } else {
     quickSaveField('droneJenis', selectEl.value);
   }
@@ -588,14 +583,6 @@ function renderHari(){
       <div class="hero-sub">${holiday ? 'Hari libur — seluruh jam dihitung lembur' : 'Otomatis dari jam antar & pulang · bisa diubah manual'}</div>
     </div>
 
-    <div class="card card-flat" style="display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <div class="field-label">Pemakaian HM Hari Ini</div>
-        <div class="field-sub">HM Akhir − HM Awal, otomatis</div>
-      </div>
-      <div class="field-value" style="font-size:26px;">${hmPakai(e)}<span style="font-size:13px;font-weight:600;color:var(--on-surface-variant);"> jam</span></div>
-    </div>
-
     <div class="section-eyebrow">Truck & Layanan</div>
     <div class="card">
       <label class="flabel">No Unit</label>
@@ -636,6 +623,7 @@ function renderHari(){
         <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${e.hmAwal||''}" onchange="quickSaveField('hmAwal', this.value)"></div>
         <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" value="${e.hmAkhir||''}" onchange="quickSaveField('hmAkhir', this.value)"></div>
         <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="decimal" value="${e.bbmLiter||''}" onchange="quickSaveField('bbmLiter', this.value)"></div>
+        <div><label class="flabel">Pemakaian HM</label><input type="text" value="${hmPakai(e)} jam" disabled></div>
       </div>
       <label class="flabel">Catatan (opsional)</label>
       <textarea onchange="quickSaveField('catatan', this.value)">${e.catatan||''}</textarea>
@@ -659,8 +647,9 @@ function openEntryForm(existing){
     otOverride:null, jenisKategori:'Antar/Jemput Tenaga', antarKegiatan:'', antarTipe:'', muatTipe:'', tonaseKg:'',
     lokasiMuat:'', lokasiBongkar:'', droneJenis:'', operatorShift:'', jenisKet:'', catatan:''};
   window._efOtManual = false;
-  const sopirVal = e.partnerId;
-  const sopirOpts = `<option value="">Pilih sopir</option>` + PARTNERS.map(p=>`<option value="${p.id}" ${p.id===sopirVal?'selected':''}>${p.name}</option>`).join('');
+  const sopirVal = e.ownerType==='saya' ? 'saya' : e.partnerId;
+  const sopirOpts = `<option value="saya" ${sopirVal==='saya'?'selected':''}>Saya (${USER.name||'akun ini'})</option>`
+    + PARTNERS.map(p=>`<option value="${p.id}" ${p.id===sopirVal?'selected':''}>${p.name}</option>`).join('');
   document.getElementById('modalHost').innerHTML = `
     <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
       <div class="sheet">
@@ -738,36 +727,33 @@ function onProgramJenisChange(newKategori){
 }
 function handleAntarKegiatanChangeForm(selectEl){
   if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan kegiatan baru:', '', function(val){
-      if(val && val.trim()){
-        KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
-        saveKegiatanAntar();
-        const opt = document.createElement('option');
-        opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
-        selectEl.insertBefore(opt, selectEl.lastElementChild);
-      } else { selectEl.value = ''; }
-    });
+    const val = prompt('Tambahkan kegiatan baru:');
+    if(val && val.trim()){
+      KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
+      saveKegiatanAntar();
+      const opt = document.createElement('option');
+      opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
+      selectEl.insertBefore(opt, selectEl.lastElementChild);
+    } else { selectEl.value = ''; }
   }
 }
 function handleDroneJenisChangeForm(selectEl){
   if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan jenis drone baru:', '', function(val){
-      if(val && val.trim()){
-        DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
-        saveDroneJenis();
-        const opt = document.createElement('option');
-        opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
-        selectEl.insertBefore(opt, selectEl.lastElementChild);
-      } else { selectEl.value = ''; }
-    });
+    const val = prompt('Tambahkan jenis drone baru:');
+    if(val && val.trim()){
+      DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
+      saveDroneJenis();
+      const opt = document.createElement('option');
+      opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
+      selectEl.insertBefore(opt, selectEl.lastElementChild);
+    } else { selectEl.value = ''; }
   }
 }
 function saveEntryForm(id){
   const sopirVal = document.getElementById('efSopir').value;
-  if(!sopirVal){ toast('Pilih sopir dulu'); return; }
   const partnerObj = PARTNERS.find(p=>p.id===sopirVal);
-  const ownerType = 'partner';
-  const partnerId = sopirVal;
+  const ownerType = sopirVal==='saya' ? 'saya' : 'partner';
+  const partnerId = ownerType==='partner' ? sopirVal : '';
   const dateStart = document.getElementById('efDate').value;
   const dateEnd = document.getElementById('efDateEnd').value || dateStart;
   const dates = enumerateDates(dateStart, dateEnd);
@@ -804,9 +790,8 @@ function saveEntryForm(id){
   renderProgram(); renderHari(); renderRekap();
 }
 function deleteEntry(id){
-  showConfirm('Hapus catatan ini?', function(){
-    ENTRIES = ENTRIES.filter(x=>x.id!==id); saveEntries(); toast('Catatan dihapus'); renderProgram(); renderRekap();
-  });
+  if(!confirm('Hapus catatan ini?')) return;
+  ENTRIES = ENTRIES.filter(x=>x.id!==id); saveEntries(); toast('Catatan dihapus'); renderProgram(); renderRekap();
 }
 
 /* ============ RIWAYAT (accordion, dipakai Program & Rekap) ============ */
@@ -821,17 +806,15 @@ function renderHistoryList(list){
         <div class="hrow-dot ${isSaya?'':'partner'}"></div>
         <div class="hrow-main">
           <div class="hrow-date">${fmtLabel(e.date)}</div>
-          <div class="hrow-sum">${btLabel(e.btId)}${e.antarKegiatan?' · '+e.antarKegiatan:''}${isSaya?' · HM '+(e.hmAwal||'-')+'→'+(e.hmAkhir||'-'):''} · Lembur ${fmtHoursNum(ot.otMin)}j · ${e.ownerName||(isSaya?(USER.name||'Saya'):'Sopir')}</div>
+          <div class="hrow-sum">${btLabel(e.btId)}${e.antarKegiatan?' · '+e.antarKegiatan:''} · HM ${e.hmAwal||'-'}→${e.hmAkhir||'-'} · Lembur ${fmtHoursNum(ot.otMin)}j · ${e.ownerName||(isSaya?(USER.name||'Saya'):'Sopir')}</div>
         </div>
         <svg class="hrow-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
       <div class="hrow-body"><div class="hrow-body-inner" onclick="event.stopPropagation()">
         <div class="grid2">
-          ${isSaya ? `
           <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${e.hmAwal||''}"></div>
           <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" value="${e.hmAkhir||''}"></div>
           <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" value="${e.bbmLiter||''}"></div>
-          ` : ''}
           <div><label class="flabel">Lembur (jam)</label><input type="text" id="ed-ot-${e.id}" value="${e.otOverride??''}"></div>
           <div class="full"><label class="flabel">Catatan</label><input type="text" id="ed-cat-${e.id}" value="${e.catatan||''}"></div>
         </div>
@@ -846,10 +829,9 @@ function renderHistoryList(list){
 function toggleRow(id){ document.getElementById('hrow-'+id).classList.toggle('open'); }
 function saveRowEdit(id){
   const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
-  const hmAEl = document.getElementById('ed-hmA-'+id), hmBEl = document.getElementById('ed-hmB-'+id), bbmEl = document.getElementById('ed-bbm-'+id);
-  if(hmAEl) ENTRIES[idx].hmAwal = hmAEl.value;
-  if(hmBEl) ENTRIES[idx].hmAkhir = hmBEl.value;
-  if(bbmEl) ENTRIES[idx].bbmLiter = bbmEl.value;
+  ENTRIES[idx].hmAwal = document.getElementById('ed-hmA-'+id).value;
+  ENTRIES[idx].hmAkhir = document.getElementById('ed-hmB-'+id).value;
+  ENTRIES[idx].bbmLiter = document.getElementById('ed-bbm-'+id).value;
   ENTRIES[idx].otOverride = document.getElementById('ed-ot-'+id).value===''?null:document.getElementById('ed-ot-'+id).value;
   ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
   saveEntries(); toast('Perubahan disimpan'); renderProgram(); renderRekap(); renderHari();
@@ -860,7 +842,17 @@ function setHistFilter(f){ histFilter = f; renderProgram(); renderRekap(); }
 function renderProgram(){
   const host = document.getElementById('screen-program');
   const list = ENTRIES.filter(e=>e.ownerType===histFilter).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!WEEKPLAN.from || !WEEKPLAN.to){
+    const today = todayIso();
+    const monday = new Date(today+'T00:00:00');
+    const wd = monday.getDay(); const diffToMon = wd===0?-6:1-wd;
+    monday.setDate(monday.getDate()+diffToMon);
+    const sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
+    const isoOf = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    WEEKPLAN.from = isoOf(monday); WEEKPLAN.to = isoOf(sunday);
+  }
   host.innerHTML = `
+    ${renderWeekPlanSection()}
     <div class="section-eyebrow section-eyebrow-row">Riwayat Program<button class="pill-btn" onclick="openEntryForm(null)">+ Tambah</button></div>
     <div class="hist-tabs">
       <div class="hist-tab ${histFilter==='saya'?'active-saya':''}" onclick="setHistFilter('saya')">🟠 Saya</div>
@@ -870,6 +862,62 @@ function renderProgram(){
     <button class="pill-btn" style="margin:16px 0 4px 0;width:100%;justify-content:center;" onclick="openBoxTruckSheet()">${icon('print',16)} Tabel Box Truck (Cetak)</button>
     <button class="pill-btn" style="margin:0 0 4px;width:100%;justify-content:center;" onclick="openExportSheet(true)">${icon('download',16)} Export / Cetak per Sopir</button>
   `;
+}
+function renderWeekPlanSection(){
+  const rows = WEEKPLAN.rows.filter(r=>weekPlanBtFilter==='all' || r.btId===weekPlanBtFilter);
+  const btFilterOpts = `<option value="all" ${weekPlanBtFilter==='all'?'selected':''}>Semua BT</option>`
+    + BT_CODES.map(b=>`<option value="${b.id}" ${weekPlanBtFilter===b.id?'selected':''}>${b.label}</option>`).join('');
+  const cards = rows.length ? rows.map(r=>`
+    <div class="card" style="position:relative;">
+      <button class="btn-sm" style="position:absolute;top:12px;right:12px;padding:5px 9px;" onclick="removeWeekPlanRow('${r.id}')">${icon('close',13)}</button>
+      <div class="grid2">
+        <div>
+          <label class="field-label">BT</label>
+          <select onchange="updateWeekPlanRow('${r.id}','btId',this.value)">${btOptionsHtml(r.btId)}</select>
+        </div>
+        <div>
+          <label class="field-label">Sopir</label>
+          <select onchange="updateWeekPlanRow('${r.id}','partnerId',this.value)">
+            <option value="">Pilih sopir</option>
+            ${PARTNERS.map(p=>`<option value="${p.id}" ${r.partnerId===p.id?'selected':''}>${p.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="full">
+          <label class="field-label">Kegiatan</label>
+          <input type="text" value="${r.kegiatan||''}" placeholder="mis. Pel. Umum" onchange="updateWeekPlanRow('${r.id}','kegiatan',this.value)">
+        </div>
+      </div>
+    </div>
+  `).join('') : `<div class="empty-note">Belum ada rencana di periode ini${weekPlanBtFilter!=='all'?' untuk BT ini':''}.</div>`;
+  return `
+    <div class="section-eyebrow">Periode Tabel</div>
+    <div class="card">
+      <div class="grid2">
+        <div><label class="field-label">Dari Tanggal</label><input type="date" value="${WEEKPLAN.from}" onchange="updateWeekPlanPeriod('from',this.value)"></div>
+        <div><label class="field-label">Sampai Tanggal</label><input type="date" value="${WEEKPLAN.to}" onchange="updateWeekPlanPeriod('to',this.value)"></div>
+      </div>
+    </div>
+    <div class="section-eyebrow section-eyebrow-row">Program Mingguan
+      <select style="width:auto;min-width:130px;margin-bottom:0;" onchange="setWeekPlanBtFilter(this.value)">${btFilterOpts}</select>
+    </div>
+    ${cards}
+    <button class="pill-btn" style="width:100%;justify-content:center;margin-bottom:20px;" onclick="addWeekPlanRow()">+ Tambah Baris</button>
+  `;
+}
+function updateWeekPlanPeriod(field, value){ WEEKPLAN[field]=value; saveWeekPlan(); renderProgram(); }
+function setWeekPlanBtFilter(val){ weekPlanBtFilter = val; renderProgram(); }
+function addWeekPlanRow(){
+  WEEKPLAN.rows.push({id:uid(), btId: weekPlanBtFilter!=='all'?weekPlanBtFilter:(BT_CODES[0]?BT_CODES[0].id:''), partnerId:'', kegiatan:''});
+  saveWeekPlan(); renderProgram();
+}
+function updateWeekPlanRow(id, field, value){
+  const r = WEEKPLAN.rows.find(x=>x.id===id); if(!r) return;
+  r[field]=value; saveWeekPlan();
+  if(field==='kegiatan') return; // hindari re-render saat masih mengetik
+  renderProgram();
+}
+function removeWeekPlanRow(id){
+  WEEKPLAN.rows = WEEKPLAN.rows.filter(x=>x.id!==id); saveWeekPlan(); renderProgram();
 }
 function openBoxTruckSheet(){
   const today = todayIso();
@@ -990,13 +1038,12 @@ function handlePetaTap(ev){
   const rect = ev.target.getBoundingClientRect();
   const xPct = ((ev.clientX - rect.left) / rect.width * 100).toFixed(2);
   const yPct = ((ev.clientY - rect.top) / rect.height * 100).toFixed(2);
-  showPrompt('Nama lokasi/blok di titik ini?', '', function(label){
-    if(!label || !label.trim()) return;
-    const pin = {id:uid(), xPct, yPct, label:label.trim()};
-    PETA_PINS.push(pin); savePetaPins();
-    if(!BLOK_LIST.some(b=>b.label===pin.label)){ BLOK_LIST.push({id:uid(), label:pin.label, source:'peta'}); saveBlok(); refreshBlokDatalist(); }
-    toast('Titik lokasi ditambahkan'); renderPeta();
-  });
+  const label = prompt('Nama lokasi/blok di titik ini?');
+  if(!label || !label.trim()) return;
+  const pin = {id:uid(), xPct, yPct, label:label.trim()};
+  PETA_PINS.push(pin); savePetaPins();
+  if(!BLOK_LIST.some(b=>b.label===pin.label)){ BLOK_LIST.push({id:uid(), label:pin.label, source:'peta'}); saveBlok(); refreshBlokDatalist(); }
+  toast('Titik lokasi ditambahkan'); renderPeta();
 }
 function selectPetaPin(id){
   const p = PETA_PINS.find(x=>x.id===id); if(!p) return;
@@ -1015,9 +1062,8 @@ function applyPetaPinToRute(id){
   toast('Rute diisi dari peta');
 }
 function removePetaPin(id){
-  showConfirm('Hapus titik lokasi ini dari peta?', function(){
-    PETA_PINS = PETA_PINS.filter(x=>x.id!==id); savePetaPins(); toast('Titik dihapus'); renderPeta();
-  });
+  if(!confirm('Hapus titik lokasi ini dari peta?')) return;
+  PETA_PINS = PETA_PINS.filter(x=>x.id!==id); savePetaPins(); toast('Titik dihapus'); renderPeta();
 }
 
 /* ============ SERVIS ============ */
@@ -1304,7 +1350,39 @@ function getExportRows(){
   });
   return {cols, rows};
 }
+function blobToBase64(blob){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onloadend = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+function isNativeApp(){
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
 async function saveOrShareBlob(blob, filename, mimeType){
+  // 0) Di dalam APK: tulis langsung ke storage lewat Capacitor Filesystem (paling andal, tidak tergantung pilihan user)
+  if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
+    try{
+      const { Filesystem, Directory } = window.Capacitor.Plugins;
+      const base64 = await blobToBase64(blob);
+      const written = await Filesystem.writeFile({
+        path: filename,
+        data: base64,
+        directory: Directory.Documents,
+        recursive: true
+      });
+      try{
+        if(window.Capacitor.Plugins.Share){
+          await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Buka atau bagikan file' });
+        }
+      }catch(shareErr){ /* file tetap tersimpan meski dialog share dibatalkan */ }
+      return 'saved-native';
+    }catch(err){
+      // kalau gagal, lanjut ke jalur fallback di bawah
+    }
+  }
   // 1) Coba Web Share API dengan file (paling andal di PWA mobile termasuk iOS)
   try{
     const file = new File([blob], filename, {type: mimeType});
@@ -1340,7 +1418,7 @@ async function doExport(fmt){
       rows.forEach(r=>{ csv += headers.map(h=>'"'+String(r[h]).replace(/"/g,'""')+'"').join(';')+'\n'; });
       const blob = new Blob(["\ufeff"+csv], {type:'text/csv;charset=utf-8;'});
       const result = await saveOrShareBlob(blob, 'rekap-'+rekapMonth+'.csv', 'text/csv');
-      toast(result==='shared' ? 'CSV siap dibagikan' : 'Excel (CSV) diunduh');
+      toast(result==='saved-native' ? 'CSV tersimpan di Documents' : (result==='shared' ? 'CSV siap dibagikan' : 'Excel (CSV) diunduh'));
       closeModal();
     }catch(err){
       toast('Gagal membuat CSV: '+(err && err.message ? err.message : 'error tidak dikenal'));
@@ -1378,7 +1456,7 @@ async function doExport(fmt){
     });
     const pdfBlob = doc.output('blob');
     const result = await saveOrShareBlob(pdfBlob, 'rekap-'+rekapMonth+'.pdf', 'application/pdf');
-    toast(result==='shared' ? 'PDF siap dibagikan' : 'PDF diunduh');
+    toast(result==='saved-native' ? 'PDF tersimpan di Documents' : (result==='shared' ? 'PDF siap dibagikan' : 'PDF diunduh'));
     closeModal();
   }catch(err){ toast('Gagal membuat PDF: '+(err && err.message ? err.message : 'error tidak dikenal')); }
 }
@@ -1436,26 +1514,20 @@ function addBtOrPartner(){
   saveBt(); savePartners(); renderBtPartnerSheet(); toast('Ditambahkan');
 }
 function renameBt(id){
-  const b = BT_CODES.find(x=>x.id===id);
-  showPrompt('Ubah nama kode BT', b.label, function(val){
-    if(val && val.trim()){ b.label = val.trim(); saveBt(); renderBtPartnerSheet(); renderHari(); toast('No Unit diperbarui'); }
-  });
+  const b = BT_CODES.find(x=>x.id===id); const val = prompt('Ubah nama kode BT', b.label);
+  if(val && val.trim()){ b.label = val.trim(); saveBt(); renderBtPartnerSheet(); renderHari(); toast('No Unit diperbarui'); }
 }
 function removeBt(id){
-  showConfirm('Hapus kode BT ini?', function(){
-    BT_CODES = BT_CODES.filter(x=>x.id!==id); saveBt(); renderBtPartnerSheet(); toast('No Unit dihapus');
-  });
+  if(!confirm('Hapus kode BT ini?')) return;
+  BT_CODES = BT_CODES.filter(x=>x.id!==id); saveBt(); renderBtPartnerSheet(); toast('No Unit dihapus');
 }
 function renamePartner(id){
-  const p = PARTNERS.find(x=>x.id===id);
-  showPrompt('Ubah nama partner', p.name, function(val){
-    if(val && val.trim()){ p.name = val.trim(); savePartners(); renderBtPartnerSheet(); toast('Sopir diperbarui'); }
-  });
+  const p = PARTNERS.find(x=>x.id===id); const val = prompt('Ubah nama partner', p.name);
+  if(val && val.trim()){ p.name = val.trim(); savePartners(); renderBtPartnerSheet(); toast('Sopir diperbarui'); }
 }
 function removePartner(id){
-  showConfirm('Hapus partner ini?', function(){
-    PARTNERS = PARTNERS.filter(x=>x.id!==id); savePartners(); renderBtPartnerSheet(); toast('Sopir dihapus');
-  });
+  if(!confirm('Hapus partner ini?')) return;
+  PARTNERS = PARTNERS.filter(x=>x.id!==id); savePartners(); renderBtPartnerSheet(); toast('Sopir dihapus');
 }
 
 /* ============ KELOLA JENIS LAYANAN ============ */
@@ -1495,15 +1567,13 @@ function addJenisSubItem(){
 }
 function removeKegiatanAntarItem(i){
   if(KEGIATAN_ANTAR_LIST[i].locked) return;
-  showConfirm('Hapus item ini?', function(){
-    KEGIATAN_ANTAR_LIST.splice(i,1); saveKegiatanAntar(); renderJenisSheet(); toast('Dihapus');
-  });
+  if(!confirm('Hapus item ini?')) return;
+  KEGIATAN_ANTAR_LIST.splice(i,1); saveKegiatanAntar(); renderJenisSheet(); toast('Dihapus');
 }
 function removeDroneJenisItem(i){
   if(DRONE_JENIS_LIST[i].locked) return;
-  showConfirm('Hapus item ini?', function(){
-    DRONE_JENIS_LIST.splice(i,1); saveDroneJenis(); renderJenisSheet(); toast('Dihapus');
-  });
+  if(!confirm('Hapus item ini?')) return;
+  DRONE_JENIS_LIST.splice(i,1); saveDroneJenis(); renderJenisSheet(); toast('Dihapus');
 }
 
 /* ============ KELOLA BLOK/PETAK (RUTE) ============ */
@@ -1576,7 +1646,9 @@ function removeLibur(date){
 
 /* ============ INIT ============ */
 refreshBlokDatalist();
+const _dupMerged = mergeDuplicateEntries();
 showScreen('hari');
+if(_dupMerged>0){ setTimeout(()=>toast(_dupMerged+' catatan ganda berhasil digabung'), 400); }
 </script>
 </body>
 </html>
