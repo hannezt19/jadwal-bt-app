@@ -97,7 +97,7 @@
   .box-truck-table tr:nth-child(even) td{background:var(--surface-container);}
 
   /* NAV */
-  .navwrap{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:456px;z-index:50;padding:0;background:transparent;}
+  .navwrap{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:456px;z-index:50;padding:0;background:transparent;}
   .screen{padding-bottom:110px;}
   nav.tabbar{display:flex;background:var(--navy);border-radius:100px;padding:6px;gap:2px;box-shadow:0 8px 24px rgba(20,15,5,.25);}
   nav.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border:none;background:transparent;color:#9099AD;border-radius:100px;cursor:pointer;}
