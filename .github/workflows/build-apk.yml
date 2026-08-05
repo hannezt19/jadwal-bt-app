@@ -50,9 +50,24 @@ jobs:
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             cp ic_launcher.png android/app/src/main/res/mipmap-$d/ic_launcher.png
             cp ic_launcher_round.png android/app/src/main/res/mipmap-$d/ic_launcher_round.png
+            cp ic_launcher_foreground.png android/app/src/main/res/mipmap-$d/ic_launcher_foreground.png
           done
-          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/ic_launcher_background.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#1C2333</color>
+          </resources>
+          EOF
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
 
       - name: Sync web assets
         run: npx cap sync android
@@ -91,3 +106,4 @@ jobs:
         with:
           name: jadwal-bt-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          
