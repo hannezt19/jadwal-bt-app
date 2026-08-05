@@ -37,7 +37,7 @@ jobs:
         run: npm init -y
 
       - name: Pasang Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem @capacitor/share
 
       - name: Init Capacitor project
         run: npx cap init "Jadwal BT" "com.hannezt19.jadwalbt" --web-dir=www
@@ -91,33 +91,4 @@ jobs:
         with:
           name: jadwal-bt-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-EAD_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />#' "$MANIFEST"
-          fi
-
-      - name: Perbaiki konflik versi Kotlin
-        run: |
-          cat >> android/build.gradle << 'EOF'
-
-          allprojects {
-              configurations.all {
-                  resolutionStrategy {
-                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.24"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24"
-                  }
-              }
-          }
-          EOF
-
-      - name: Build APK (debug, unsigned)
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: jadwal-bt-apk
-  
+          
