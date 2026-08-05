@@ -48,8 +48,8 @@ jobs:
       - name: Ganti ikon aplikasi
         run: |
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            cp icon-assets/mipmap-$d/ic_launcher.png android/app/src/main/res/mipmap-$d/ic_launcher.png
-            cp icon-assets/mipmap-$d/ic_launcher_round.png android/app/src/main/res/mipmap-$d/ic_launcher_round.png
+            cp ic_launcher.png android/app/src/main/res/mipmap-$d/ic_launcher.png
+            cp ic_launcher_round.png android/app/src/main/res/mipmap-$d/ic_launcher_round.png
           done
           rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
