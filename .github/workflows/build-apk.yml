@@ -23,6 +23,18 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Buat identitas proyek (package.json)
+        run: npm init -y
+
+      - name: Pasang Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem @capacitor/share
+
+      - name: Siapkan library Excel (SheetJS)
+        run: |
+          npm install xlsx --no-save
+          mkdir -p vendor
+          cp node_modules/xlsx/dist/xlsx.full.min.js vendor/xlsx.full.min.js
+
       - name: Susun folder www/ dari file web
         run: |
           mkdir -p www
@@ -32,12 +44,6 @@ jobs:
           cp -r icons www/ || true
           cp -r fonts www/ || true
           cp -r vendor www/ || true
-
-      - name: Buat identitas proyek (package.json)
-        run: npm init -y
-
-      - name: Pasang Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem @capacitor/share
 
       - name: Init Capacitor project
         run: npx cap init "Jadwal BT" "com.hannezt19.jadwalbt" --web-dir=www
@@ -78,6 +84,7 @@ jobs:
           if ! grep -q "WRITE_EXTERNAL_STORAGE" "$MANIFEST"; then
             sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />#' "$MANIFEST"
           fi
+          sed -i 's#<application#<application android:requestLegacyExternalStorage="true"#' "$MANIFEST"
 
       - name: Perbaiki konflik versi Kotlin
         run: |
@@ -106,4 +113,3 @@ jobs:
         with:
           name: jadwal-bt-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
