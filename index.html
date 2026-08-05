@@ -160,10 +160,27 @@
   .kgt-row{display:flex;gap:6px;margin-bottom:8px;}
   .kgt-row input{margin-bottom:0;flex:1;}
   .kgt-row .kgt-rm{flex-shrink:0;width:32px;border-radius:10px;border:1.5px solid var(--outline);background:#fff;color:var(--danger);font-weight:700;cursor:pointer;}
+  .loc-chip{display:flex;align-items:center;gap:6px;background:var(--primary-container);color:var(--on-primary-container);border-radius:100px;padding:7px 8px 7px 12px;font-size:13px;font-weight:700;}
+  .loc-chip button{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.12);color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
 
   .badge-mini{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:100px;margin-left:6px;}
   .badge-saya{background:var(--primary-container);color:var(--on-primary-container);}
   .badge-partner{background:var(--secondary-container);color:var(--secondary);}
+  .loc-field-btn{width:100%;display:flex;align-items:center;gap:8px;text-align:left;background:var(--surface-variant,#efeae2);border:1.5px solid var(--outline);border-radius:14px;padding:12px 14px;font-size:14.5px;color:var(--on-surface);cursor:pointer;}
+  .loc-field-btn.empty{color:var(--on-surface-variant);}
+  .loc-field-btn span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lokpick-search{width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--outline);font-size:14.5px;margin-bottom:10px;}
+  .lokpick-list{max-height:38vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+  .lokpick-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;background:var(--surface-variant,#efeae2);font-size:14.5px;font-weight:600;cursor:pointer;}
+  .lokpick-item:active{opacity:.7;}
+  .lokpick-actions{display:flex;gap:8px;margin-bottom:6px;}
+  .lokpick-map-wrap{position:relative;width:100%;border-radius:14px;overflow:hidden;background:#e9e3d8;margin-bottom:10px;max-height:34vh;overflow-y:auto;}
+  .lokpick-map-wrap img{width:100%;display:block;}
+  .lokpick-pin{position:absolute;transform:translate(-50%,-100%);font-size:20px;cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
+  .peta-toprow{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+  .peta-toprow input[type=date]{flex:1;min-width:150px;padding:9px 10px;border-radius:12px;border:1.5px solid var(--outline);font-size:13.5px;}
+  .peta-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--on-surface-variant);margin-bottom:10px;}
+  .peta-selected{font-size:13px;}
 </style>
 </head>
 <body>
@@ -255,8 +272,12 @@
   .peta-upload{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-container);border:1.5px dashed var(--outline);border-radius:var(--radius-md);padding:14px;font-size:13px;font-weight:700;color:var(--on-surface-variant);cursor:pointer;margin-bottom:12px;}
   .peta-upload input{display:none;}
   .peta-selected{background:var(--primary-container);color:var(--on-primary-container);border-radius:var(--radius-md);padding:12px 14px;font-size:14px;font-weight:700;margin-bottom:12px;}
-  .peta-imgwrap{position:relative;width:100%;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--outline);margin-bottom:12px;background:var(--surface-container);touch-action:manipulation;}
-  .peta-imgwrap img{width:100%;display:block;}
+  .peta-imgwrap{position:relative;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--outline);background:var(--surface-container);touch-action:manipulation;}
+  .peta-imgwrap img{width:100%;display:block;height:auto;}
+  .peta-scrollbox{width:100%;height:62vh;overflow:auto;border-radius:var(--radius-lg);border:1px solid var(--outline);margin-bottom:8px;background:var(--surface-container);-webkit-overflow-scrolling:touch;}
+  .peta-zoom-bar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;}
+  .peta-zoom-btn{width:40px;height:40px;border-radius:100px;border:1.5px solid var(--outline);background:var(--surface-container-high);font-size:19px;font-weight:800;color:var(--on-surface);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .peta-zoom-label{align-self:center;font-size:12.5px;font-weight:700;color:var(--on-surface-variant);min-width:42px;text-align:center;}
   .peta-pin{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-26px;cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
 </style>
 <script>
@@ -273,6 +294,27 @@ let weekPlanBtFilter = 'all';
 function saveWeekPlan(){ LS.set('mrg_weekplan', WEEKPLAN); }
 let LIBUR = LS.get('mrg_libur', []); // [{date,label}]
 let ENTRIES = LS.get('mrg_entries', []); // catatan harian gabungan
+(function migrateLegacyLokasiRute(){
+  // Migrasi 1x: field "Lokasi/Rute (Petak)" lama (bisa berisi banyak lokasi) diganti jadi 1 lokasi saja.
+  // Lokasi pertama dipindah ke lokasiMuat, sisanya (kalau ada) dipindah ke Catatan supaya tidak hilang.
+  let changed = false;
+  ENTRIES.forEach(e=>{
+    let arr = e.lokasiRute;
+    if(typeof arr === 'string') arr = arr ? [arr] : [];
+    if(Array.isArray(arr) && arr.length>0){
+      const firstUsedForMuat = !e.lokasiMuat;
+      if(firstUsedForMuat) e.lokasiMuat = arr[0];
+      const extra = firstUsedForMuat ? arr.slice(1) : arr;
+      if(extra.length){
+        const note = 'Lokasi lama: ' + extra.join(', ');
+        e.catatan = e.catatan ? (e.catatan+'\n'+note) : note;
+      }
+      changed = true;
+    }
+    if(e.lokasiRute !== undefined) delete e.lokasiRute;
+  });
+  if(changed) LS.set('mrg_entries', ENTRIES);
+})();
 let SERVIS = LS.get('mrg_servis', []);
 if(!USER.mainBt && BT_CODES[0]) USER.mainBt = BT_CODES[0].id;
 
@@ -423,6 +465,46 @@ function openDrawer(){
 function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); document.getElementById('scrim').classList.remove('show'); }
 function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
 
+/* ============ DIALOG KUSTOM (pengganti confirm()/prompt() bawaan — tidak semua WebView APK mendukungnya) ============ */
+function showConfirm(message, onYes){
+  window._pendingConfirmCb = onYes;
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:18px;">${message}</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-outline" style="flex:1;" onclick="closeModal()">Batal</button>
+          <button class="btn-filled" style="flex:1;background:var(--danger);" onclick="runConfirmYes()">Hapus</button>
+        </div>
+      </div>
+    </div>`;
+}
+function runConfirmYes(){ const cb = window._pendingConfirmCb; closeModal(); if(cb) cb(); }
+function showPrompt(message, defaultValue, onSubmit){
+  window._pendingPromptCb = onSubmit;
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:12px;">${message}</div>
+        <input type="text" id="promptInputVal" value="${(defaultValue||'').replace(/"/g,'&quot;')}">
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button class="btn-outline" style="flex:1;" onclick="closeModal()">Batal</button>
+          <button class="btn-filled" style="flex:1;" onclick="runPromptSubmit()">Simpan</button>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(()=>{ const el=document.getElementById('promptInputVal'); if(el){ el.focus(); el.select(); } }, 60);
+}
+function runPromptSubmit(){
+  const el = document.getElementById('promptInputVal');
+  const val = el ? el.value : '';
+  const cb = window._pendingPromptCb;
+  closeModal();
+  if(cb) cb(val);
+}
+
 /* ============ FORMAT JAM OTOMATIS ============ */
 document.addEventListener('input', function(e){
   if(e.target.classList && e.target.classList.contains('time-chip')){
@@ -479,6 +561,9 @@ function normKegiatan(e){
   });
   return e;
 }
+// Kategori Jenis Layanan yang punya kolom lokasi (kotak 1 = lokasiMuat, dipakai untuk semua ini).
+// Khusus "Muat Tebu" - Bibit saja yang juga memakai kotak 2 (lokasiBongkar).
+const LOKASI_RUTE_KATEGORI = ['Antar/Jemput Tenaga','Drone','Muat Tebu'];
 function kegiatanListHtml(e, field){
   return e[field].map((v,i)=>`
     <div class="kgt-row">
@@ -513,26 +598,118 @@ function extendableOptionsHtml(list, sel){
     + list.map(it=>`<option value="${it.value}" ${it.value===sel?'selected':''}>${it.value}</option>`).join('')
     + `<option value="__new__">+ Tambah baru...</option>`;
 }
+function addBlokIfNew(label){
+  if(!BLOK_LIST.some(b=>b.label===label)){ BLOK_LIST.push({id:uid(), label, source:'manual'}); saveBlok(); refreshBlokDatalist(); }
+}
+/* ============ LOKASI PICKER (pencarian blok/petak + preview mini-peta) ============ */
+function blokSearchList(query){
+  const q = (query||'').trim().toLowerCase();
+  if(!q) return BLOK_LIST;
+  let res = BLOK_LIST.filter(b=>b.label.toLowerCase().startsWith(q));
+  if(res.length===0) res = BLOK_LIST.filter(b=>b.label.toLowerCase().includes(q));
+  return res;
+}
+function lokpickListHtml(query){
+  const list = blokSearchList(query);
+  if(list.length===0) return '<div class="empty-note" style="padding:14px 4px;">Tidak ada blok yang cocok. Ketuk "+ Tambah manual" untuk menambahkannya.</div>';
+  return list.map(b=>`<div class="lokpick-item" onclick="lokpickSelect('${b.label.replace(/'/g,"\\'")}')">${b.label}</div>`).join('');
+}
+function lokpickMapHtml(){
+  if(!PETA_IMAGE) return '<div class="empty-note" style="padding:14px 4px;">Belum ada gambar peta. Upload dulu lewat menu Peta.</div>';
+  if(PETA_PINS.length===0) return '<div class="empty-note" style="padding:14px 4px;">Peta sudah ada, tapi belum ada titik lokasi ditandai.</div>';
+  return `<div class="lokpick-map-wrap"><img src="${PETA_IMAGE}">${PETA_PINS.map(p=>`<div class="lokpick-pin" style="left:${p.xPct}%;top:${p.yPct}%;" title="${p.label}" onclick="lokpickSelect('${p.label.replace(/'/g,"\\'")}')">📍</div>`).join('')}</div>`;
+}
+function openLokasiPicker(currentValue, onSelect){
+  window._lokPick = {value:currentValue||'', onSelect, query:'', showMap:false};
+  renderLokasiPickerSheet();
+}
+function renderLokasiPickerSheet(){
+  const st = window._lokPick || {query:'', showMap:false};
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this){window._lokPick=null;closeModal();}">
+      <div class="sheet">
+        <div class="sheet-title-row"><h3>Pilih Lokasi</h3><button class="sheet-close" onclick="window._lokPick=null;closeModal()">${icon('close',18)}</button></div>
+        <input class="lokpick-search" id="lokpickSearchInput" type="text" placeholder="Ketik untuk cari, mis. 11" value="${(st.query||'').replace(/"/g,'&quot;')}" oninput="lokpickOnInput(this.value)">
+        <div class="lokpick-actions">
+          <button type="button" class="btn-sm" onclick="lokpickAddManual()">+ Tambah manual</button>
+          <button type="button" class="btn-sm" onclick="lokpickToggleMap()">📍 ${st.showMap?'Tutup Peta':'Buka Peta'}</button>
+        </div>
+        <div id="lokpickMapHost">${st.showMap ? lokpickMapHtml() : ''}</div>
+        <div class="lokpick-list" id="lokpickListHost">${lokpickListHtml(st.query)}</div>
+      </div>
+    </div>`;
+  setTimeout(()=>{ const el=document.getElementById('lokpickSearchInput'); if(el) el.focus(); }, 60);
+}
+function lokpickOnInput(val){
+  if(window._lokPick) window._lokPick.query = val;
+  const host = document.getElementById('lokpickListHost');
+  if(host) host.innerHTML = lokpickListHtml(val);
+}
+function lokpickToggleMap(){
+  if(!window._lokPick) return;
+  window._lokPick.showMap = !window._lokPick.showMap;
+  renderLokasiPickerSheet();
+}
+function lokpickSelect(label){
+  const st = window._lokPick;
+  window._lokPick = null;
+  closeModal();
+  if(st && st.onSelect) st.onSelect(label);
+}
+function lokpickAddManual(){
+  showPrompt('Tambah lokasi/petak manual (mis. 11 TS 20):', '', function(val){
+    if(val && val.trim()){
+      addBlokIfNew(val.trim());
+      lokpickSelect(val.trim());
+    } else {
+      renderLokasiPickerSheet();
+    }
+  });
+}
+/* Field lokasi tunggal (tombol yang membuka picker), dipakai di form Hari Ini & Program */
+function lokasiFieldHtml(id, label, value){
+  const val = value||'';
+  return `<div><label class="flabel">${label}</label>
+    <input type="hidden" id="${id}" value="${val.replace(/"/g,'&quot;')}">
+    <button type="button" class="loc-field-btn ${val?'':'empty'}" id="${id}_btn" onclick="pickLokasiInto('${id}')">${icon('location_on',16)}<span>${val?val:'Pilih lokasi...'}</span></button>
+  </div>`;
+}
+function pickLokasiInto(inputId){
+  const inputEl = document.getElementById(inputId);
+  const cur = inputEl ? inputEl.value : '';
+  openLokasiPicker(cur, function(val){
+    addBlokIfNew(val);
+    const el = document.getElementById(inputId);
+    if(el) el.value = val;
+    const btn = document.getElementById(inputId+'_btn');
+    if(btn){ btn.classList.remove('empty'); const sp=btn.querySelector('span'); if(sp) sp.textContent = val; }
+    // Kolom di laman "Hari Ini" tersimpan otomatis (autosave), kolom di form Program disimpan saat tombol Simpan ditekan.
+    if(inputId==='fLokasiMuat') quickSaveField('lokasiMuat', val);
+    if(inputId==='fLokasiBongkar') quickSaveField('lokasiBongkar', val);
+  });
+}
 function handleAntarKegiatanChange(selectEl){
   if(selectEl.value === '__new__'){
-    const val = prompt('Tambahkan kegiatan baru:');
-    if(val && val.trim()){
-      KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
-      saveKegiatanAntar();
-      quickSaveField('antarKegiatan', val.trim());
-    } else { renderHari(); }
+    showPrompt('Tambahkan kegiatan baru:', '', function(val){
+      if(val && val.trim()){
+        KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
+        saveKegiatanAntar();
+        quickSaveField('antarKegiatan', val.trim());
+      } else { renderHari(); }
+    });
   } else {
     quickSaveField('antarKegiatan', selectEl.value);
   }
 }
 function handleDroneJenisChange(selectEl){
   if(selectEl.value === '__new__'){
-    const val = prompt('Tambahkan jenis drone baru:');
-    if(val && val.trim()){
-      DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
-      saveDroneJenis();
-      quickSaveField('droneJenis', val.trim());
-    } else { renderHari(); }
+    showPrompt('Tambahkan jenis drone baru:', '', function(val){
+      if(val && val.trim()){
+        DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
+        saveDroneJenis();
+        quickSaveField('droneJenis', val.trim());
+      } else { renderHari(); }
+    });
   } else {
     quickSaveField('droneJenis', selectEl.value);
   }
@@ -544,17 +721,20 @@ function renderJenisSubFields(e){
         <div class="grid2" style="margin-top:10px;">
           <div><label class="flabel">Tipe</label><select onchange="quickSaveField('antarTipe', this.value)">${subOptionsHtml(ANTAR_TIPE_OPTS, e.antarTipe)}</select></div>
           <div><label class="flabel">Kegiatan</label><select onchange="handleAntarKegiatanChange(this)">${extendableOptionsHtml(KEGIATAN_ANTAR_LIST, e.antarKegiatan)}</select></div>
-        </div>`;
+        </div>
+        <div style="margin-top:10px;">${lokasiFieldHtml('fLokasiMuat','Lokasi', e.lokasiMuat)}</div>`;
     case 'Muat Tebu':
       return `
         <div style="margin-top:10px;"><label class="flabel">Tipe</label><select onchange="quickSaveField('muatTipe', this.value)">${subOptionsHtml(MUAT_TIPE_OPTS, e.muatTipe)}</select></div>
-        ${e.muatTipe==='Produksi' ? `<div style="margin-top:10px;"><label class="flabel">Tonase (kg)</label><input type="text" inputmode="decimal" value="${e.tonaseKg||''}" onchange="quickSaveField('tonaseKg', this.value)"></div>` : ''}
+        ${e.muatTipe==='Produksi' ? `<div style="margin-top:10px;"><label class="flabel">Tonase (kg)</label><input type="text" inputmode="decimal" value="${e.tonaseKg||''}" onchange="quickSaveField('tonaseKg', this.value)"></div>
+        <div style="margin-top:10px;">${lokasiFieldHtml('fLokasiMuat','Lokasi', e.lokasiMuat)}</div>` : ''}
         ${e.muatTipe==='Bibit' ? `<div class="grid2" style="margin-top:10px;">
-          <div><label class="flabel">Lokasi Muat</label><input type="text" value="${e.lokasiMuat||''}" onchange="quickSaveField('lokasiMuat', this.value)"></div>
-          <div><label class="flabel">Lokasi Bongkar</label><input type="text" value="${e.lokasiBongkar||''}" onchange="quickSaveField('lokasiBongkar', this.value)"></div>
+          ${lokasiFieldHtml('fLokasiMuat','Lokasi Muat', e.lokasiMuat)}
+          ${lokasiFieldHtml('fLokasiBongkar','Lokasi Bongkar', e.lokasiBongkar)}
         </div>` : ''}`;
     case 'Drone':
-      return `<div style="margin-top:10px;"><label class="flabel">Jenis</label><select onchange="handleDroneJenisChange(this)">${extendableOptionsHtml(DRONE_JENIS_LIST, e.droneJenis)}</select></div>`;
+      return `<div style="margin-top:10px;"><label class="flabel">Jenis</label><select onchange="handleDroneJenisChange(this)">${extendableOptionsHtml(DRONE_JENIS_LIST, e.droneJenis)}</select></div>
+        <div style="margin-top:10px;">${lokasiFieldHtml('fLokasiMuat','Lokasi', e.lokasiMuat)}</div>`;
     case 'Operator':
       return `<div style="margin-top:10px;"><label class="flabel">Shift</label><select onchange="quickSaveField('operatorShift', this.value)">${subOptionsHtml(OPERATOR_SHIFT_OPTS, e.operatorShift)}</select></div>`;
     case 'Lainnya':
@@ -696,17 +876,20 @@ function renderProgramJenisSubFields(e){
       return `<div class="grid2">
         <div><label class="flabel">Tipe</label><select id="efAntarTipe">${subOptionsHtml(ANTAR_TIPE_OPTS, e.antarTipe)}</select></div>
         <div><label class="flabel">Kegiatan</label><select id="efAntarKegiatan" onchange="handleAntarKegiatanChangeForm(this)">${extendableOptionsHtml(KEGIATAN_ANTAR_LIST, e.antarKegiatan)}</select></div>
-      </div>`;
+      </div>
+      ${lokasiFieldHtml('efLokasiMuat','Lokasi', e.lokasiMuat)}`;
     case 'Muat Tebu':
       return `
         <div><label class="flabel">Tipe</label><select id="efMuatTipe" onchange="onProgramJenisChange('Muat Tebu')">${subOptionsHtml(MUAT_TIPE_OPTS, e.muatTipe)}</select></div>
-        ${e.muatTipe==='Produksi' ? `<div><label class="flabel">Tonase (kg)</label><input type="text" id="efTonase" inputmode="decimal" value="${e.tonaseKg||''}"></div>` : ''}
+        ${e.muatTipe==='Produksi' ? `<div><label class="flabel">Tonase (kg)</label><input type="text" id="efTonase" inputmode="decimal" value="${e.tonaseKg||''}"></div>
+        ${lokasiFieldHtml('efLokasiMuat','Lokasi', e.lokasiMuat)}` : ''}
         ${e.muatTipe==='Bibit' ? `<div class="grid2">
-          <div><label class="flabel">Lokasi Muat</label><input type="text" id="efLokasiMuat" value="${e.lokasiMuat||''}"></div>
-          <div><label class="flabel">Lokasi Bongkar</label><input type="text" id="efLokasiBongkar" value="${e.lokasiBongkar||''}"></div>
+          ${lokasiFieldHtml('efLokasiMuat','Lokasi Muat', e.lokasiMuat)}
+          ${lokasiFieldHtml('efLokasiBongkar','Lokasi Bongkar', e.lokasiBongkar)}
         </div>` : ''}`;
     case 'Drone':
-      return `<div><label class="flabel">Jenis</label><select id="efDroneJenis" onchange="handleDroneJenisChangeForm(this)">${extendableOptionsHtml(DRONE_JENIS_LIST, e.droneJenis)}</select></div>`;
+      return `<div><label class="flabel">Jenis</label><select id="efDroneJenis" onchange="handleDroneJenisChangeForm(this)">${extendableOptionsHtml(DRONE_JENIS_LIST, e.droneJenis)}</select></div>
+      ${lokasiFieldHtml('efLokasiMuat','Lokasi', e.lokasiMuat)}`;
     case 'Operator':
       return `<div><label class="flabel">Shift</label><select id="efOperatorShift">${subOptionsHtml(OPERATOR_SHIFT_OPTS, e.operatorShift)}</select></div>`;
     case 'Lainnya':
@@ -727,26 +910,28 @@ function onProgramJenisChange(newKategori){
 }
 function handleAntarKegiatanChangeForm(selectEl){
   if(selectEl.value === '__new__'){
-    const val = prompt('Tambahkan kegiatan baru:');
-    if(val && val.trim()){
-      KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
-      saveKegiatanAntar();
-      const opt = document.createElement('option');
-      opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
-      selectEl.insertBefore(opt, selectEl.lastElementChild);
-    } else { selectEl.value = ''; }
+    showPrompt('Tambahkan kegiatan baru:', '', function(val){
+      if(val && val.trim()){
+        KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
+        saveKegiatanAntar();
+        const opt = document.createElement('option');
+        opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
+        selectEl.insertBefore(opt, selectEl.lastElementChild);
+      } else { selectEl.value = ''; }
+    });
   }
 }
 function handleDroneJenisChangeForm(selectEl){
   if(selectEl.value === '__new__'){
-    const val = prompt('Tambahkan jenis drone baru:');
-    if(val && val.trim()){
-      DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
-      saveDroneJenis();
-      const opt = document.createElement('option');
-      opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
-      selectEl.insertBefore(opt, selectEl.lastElementChild);
-    } else { selectEl.value = ''; }
+    showPrompt('Tambahkan jenis drone baru:', '', function(val){
+      if(val && val.trim()){
+        DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
+        saveDroneJenis();
+        const opt = document.createElement('option');
+        opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
+        selectEl.insertBefore(opt, selectEl.lastElementChild);
+      } else { selectEl.value = ''; }
+    });
   }
 }
 function saveEntryForm(id){
@@ -790,8 +975,9 @@ function saveEntryForm(id){
   renderProgram(); renderHari(); renderRekap();
 }
 function deleteEntry(id){
-  if(!confirm('Hapus catatan ini?')) return;
-  ENTRIES = ENTRIES.filter(x=>x.id!==id); saveEntries(); toast('Catatan dihapus'); renderProgram(); renderRekap();
+  showConfirm('Hapus catatan ini?', function(){
+    ENTRIES = ENTRIES.filter(x=>x.id!==id); saveEntries(); toast('Catatan dihapus'); renderProgram(); renderRekap();
+  });
 }
 
 /* ============ RIWAYAT (accordion, dipakai Program & Rekap) ============ */
@@ -806,7 +992,7 @@ function renderHistoryList(list){
         <div class="hrow-dot ${isSaya?'':'partner'}"></div>
         <div class="hrow-main">
           <div class="hrow-date">${fmtLabel(e.date)}</div>
-          <div class="hrow-sum">${btLabel(e.btId)}${e.antarKegiatan?' · '+e.antarKegiatan:''} · HM ${e.hmAwal||'-'}→${e.hmAkhir||'-'} · Lembur ${fmtHoursNum(ot.otMin)}j · ${e.ownerName||(isSaya?(USER.name||'Saya'):'Sopir')}</div>
+          <div class="hrow-sum">${btLabel(e.btId)}${e.jenisKategori?' · '+jenisDetailText(e):''} · HM ${e.hmAwal||'-'}→${e.hmAkhir||'-'} · Lembur ${fmtHoursNum(ot.otMin)}j · ${e.ownerName||(isSaya?(USER.name||'Saya'):'Sopir')}</div>
         </div>
         <svg class="hrow-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
@@ -985,6 +1171,38 @@ let PETA_IMAGE = LS.get('mrg_peta_image', null); // dataURL hasil kompres
 let PETA_PINS = LS.get('mrg_peta_pins', []); // [{id,xPct,yPct,label}]
 function savePetaImage(){ LS.set('mrg_peta_image', PETA_IMAGE); }
 function savePetaPins(){ LS.set('mrg_peta_pins', PETA_PINS); }
+let petaZoom = 100;
+let petaSelectedDate = todayIso();
+// Hitung warna pin untuk 1 tanggal tertentu, hanya dari catatan milik "saya" sendiri.
+// 🟢 = lokasi tunggal / Lokasi Muat, 🔴 = Lokasi Bongkar (khusus Bibit), 🟠 = dipakai sebagai keduanya di tanggal itu.
+function petaColorMapForDate(dateIso){
+  const map = {};
+  function mark(label, color){
+    if(!label) return;
+    if(!map[label]) map[label] = color;
+    else if(map[label] !== color) map[label] = 'orange';
+  }
+  ENTRIES.filter(e=>e.date===dateIso && e.ownerType==='saya').forEach(e=>{
+    if(e.jenisKategori==='Muat Tebu' && e.muatTipe==='Bibit'){
+      mark(e.lokasiMuat, 'green');
+      mark(e.lokasiBongkar, 'red');
+    } else if(LOKASI_RUTE_KATEGORI.includes(e.jenisKategori)){
+      mark(e.lokasiMuat, 'green');
+    }
+  });
+  return map;
+}
+function petaPinEmoji(color){
+  return color==='green' ? '🟢' : color==='red' ? '🔴' : color==='orange' ? '🟠' : '📍';
+}
+function petaDateChange(val){
+  petaSelectedDate = val || todayIso();
+  renderPeta();
+}
+function petaGoToday(){
+  petaSelectedDate = todayIso();
+  renderPeta();
+}
 function renderPeta(){
   const host = document.getElementById('screen-peta');
   if(!PETA_IMAGE){
@@ -997,18 +1215,45 @@ function renderPeta(){
     `;
     return;
   }
+  const colorMap = petaColorMapForDate(petaSelectedDate);
+  const isToday = petaSelectedDate === todayIso();
   host.innerHTML = `
     <div class="section-eyebrow section-eyebrow-row">Peta Kebun
       <button class="btn-sm" onclick="document.getElementById('petaFileInput2').click()">${icon('sync',14)} Ganti Gambar</button>
     </div>
     <input type="file" id="petaFileInput2" accept="image/*" style="display:none;" onchange="handlePetaUpload(event)">
-    <div class="dsub" style="margin:0 0 8px;">Ketuk di atas peta untuk menandai lokasi. Ketuk pin yang sudah ada untuk memakainya di kolom Rute.</div>
-    <div class="peta-imgwrap" id="petaImgWrap">
-      <img src="${PETA_IMAGE}" id="petaImgEl" onclick="handlePetaTap(event)">
-      ${PETA_PINS.map(p=>`<div class="peta-pin" style="left:${p.xPct}%;top:${p.yPct}%;" title="${p.label}" onclick="event.stopPropagation();selectPetaPin('${p.id}')">📍</div>`).join('')}
+    <div class="peta-toprow">
+      <input type="date" value="${petaSelectedDate}" onchange="petaDateChange(this.value)">
+      ${!isToday ? `<button class="btn-sm" onclick="petaGoToday()">Hari Ini</button>` : ''}
+    </div>
+    <div class="peta-legend">🟢 Lokasi utama / Muat &nbsp; 🔴 Lokasi Bongkar &nbsp; 🟠 Dipakai sebagai keduanya</div>
+    <div class="dsub" style="margin:0 0 8px;">Ketuk di atas peta untuk menandai lokasi baru. Ketuk pin yang sudah ada untuk mengisinya ke Hari Ini atau melihat riwayat. Warna pin mengikuti tanggal yang dipilih.</div>
+    <div class="peta-zoom-bar">
+      <div class="peta-zoom-btn" onclick="petaZoomBy(-25)">−</div>
+      <div class="peta-zoom-label">${petaZoom}%</div>
+      <div class="peta-zoom-btn" onclick="petaZoomBy(25)">+</div>
+    </div>
+    <div class="peta-scrollbox" id="petaScrollbox">
+      <div class="peta-imgwrap" id="petaImgWrap" style="width:${petaZoom}%;">
+        <img src="${PETA_IMAGE}" id="petaImgEl" onclick="handlePetaTap(event)">
+        ${PETA_PINS.map(p=>`<div class="peta-pin" style="left:${p.xPct}%;top:${p.yPct}%;" title="${p.label}" onclick="event.stopPropagation();selectPetaPin('${p.id}')">${petaPinEmoji(colorMap[p.label])}</div>`).join('')}
+      </div>
     </div>
     <div id="petaSelWrap"></div>
   `;
+}
+function petaZoomBy(delta){
+  const box = document.getElementById('petaScrollbox');
+  const prevScrollX = box?box.scrollLeft:0, prevScrollY = box?box.scrollTop:0;
+  const prevZoom = petaZoom;
+  petaZoom = Math.max(100, Math.min(600, petaZoom + delta));
+  renderPeta();
+  const newBox = document.getElementById('petaScrollbox');
+  if(newBox && prevZoom>0){
+    const ratio = petaZoom/prevZoom;
+    newBox.scrollLeft = prevScrollX*ratio;
+    newBox.scrollTop = prevScrollY*ratio;
+  }
 }
 function handlePetaUpload(ev){
   const file = ev.target.files[0]; if(!file) return;
@@ -1034,36 +1279,121 @@ function handlePetaUpload(ev){
   reader.onerror = ()=>toast('Gagal membaca file');
   reader.readAsDataURL(file);
 }
+let _pendingPetaTap = null;
+const KODE_DIVISI_LIST = ['TS','BS','BU','TU'];
 function handlePetaTap(ev){
   const rect = ev.target.getBoundingClientRect();
   const xPct = ((ev.clientX - rect.left) / rect.width * 100).toFixed(2);
   const yPct = ((ev.clientY - rect.top) / rect.height * 100).toFixed(2);
-  const label = prompt('Nama lokasi/blok di titik ini?');
-  if(!label || !label.trim()) return;
-  const pin = {id:uid(), xPct, yPct, label:label.trim()};
+  _pendingPetaTap = {xPct, yPct};
+  openPetakLabelSheet();
+}
+function openPetakLabelSheet(){
+  const recent = BLOK_LIST.slice(-10).reverse();
+  document.getElementById('modalHost').innerHTML = `
+    <div class="sheet-scrim show" onclick="if(event.target===this){_pendingPetaTap=null;closeModal();}">
+      <div class="sheet">
+        <div class="sheet-title-row"><h3>Nomor Petak/Blok</h3><button class="sheet-close" onclick="_pendingPetaTap=null;closeModal()">${icon('close',18)}</button></div>
+        <div class="grid2">
+          <div><label class="flabel">Nomor Blok</label><input type="text" inputmode="numeric" id="petakBlokInput" placeholder="mis. 11" autofocus></div>
+          <div><label class="flabel">Kode Divisi</label><select id="petakKodeInput">${KODE_DIVISI_LIST.map(k=>`<option value="${k}">${k}</option>`).join('')}</select></div>
+        </div>
+        <label class="flabel">Nomor Petak</label>
+        <input type="text" inputmode="numeric" id="petakNomorInput" placeholder="mis. 20">
+        ${recent.length ? `<label class="flabel" style="margin-top:12px;">Baru dipakai</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+          ${recent.map(b=>`<button type="button" class="btn-sm" onclick="fillPetakFromRecent('${b.label.replace(/'/g,"\\'")}')">${b.label}</button>`).join('')}
+        </div>` : ''}
+        <button class="btn-filled" style="margin-top:14px;" onclick="confirmPetaTapLabel()">Simpan Titik</button>
+      </div>
+    </div>`;
+}
+function fillPetakFromRecent(label){
+  const parts = label.trim().split(/\s+/);
+  if(parts.length>=3){
+    document.getElementById('petakBlokInput').value = parts[0];
+    document.getElementById('petakKodeInput').value = KODE_DIVISI_LIST.includes(parts[1]) ? parts[1] : KODE_DIVISI_LIST[0];
+    document.getElementById('petakNomorInput').value = parts.slice(2).join(' ');
+  }
+}
+function confirmPetaTapLabel(){
+  const blok = document.getElementById('petakBlokInput').value.trim();
+  const kode = document.getElementById('petakKodeInput').value;
+  const petak = document.getElementById('petakNomorInput').value.trim();
+  if(!blok || !petak){ toast('Isi dulu nomor blok dan petaknya'); return; }
+  if(!_pendingPetaTap) return;
+  const val = blok+' '+kode+' '+petak;
+  const pin = {id:uid(), xPct:_pendingPetaTap.xPct, yPct:_pendingPetaTap.yPct, label:val};
   PETA_PINS.push(pin); savePetaPins();
   if(!BLOK_LIST.some(b=>b.label===pin.label)){ BLOK_LIST.push({id:uid(), label:pin.label, source:'peta'}); saveBlok(); refreshBlokDatalist(); }
-  toast('Titik lokasi ditambahkan'); renderPeta();
+  _pendingPetaTap = null;
+  closeModal();
+  toast('Titik lokasi ditambahkan');
+  renderPeta();
 }
 function selectPetaPin(id){
   const p = PETA_PINS.find(x=>x.id===id); if(!p) return;
+  let infoHtml = '';
+  if(petaSelectedDate !== todayIso()){
+    const matches = ENTRIES.filter(e=>e.date===petaSelectedDate && e.ownerType==='saya' &&
+      (e.lokasiMuat===p.label || e.lokasiBongkar===p.label));
+    if(matches.length){
+      infoHtml = '<div class="peta-selected" style="margin-top:6px;">' + matches.map(e=>{
+        const isBibit = e.jenisKategori==='Muat Tebu' && e.muatTipe==='Bibit';
+        const peran = isBibit ? (e.lokasiBongkar===p.label ? 'Lokasi Bongkar' : 'Lokasi Muat') : 'Lokasi';
+        return `${btLabel(e.btId)} · ${e.jenisKategori}${isBibit?' - Bibit':''} · ${peran}`;
+      }).join('<br>') + '</div>';
+    } else {
+      infoHtml = '<div class="peta-selected" style="margin-top:6px;">Tidak dipakai di tanggal ini.</div>';
+    }
+  }
   document.getElementById('petaSelWrap').innerHTML = `
-    <div class="peta-selected">📍 ${p.label}
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn-sm primary" onclick="applyPetaPinToRute('${p.id}')">Isi ke Rute Hari Ini</button>
-        <button class="btn-sm" onclick="removePetaPin('${p.id}')" style="color:var(--danger);">Hapus Titik</button>
-      </div>
+    <div class="peta-selected">📍 ${p.label}</div>
+    ${infoHtml}
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn-sm primary" onclick="applyPetaPinToRute('${p.id}')">Isi ke Lokasi Hari Ini</button>
+      <button class="btn-sm" onclick="removePetaPin('${p.id}')" style="color:var(--danger);">Hapus Titik</button>
     </div>`;
 }
 function applyPetaPinToRute(id){
   const p = PETA_PINS.find(x=>x.id===id); if(!p) return;
   showScreen('hari');
-  setTimeout(()=>quickSaveField('jenisKet', p.label), 30);
-  toast('Rute diisi dari peta');
+  setTimeout(()=>{
+    const e = window._todayEntry;
+    if(!LOKASI_RUTE_KATEGORI.includes(e.jenisKategori)){
+      toast('Ganti Jenis Layanan ke Antar/Jemput Tenaga, Muat Tebu, atau Drone dulu');
+      return;
+    }
+    if(e.jenisKategori==='Muat Tebu' && e.muatTipe==='Bibit'){
+      document.getElementById('modalHost').innerHTML = `
+        <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
+          <div class="sheet">
+            <div class="sheet-title-row"><h3>Isi ke kolom mana?</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
+            <div class="dsub">Lokasi "${p.label}" mau diisi ke kolom mana?</div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn-filled" style="flex:1;" onclick="closeModal();applyPetaPinToField('lokasiMuat','${p.label.replace(/'/g,"\\'")}')">🟢 Lokasi Muat</button>
+              <button class="btn-filled" style="flex:1;background:var(--danger);" onclick="closeModal();applyPetaPinToField('lokasiBongkar','${p.label.replace(/'/g,"\\'")}')">🔴 Lokasi Bongkar</button>
+            </div>
+          </div>
+        </div>`;
+      return;
+    }
+    applyPetaPinToField('lokasiMuat', p.label);
+  }, 30);
+}
+function applyPetaPinToField(field, label){
+  const e = window._todayEntry;
+  const doFill = ()=>{ quickSaveField(field, label); toast('Lokasi diisi: '+label); };
+  if(e[field] && e[field]!==label){
+    showConfirm(`Ganti lokasi dari "${e[field]}" ke "${label}"?`, doFill);
+  } else {
+    doFill();
+  }
 }
 function removePetaPin(id){
-  if(!confirm('Hapus titik lokasi ini dari peta?')) return;
-  PETA_PINS = PETA_PINS.filter(x=>x.id!==id); savePetaPins(); toast('Titik dihapus'); renderPeta();
+  showConfirm('Hapus titik lokasi ini dari peta?', function(){
+    PETA_PINS = PETA_PINS.filter(x=>x.id!==id); savePetaPins(); toast('Titik dihapus'); renderPeta();
+  });
 }
 
 /* ============ SERVIS ============ */
@@ -1299,15 +1629,16 @@ function openExportSheet(fromProgram){
 }
 function jenisDetailText(e){
   const kat = e.jenisKategori || '-';
+  const rute = e.lokasiMuat || '-';
   switch(kat){
     case 'Antar/Jemput Tenaga':
-      return kat+' - '+(e.antarTipe||'-')+' - '+(e.antarKegiatan||'-');
+      return kat+' - '+(e.antarTipe||'-')+' - '+(e.antarKegiatan||'-')+' - '+rute;
     case 'Muat Tebu':
-      if(e.muatTipe==='Produksi') return kat+' - Produksi - '+(e.tonaseKg||'-')+' kg';
-      if(e.muatTipe==='Bibit') return kat+' - Bibit - '+(e.lokasiMuat||'-')+' -> '+(e.lokasiBongkar||'-');
+      if(e.muatTipe==='Produksi') return kat+' - Produksi - '+rute;
+      if(e.muatTipe==='Bibit') return kat+' - Bibit - '+(e.lokasiMuat||'-')+' + '+(e.lokasiBongkar||'-');
       return kat+' - -';
     case 'Drone':
-      return kat+' - '+(e.droneJenis||'-');
+      return kat+' - '+(e.droneJenis||'-')+' - '+rute;
     case 'Operator':
       return kat+' - '+(e.operatorShift||'-');
     case 'Lainnya':
@@ -1514,20 +1845,26 @@ function addBtOrPartner(){
   saveBt(); savePartners(); renderBtPartnerSheet(); toast('Ditambahkan');
 }
 function renameBt(id){
-  const b = BT_CODES.find(x=>x.id===id); const val = prompt('Ubah nama kode BT', b.label);
-  if(val && val.trim()){ b.label = val.trim(); saveBt(); renderBtPartnerSheet(); renderHari(); toast('No Unit diperbarui'); }
+  const b = BT_CODES.find(x=>x.id===id);
+  showPrompt('Ubah nama kode BT', b.label, function(val){
+    if(val && val.trim()){ b.label = val.trim(); saveBt(); renderBtPartnerSheet(); renderHari(); toast('No Unit diperbarui'); }
+  });
 }
 function removeBt(id){
-  if(!confirm('Hapus kode BT ini?')) return;
-  BT_CODES = BT_CODES.filter(x=>x.id!==id); saveBt(); renderBtPartnerSheet(); toast('No Unit dihapus');
+  showConfirm('Hapus kode BT ini?', function(){
+    BT_CODES = BT_CODES.filter(x=>x.id!==id); saveBt(); renderBtPartnerSheet(); toast('No Unit dihapus');
+  });
 }
 function renamePartner(id){
-  const p = PARTNERS.find(x=>x.id===id); const val = prompt('Ubah nama partner', p.name);
-  if(val && val.trim()){ p.name = val.trim(); savePartners(); renderBtPartnerSheet(); toast('Sopir diperbarui'); }
+  const p = PARTNERS.find(x=>x.id===id);
+  showPrompt('Ubah nama partner', p.name, function(val){
+    if(val && val.trim()){ p.name = val.trim(); savePartners(); renderBtPartnerSheet(); toast('Sopir diperbarui'); }
+  });
 }
 function removePartner(id){
-  if(!confirm('Hapus partner ini?')) return;
-  PARTNERS = PARTNERS.filter(x=>x.id!==id); savePartners(); renderBtPartnerSheet(); toast('Sopir dihapus');
+  showConfirm('Hapus partner ini?', function(){
+    PARTNERS = PARTNERS.filter(x=>x.id!==id); savePartners(); renderBtPartnerSheet(); toast('Sopir dihapus');
+  });
 }
 
 /* ============ KELOLA JENIS LAYANAN ============ */
@@ -1567,13 +1904,15 @@ function addJenisSubItem(){
 }
 function removeKegiatanAntarItem(i){
   if(KEGIATAN_ANTAR_LIST[i].locked) return;
-  if(!confirm('Hapus item ini?')) return;
-  KEGIATAN_ANTAR_LIST.splice(i,1); saveKegiatanAntar(); renderJenisSheet(); toast('Dihapus');
+  showConfirm('Hapus item ini?', function(){
+    KEGIATAN_ANTAR_LIST.splice(i,1); saveKegiatanAntar(); renderJenisSheet(); toast('Dihapus');
+  });
 }
 function removeDroneJenisItem(i){
   if(DRONE_JENIS_LIST[i].locked) return;
-  if(!confirm('Hapus item ini?')) return;
-  DRONE_JENIS_LIST.splice(i,1); saveDroneJenis(); renderJenisSheet(); toast('Dihapus');
+  showConfirm('Hapus item ini?', function(){
+    DRONE_JENIS_LIST.splice(i,1); saveDroneJenis(); renderJenisSheet(); toast('Dihapus');
+  });
 }
 
 /* ============ KELOLA BLOK/PETAK (RUTE) ============ */
