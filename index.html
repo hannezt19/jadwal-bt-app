@@ -260,6 +260,7 @@
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
 <script>
   // Fallback: kalau file vendor lokal gagal dimuat (mis. tidak ikut ter-upload), ambil dari CDN
   if (!window.jspdf) {
@@ -1246,7 +1247,7 @@ function petaZoomBy(delta){
   const box = document.getElementById('petaScrollbox');
   const prevScrollX = box?box.scrollLeft:0, prevScrollY = box?box.scrollTop:0;
   const prevZoom = petaZoom;
-  petaZoom = Math.max(100, Math.min(600, petaZoom + delta));
+  petaZoom = Math.max(100, Math.min(800, petaZoom + delta));
   renderPeta();
   const newBox = document.getElementById('petaScrollbox');
   if(newBox && prevZoom>0){
@@ -1259,22 +1260,15 @@ function handlePetaUpload(ev){
   const file = ev.target.files[0]; if(!file) return;
   const reader = new FileReader();
   reader.onload = ()=>{
-    const img = new Image();
-    img.onload = ()=>{
-      // kompres/perkecil dulu supaya hemat penyimpanan
-      const maxW = 1400;
-      const scale = Math.min(1, maxW/img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width*scale; canvas.height = img.height*scale;
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      PETA_IMAGE = canvas.toDataURL('image/jpeg', 0.82);
+    try{
+      PETA_IMAGE = reader.result; // simpan apa adanya, tanpa resize/kompres
       savePetaImage();
       PETA_PINS = []; savePetaPins();
-      toast('Gambar peta disimpan');
+      toast('Gambar peta disimpan (kualitas asli)');
       renderPeta();
-    };
-    img.onerror = ()=>toast('Gagal membaca gambar');
-    img.src = reader.result;
+    }catch(err){
+      toast('Gagal simpan: ukuran gambar terlalu besar untuk penyimpanan HP. Coba foto ulang dengan resolusi lebih kecil.');
+    }
   };
   reader.onerror = ()=>toast('Gagal membaca file');
   reader.readAsDataURL(file);
@@ -1563,7 +1557,9 @@ function renderRekap(){
     </div>
     <div class="card" style="${overdue?'border-color:var(--danger);':nearing?'border-color:var(--primary);':''}">
       <div class="field-label">Progres Menuju Servis Berkala (${intervalHm} jam HM)</div>
-      ${svc.baseHm===null ? `<div class="field-sub" style="margin-top:6px;">Belum ada catatan servis untuk ${btLabel(mainBt)}. Tambahkan servis terakhir agar progres bisa dihitung.</div>` : `
+      ${svc.baseHm===null ? `<div class="field-sub" style="margin-top:6px;">Belum ada catatan servis untuk ${btLabel(mainBt)}. Tambahkan servis terakhir agar progres bisa dihitung.</div>` : svc.sisa===null ? `
+        <div class="field-sub" style="margin-top:6px;">Servis terakhir tercatat di HM ${svc.baseHm} (${fmtLabel(svc.last.date)}), tapi belum ada data HM harian untuk ${btLabel(mainBt)}. Isi HM Awal/Akhir di Hari Ini agar progres bisa dihitung.</div>
+      ` : `
         <div style="background:var(--surface-container-high);border-radius:100px;height:10px;margin:10px 0 6px;overflow:hidden;">
           <div style="height:100%;border-radius:100px;width:${pct}%;background:${overdue?'var(--danger)':'var(--primary)'};"></div>
         </div>
@@ -1622,7 +1618,7 @@ function openExportSheet(fromProgram){
         ${EXPORT_COLS.map(c=>`<div class="chk-row"><input type="checkbox" id="exp-${c.key}" ${c.checked?'checked':''}><label for="exp-${c.key}">${c.label}</label></div>`).join('')}
         <div class="export-fmt">
           <button class="fmt-btn pdf" onclick="doExport('pdf')">📄 PDF</button>
-          <button class="fmt-btn csv" onclick="doExport('csv')">📊 Excel (CSV)</button>
+          <button class="fmt-btn csv" onclick="doExport('xlsx')">📊 Excel (.xlsx)</button>
         </div>
       </div>
     </div>`;
@@ -1693,25 +1689,29 @@ function isNativeApp(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
 async function saveOrShareBlob(blob, filename, mimeType){
-  // 0) Di dalam APK: tulis langsung ke storage lewat Capacitor Filesystem (paling andal, tidak tergantung pilihan user)
-  if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
-    try{
-      const { Filesystem, Directory } = window.Capacitor.Plugins;
-      const base64 = await blobToBase64(blob);
-      const written = await Filesystem.writeFile({
-        path: filename,
-        data: base64,
-        directory: Directory.Documents,
-        recursive: true
-      });
+  // 0) Di dalam APK: tulis langsung ke folder Download/hannezt19 lewat Capacitor Filesystem
+  if(isNativeApp()){
+    if(!(window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem)){
+      toast('Plugin Filesystem tidak terpasang di APK ini. Build ulang APK.');
+    } else {
       try{
-        if(window.Capacitor.Plugins.Share){
-          await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Buka atau bagikan file' });
-        }
-      }catch(shareErr){ /* file tetap tersimpan meski dialog share dibatalkan */ }
-      return 'saved-native';
-    }catch(err){
-      // kalau gagal, lanjut ke jalur fallback di bawah
+        const { Filesystem, Directory } = window.Capacitor.Plugins;
+        const base64 = await blobToBase64(blob);
+        const written = await Filesystem.writeFile({
+          path: 'Download/hannezt19/'+filename,
+          data: base64,
+          directory: Directory.ExternalStorage,
+          recursive: true
+        });
+        try{
+          if(window.Capacitor.Plugins.Share){
+            await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Buka atau bagikan file' });
+          }
+        }catch(shareErr){ /* file tetap tersimpan meski dialog share dibatalkan */ }
+        return 'saved-native';
+      }catch(err){
+        toast('Gagal simpan native: '+(err && err.message ? err.message : String(err)));
+      }
     }
   }
   // 1) Coba Web Share API dengan file (paling andal di PWA mobile termasuk iOS)
@@ -1743,16 +1743,31 @@ async function doExport(fmt){
   const {cols, rows} = getExportRows();
   if(rows.length===0){ toast('Tidak ada data yang cocok dengan filter'); return; }
   const headers = cols.map(c=>c.label);
-  if(fmt==='csv'){
+  if(fmt==='xlsx'){
     try{
-      let csv = headers.join(';')+'\n';
-      rows.forEach(r=>{ csv += headers.map(h=>'"'+String(r[h]).replace(/"/g,'""')+'"').join(';')+'\n'; });
-      const blob = new Blob(["\ufeff"+csv], {type:'text/csv;charset=utf-8;'});
-      const result = await saveOrShareBlob(blob, 'rekap-'+rekapMonth+'.csv', 'text/csv');
-      toast(result==='saved-native' ? 'CSV tersimpan di Documents' : (result==='shared' ? 'CSV siap dibagikan' : 'Excel (CSV) diunduh'));
+      const aoa = [headers, ...rows.map(r=>headers.map(h=>r[h]))];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
+      const fileName = 'rekap-'+rekapMonth+'.xlsx';
+      if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
+        const base64 = XLSX.write(wb, {type:'base64', bookType:'xlsx'});
+        const { Filesystem, Directory } = window.Capacitor.Plugins;
+        try{
+          const written = await Filesystem.writeFile({ path:'Download/hannezt19/'+fileName, data:base64, directory:Directory.ExternalStorage, recursive:true });
+          try{ if(window.Capacitor.Plugins.Share) await window.Capacitor.Plugins.Share.share({title:fileName, url:written.uri, dialogTitle:'Buka atau bagikan file'}); }catch(e){}
+          toast('Excel (.xlsx) tersimpan di Download/hannezt19'); closeModal(); return;
+        }catch(err){
+          toast('Gagal simpan native: '+(err && err.message ? err.message : String(err)));
+        }
+      }
+      const wbout = XLSX.write(wb, {type:'array', bookType:'xlsx'});
+      const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const result = await saveOrShareBlob(blob, fileName, blob.type);
+      toast(result==='shared' ? 'Excel (.xlsx) siap dibagikan' : 'Excel (.xlsx) diunduh');
       closeModal();
     }catch(err){
-      toast('Gagal membuat CSV: '+(err && err.message ? err.message : 'error tidak dikenal'));
+      toast('Gagal membuat Excel: '+(err && err.message ? err.message : 'error tidak dikenal'));
     }
     return;
   }
@@ -1787,7 +1802,7 @@ async function doExport(fmt){
     });
     const pdfBlob = doc.output('blob');
     const result = await saveOrShareBlob(pdfBlob, 'rekap-'+rekapMonth+'.pdf', 'application/pdf');
-    toast(result==='saved-native' ? 'PDF tersimpan di Documents' : (result==='shared' ? 'PDF siap dibagikan' : 'PDF diunduh'));
+    toast(result==='saved-native' ? 'PDF tersimpan di Download/hannezt19' : (result==='shared' ? 'PDF siap dibagikan' : 'PDF diunduh'));
     closeModal();
   }catch(err){ toast('Gagal membuat PDF: '+(err && err.message ? err.message : 'error tidak dikenal')); }
 }
