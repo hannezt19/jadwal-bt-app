@@ -1727,7 +1727,6 @@ function openExportSheet(fromProgram){
         <div class="export-fmt">
           <button class="fmt-btn pdf" onclick="doExport('pdf')">📄 PDF</button>
           <button class="fmt-btn csv" onclick="doExport('xlsx')">📊 Excel (.xlsx)</button>
-          <button class="fmt-btn" style="border-color:#888;color:#888" onclick="testNativeSave()">🧪 Tes Simpan (debug)</button>
         </div>
       </div>
     </div>`;
@@ -1797,53 +1796,14 @@ function blobToBase64(blob){
 function isNativeApp(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
-async function testNativeSave(){
-  try{
-    if(!(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem)){
-      alert('Bukan app native / plugin Filesystem tidak terdeteksi.');
-      return;
-    }
-    const { Filesystem } = window.Capacitor.Plugins;
-    alert('Mulai tes tulis file kecil...');
-    const written = await Filesystem.writeFile({
-      path: 'tes-kecil.txt',
-      data: 'halo dunia',
-      directory: 'CACHE',
-      encoding: 'utf8',
-      recursive: true
-    });
-    alert('BERHASIL! File tersimpan di: ' + written.uri);
-  }catch(err){
-    alert('GAGAL: ' + (err && err.message ? err.message : JSON.stringify(err)));
-  }
-}
 async function saveOrShareBlob(blob, filename, mimeType){
-  if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
-    try{
-      const { Filesystem } = window.Capacitor.Plugins;
-      const base64 = await blobToBase64(blob);
-      const written = await Filesystem.writeFile({
-        path: filename,
-        data: base64,
-        directory: 'CACHE',
-        recursive: true
-      });
-      if(window.Capacitor.Plugins.Share){
-        await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Simpan atau bagikan file' });
-        return 'shared';
-      }
-      return 'saved-native';
-    }catch(err){
-      alert('Gagal simpan native: ' + (err && err.message ? err.message : JSON.stringify(err)));
-    }
-  }
   try{
     const file = new File([blob], filename, {type: mimeType});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       await navigator.share({files:[file], title: filename});
       return 'shared';
     }
-  }catch(err){ /* lanjut */ }
+  }catch(err){ /* lanjut ke fallback */ }
   try{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
