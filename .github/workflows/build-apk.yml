@@ -27,14 +27,13 @@ jobs:
         run: npm init -y
 
       - name: Pasang Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem @capacitor/share
+        run: npm install @capacitor/core@latest-7 @capacitor/cli@latest-7 @capacitor/android@latest-7 @capacitor/filesystem@latest-7 @capacitor/share@latest-7
 
       - name: Siapkan library Excel (SheetJS)
         run: |
           npm install xlsx --no-save
           mkdir -p vendor
           cp node_modules/xlsx/dist/xlsx.full.min.js vendor/xlsx.full.min.js
-
       - name: Susun folder www/ dari file web
         run: |
           mkdir -p www
@@ -44,7 +43,6 @@ jobs:
           cp -r icons www/ || true
           cp -r fonts www/ || true
           cp -r vendor www/ || true
-
       - name: Init Capacitor project
         run: npx cap init "Jadwal BT" "com.hannezt19.jadwalbt" --web-dir=www
 
@@ -74,7 +72,6 @@ jobs:
           </adaptive-icon>
           EOF
           cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-
       - name: Sync web assets
         run: npx cap sync android
 
@@ -85,11 +82,9 @@ jobs:
             sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />#' "$MANIFEST"
           fi
           sed -i 's#<application#<application android:requestLegacyExternalStorage="true"#' "$MANIFEST"
-
       - name: Perbaiki konflik versi Kotlin
         run: |
           cat >> android/build.gradle << 'EOF'
-
           allprojects {
               configurations.all {
                   resolutionStrategy {
@@ -101,13 +96,11 @@ jobs:
               }
           }
           EOF
-
       - name: Build APK (debug, unsigned)
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
