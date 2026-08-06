@@ -34,6 +34,11 @@ jobs:
           npm install xlsx --no-save
           mkdir -p vendor
           cp node_modules/xlsx/dist/xlsx.full.min.js vendor/xlsx.full.min.js
+      - name: Siapkan library tabel PDF (jsPDF-AutoTable)
+        run: |
+          npm install jspdf-autotable --no-save
+          mkdir -p vendor
+          cp node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js vendor/jspdf.plugin.autotable.min.js
       - name: Susun folder www/ dari file web
         run: |
           mkdir -p www
