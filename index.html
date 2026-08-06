@@ -1813,7 +1813,7 @@ async function saveOrShareBlob(blob, filename, mimeType){
       }
       return 'saved-native';
     }catch(err){
-      toast('Gagal simpan native: ' + (err && err.message ? err.message : JSON.stringify(err)));
+      alert('Gagal simpan native: ' + (err && err.message ? err.message : JSON.stringify(err)));
     }
   }
   try{
