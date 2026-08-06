@@ -1797,17 +1797,25 @@ function isNativeApp(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
 async function saveOrShareBlob(blob, filename, mimeType){
-  try{
-    const file = new File([blob], filename, {type: mimeType});
-    const canShareFiles = !!(navigator.canShare && navigator.canShare({files:[file]}));
-    alert('Cek Web Share: canShare files = ' + canShareFiles + ' | navigator.share ada = ' + !!navigator.share);
-    if(canShareFiles){
-      await navigator.share({files:[file], title: filename});
-      alert('navigator.share selesai tanpa error');
-      return 'shared';
+  if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
+    try{
+      const { Filesystem } = window.Capacitor.Plugins;
+      const base64 = await blobToBase64(blob);
+      const written = await Filesystem.writeFile({
+        path: filename,
+        data: base64,
+        directory: 'CACHE',
+        recursive: true
+      });
+      if(window.Capacitor.Plugins.Share){
+        await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Simpan atau bagikan file' });
+        return 'shared';
+      }
+      return 'saved-native';
+    }catch(err){
+      alert('Gagal simpan native: ' + (err && err.message ? err.message : JSON.stringify(err)));
+      return 'failed';
     }
-  }catch(err){
-    alert('navigator.share GAGAL: ' + (err && err.message ? err.message : JSON.stringify(err)));
   }
   try{
     const url = URL.createObjectURL(blob);
@@ -1815,10 +1823,8 @@ async function saveOrShareBlob(blob, filename, mimeType){
     a.href = url; a.download = filename; a.rel = 'noopener';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
-    alert('Jalur unduh biasa (a.download) sudah dicoba, cek folder Download.');
     return 'downloaded';
   }catch(err){
-    alert('Jalur unduh biasa GAGAL: ' + (err && err.message ? err.message : JSON.stringify(err)));
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     return 'opened';
