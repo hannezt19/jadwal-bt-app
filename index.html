@@ -1799,19 +1799,26 @@ function isNativeApp(){
 async function saveOrShareBlob(blob, filename, mimeType){
   try{
     const file = new File([blob], filename, {type: mimeType});
-    if(navigator.canShare && navigator.canShare({files:[file]})){
+    const canShareFiles = !!(navigator.canShare && navigator.canShare({files:[file]}));
+    alert('Cek Web Share: canShare files = ' + canShareFiles + ' | navigator.share ada = ' + !!navigator.share);
+    if(canShareFiles){
       await navigator.share({files:[file], title: filename});
+      alert('navigator.share selesai tanpa error');
       return 'shared';
     }
-  }catch(err){ /* lanjut ke fallback */ }
+  }catch(err){
+    alert('navigator.share GAGAL: ' + (err && err.message ? err.message : JSON.stringify(err)));
+  }
   try{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = filename; a.rel = 'noopener';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    alert('Jalur unduh biasa (a.download) sudah dicoba, cek folder Download.');
     return 'downloaded';
   }catch(err){
+    alert('Jalur unduh biasa GAGAL: ' + (err && err.message ? err.message : JSON.stringify(err)));
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     return 'opened';
