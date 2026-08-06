@@ -269,6 +269,7 @@
     document.head.appendChild(_jspdfFallback);
   }
 </script>
+<script src="vendor/jspdf.plugin.autotable.min.js"></script>
 <script src="vendor/xlsx.full.min.js"></script>
 <style>
   .peta-upload{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-container);border:1.5px dashed var(--outline);border-radius:var(--radius-md);padding:14px;font-size:13px;font-weight:700;color:var(--on-surface-variant);cursor:pointer;margin-bottom:12px;}
@@ -1713,6 +1714,10 @@ function allSopirNames(){
   ENTRIES.forEach(e=>{ names.add(resolveOwnerName(e)); });
   return Array.from(names);
 }
+function updateExportModeUI(){
+  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
+  document.getElementById('exp-customRange').style.display = mode==='custom' ? 'block' : 'none';
+}
 function openExportSheet(fromProgram){
   const names = allSopirNames();
   document.getElementById('modalHost').innerHTML = `
@@ -1720,8 +1725,16 @@ function openExportSheet(fromProgram){
       <div class="sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-title-row"><h3>Export / Cetak Laporan</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="chk-row"><input type="checkbox" id="exp-allperiod" ${fromProgram?'checked':''} onchange="document.getElementById('exp-monthNote').style.display=this.checked?'none':'block'"><label for="exp-allperiod">Semua periode (abaikan filter bulan)</label></div>
-        <div class="dsub" id="exp-monthNote" style="${fromProgram?'display:none;':''}">Bulan ${MONTH_NAMES_FULL[parseInt(rekapMonth.split('-')[1])-1]} ${rekapMonth.split('-')[0]} · pilih kolom yang ingin disertakan</div>
+        <div class="dsub">Periode</div>
+        <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-month" value="month" ${fromProgram?'':'checked'} onchange="updateExportModeUI()"><label for="exp-mode-month">Bulan ${MONTH_NAMES_FULL[parseInt(rekapMonth.split('-')[1])-1]} ${rekapMonth.split('-')[0]}</label></div>
+        <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-all" value="all" ${fromProgram?'checked':''} onchange="updateExportModeUI()"><label for="exp-mode-all">Semua periode</label></div>
+        <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-custom" value="custom" onchange="updateExportModeUI()"><label for="exp-mode-custom">Rentang tanggal custom</label></div>
+        <div id="exp-customRange" style="display:none;margin:6px 0 12px;gap:8px;align-items:center;">
+          <div class="dsub" style="margin-bottom:4px;">Dari tanggal</div>
+          <input type="date" id="exp-dateFrom" style="width:auto;margin-bottom:8px;">
+          <div class="dsub" style="margin-bottom:4px;">Sampai tanggal</div>
+          <input type="date" id="exp-dateTo" style="width:auto;">
+        </div>
         <div class="dsub">Filter Sopir (kosongkan semua = semua sopir)</div>
         <div style="max-height:140px;overflow:auto;margin-bottom:10px;">
           ${names.map(n=>`<div class="chk-row"><input type="checkbox" class="exp-sopir-chk" value="${escapeHtml(n)}"><label>${escapeHtml(n)}</label></div>`).join('')}
@@ -1766,9 +1779,18 @@ function sanitizePdfText(s){
 }
 function getExportRows(){
   const cols = EXPORT_COLS.filter(c=>document.getElementById('exp-'+c.key).checked);
-  const allPeriod = document.getElementById('exp-allperiod').checked;
+  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
   const selectedSopir = Array.from(document.querySelectorAll('.exp-sopir-chk:checked')).map(el=>el.value);
-  let filtered = allPeriod ? ENTRIES.slice() : ENTRIES.filter(e=>monthKey(e.date)===rekapMonth);
+  let filtered;
+  if(mode==='all'){
+    filtered = ENTRIES.slice();
+  } else if(mode==='custom'){
+    const from = document.getElementById('exp-dateFrom').value;
+    const to = document.getElementById('exp-dateTo').value;
+    filtered = ENTRIES.filter(e => (!from || e.date >= from) && (!to || e.date <= to));
+  } else {
+    filtered = ENTRIES.filter(e=>monthKey(e.date)===rekapMonth);
+  }
   if(selectedSopir.length>0){
     filtered = filtered.filter(e=>selectedSopir.includes(resolveOwnerName(e)));
   }
@@ -1838,6 +1860,16 @@ async function saveOrShareBlob(blob, filename, mimeType){
     return 'opened';
   }
 }
+function exportFileLabel(){
+  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
+  if(mode==='all') return 'semua-periode';
+  if(mode==='custom'){
+    const from = document.getElementById('exp-dateFrom').value || 'awal';
+    const to = document.getElementById('exp-dateTo').value || 'akhir';
+    return from+'_sd_'+to;
+  }
+  return rekapMonth;
+}
 async function doExport(fmt){
   try {
     const {cols, rows} = getExportRows();
@@ -1855,7 +1887,7 @@ async function doExport(fmt){
       XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
       const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
       const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      const result = await saveOrShareBlob(blob, 'rekap-'+rekapMonth+'.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      const result = await saveOrShareBlob(blob, 'rekap-'+exportFileLabel()+'.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       toast(result==='saved-native' ? 'Excel tersimpan di Documents' : (result==='shared' ? 'Excel siap dibagikan' : 'Excel (.xlsx) diunduh'));
       closeModal();
       return;
@@ -1865,31 +1897,39 @@ async function doExport(fmt){
       return;
     }
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: headers.length>5 ? 'landscape' : 'portrait' });
     doc.setFont('helvetica', 'normal');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const marginX = 14;
-    const usableWidth = pageWidth - marginX*2;
+    const marginX = 10;
     doc.setFontSize(14);
-    doc.text(sanitizePdfText('Laporan Bulanan - '+rekapMonth), marginX, 16);
-    let y = 26;
-    rows.forEach((r,i)=>{
-      doc.setFontSize(9);
-      doc.setFont('helvetica','bold');
-      const headLine = sanitizePdfText((r[headers[0]]||'')+'  |  '+(headers[1]?(headers[1]+': '+r[headers[1]]):''));
-      const headSplit = doc.splitTextToSize(headLine, usableWidth);
-      doc.text(headSplit, marginX, y); y += headSplit.length*4.6;
-      doc.setFont('helvetica','normal');
-      headers.slice(2).forEach(h=>{
-        const line = sanitizePdfText(h+': '+r[h]);
-        const split = doc.splitTextToSize(line, usableWidth);
-        doc.text(split, marginX, y); y += split.length*4.6;
+    doc.text(sanitizePdfText('Laporan - '+exportFileLabel()), marginX, 14);
+    if(typeof doc.autoTable === 'function'){
+      doc.autoTable({
+        head: [headers.map(h=>sanitizePdfText(h))],
+        body: rows.map(r=>headers.map(h=>sanitizePdfText(String(r[h]==null?'-':r[h])))),
+        startY: 20,
+        margin: {left: marginX, right: marginX},
+        styles: {fontSize: 8, cellPadding: 2, font: 'helvetica'},
+        headStyles: {fillColor: [28,35,51]},
+        theme: 'grid'
       });
-      y += 4;
-      if(y > 280){ doc.addPage(); y=16; }
-    });
+    } else {
+      // Fallback kalau library tabel gagal dimuat: susun sebagai teks bertumpuk
+      let y = 26;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const usableWidth = pageWidth - marginX*2;
+      rows.forEach(r=>{
+        doc.setFontSize(9);
+        headers.forEach(h=>{
+          const line = sanitizePdfText(h+': '+r[h]);
+          const split = doc.splitTextToSize(line, usableWidth);
+          doc.text(split, marginX, y); y += split.length*4.6;
+        });
+        y += 4;
+        if(y > 280){ doc.addPage(); y=16; }
+      });
+    }
     const pdfBlob = doc.output('blob');
-    const result = await saveOrShareBlob(pdfBlob, 'rekap-'+rekapMonth+'.pdf', 'application/pdf');
+    const result = await saveOrShareBlob(pdfBlob, 'rekap-'+exportFileLabel()+'.pdf', 'application/pdf');
     toast(result==='saved-native' ? 'PDF tersimpan di Documents' : (result==='shared' ? 'PDF siap dibagikan' : 'PDF diunduh'));
     closeModal();
   } catch(err) {
