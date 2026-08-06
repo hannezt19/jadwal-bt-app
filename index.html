@@ -1096,7 +1096,7 @@ function renderHistoryList(list){
         <div class="hrow-dot ${isSaya?'':'partner'}"></div>
         <div class="hrow-main">
           <div class="hrow-date">${escapeHtml(fmtLabel(e.date))}</div>
-          <div class="hrow-sum">${escapeHtml(btLabel(e.btId))}${e.jenisKategori?' · '+escapeHtml(jenisDetailText(e)):''} · HM ${escapeHtml(e.hmAwal||'-')}→${escapeHtml(e.hmAkhir||'-')} · Lembur ${fmtHoursNum(ot.otMin)}j · ${escapeHtml(e.ownerName||(isSaya?(USER.name||'Saya'):'Sopir'))}</div>
+          <div class="hrow-sum">${escapeHtml(btLabel(e.btId))}${e.jenisKategori?' · '+escapeHtml(jenisDetailText(e)):''} · HM ${escapeHtml(e.hmAwal||'-')}→${escapeHtml(e.hmAkhir||'-')} · Lembur ${fmtHoursNum(ot.otMin)}j · ${escapeHtml(resolveOwnerName(e))}</div>
         </div>
         <svg class="hrow-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
@@ -1239,7 +1239,7 @@ function renderBoxTruckPreview(){
   const trs = rows.map(e=>`
     <tr>
       <td>${escapeHtml(btLabel(e.btId))}</td>
-      <td>${escapeHtml(e.ownerName||'-')}</td>
+      <td>${escapeHtml(resolveOwnerName(e))}</td>
       <td>${escapeHtml(e.s1Time||'-')} ${e.s5Time?'s/d '+escapeHtml(e.s5Time):''}</td>
       <td>${escapeHtml(jenisDetailText(e))}</td>
     </tr>`).join('');
@@ -1609,7 +1609,7 @@ function hmServiceStatus(btId){
 function sopirOtSummary(monthEntries){
   const map = {};
   monthEntries.forEach(e=>{
-    const key = e.ownerName || (e.ownerType==='saya' ? (USER.name||'Saya') : 'Sopir');
+    const key = resolveOwnerName(e);
     const ot = computeOT(e).otMin/60;
     map[key] = (map[key]||0) + ot;
   });
@@ -1702,11 +1702,15 @@ const EXPORT_COLS = [
   {key:'ot', label:'Jam Lembur', checked:true},
   {key:'catatan', label:'Catatan', checked:false},
 ];
+function resolveOwnerName(e){
+  if(e.ownerType === 'saya') return USER.name || 'Saya';
+  return e.ownerName || 'Sopir';
+}
 function allSopirNames(){
   const names = new Set();
   names.add(USER.name||'Saya');
   PARTNERS.forEach(p=>names.add(p.name));
-  ENTRIES.forEach(e=>{ if(e.ownerName) names.add(e.ownerName); });
+  ENTRIES.forEach(e=>{ names.add(resolveOwnerName(e)); });
   return Array.from(names);
 }
 function openExportSheet(fromProgram){
@@ -1766,7 +1770,7 @@ function getExportRows(){
   const selectedSopir = Array.from(document.querySelectorAll('.exp-sopir-chk:checked')).map(el=>el.value);
   let filtered = allPeriod ? ENTRIES.slice() : ENTRIES.filter(e=>monthKey(e.date)===rekapMonth);
   if(selectedSopir.length>0){
-    filtered = filtered.filter(e=>selectedSopir.includes(e.ownerName));
+    filtered = filtered.filter(e=>selectedSopir.includes(resolveOwnerName(e)));
   }
   filtered.sort((a,b)=>a.date.localeCompare(b.date));
   const rows = filtered.map(e=>{
@@ -1774,7 +1778,7 @@ function getExportRows(){
     cols.forEach(c=>{
       if(c.key==='date') o[c.label]=fmtLabel(e.date);
       if(c.key==='btId') o[c.label]=btLabel(e.btId);
-      if(c.key==='sopir') o[c.label]=e.ownerName||'-';
+      if(c.key==='sopir') o[c.label]=resolveOwnerName(e);
       if(c.key==='hm') o[c.label]=(e.hmAwal||'-')+' -> '+(e.hmAkhir||'-')+' ('+hmPakai(e)+' jam)';
       if(c.key==='bbm') o[c.label]=(e.bbmLiter||0)+' L';
       if(c.key==='jenis') o[c.label]=jenisDetailText(e);
@@ -1813,7 +1817,11 @@ async function saveOrShareBlob(blob, filename, mimeType){
       }
       return 'saved-native';
     }catch(err){
-      alert('Gagal simpan native: ' + (err && err.message ? err.message : JSON.stringify(err)));
+      const msg = err && err.message ? err.message : JSON.stringify(err);
+      if(/cancel/i.test(msg)){
+        return 'canceled';
+      }
+      alert('Gagal simpan native: ' + msg);
       return 'failed';
     }
   }
