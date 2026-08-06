@@ -1799,12 +1799,12 @@ function isNativeApp(){
 async function saveOrShareBlob(blob, filename, mimeType){
   if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
     try{
-      const { Filesystem, Directory } = window.Capacitor.Plugins;
+      const { Filesystem } = window.Capacitor.Plugins;
       const base64 = await blobToBase64(blob);
       const written = await Filesystem.writeFile({
         path: filename,
         data: base64,
-        directory: Directory.Cache,
+        directory: 'CACHE',
         recursive: true
       });
       if(window.Capacitor.Plugins.Share){
