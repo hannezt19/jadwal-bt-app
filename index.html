@@ -1727,6 +1727,7 @@ function openExportSheet(fromProgram){
         <div class="export-fmt">
           <button class="fmt-btn pdf" onclick="doExport('pdf')">📄 PDF</button>
           <button class="fmt-btn csv" onclick="doExport('xlsx')">📊 Excel (.xlsx)</button>
+          <button class="fmt-btn" style="border-color:#888;color:#888" onclick="testNativeSave()">🧪 Tes Simpan (debug)</button>
         </div>
       </div>
     </div>`;
@@ -1795,6 +1796,26 @@ function blobToBase64(blob){
 }
 function isNativeApp(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+async function testNativeSave(){
+  try{
+    if(!(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem)){
+      alert('Bukan app native / plugin Filesystem tidak terdeteksi.');
+      return;
+    }
+    const { Filesystem } = window.Capacitor.Plugins;
+    alert('Mulai tes tulis file kecil...');
+    const written = await Filesystem.writeFile({
+      path: 'tes-kecil.txt',
+      data: 'halo dunia',
+      directory: 'CACHE',
+      encoding: 'utf8',
+      recursive: true
+    });
+    alert('BERHASIL! File tersimpan di: ' + written.uri);
+  }catch(err){
+    alert('GAGAL: ' + (err && err.message ? err.message : JSON.stringify(err)));
+  }
 }
 async function saveOrShareBlob(blob, filename, mimeType){
   if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
