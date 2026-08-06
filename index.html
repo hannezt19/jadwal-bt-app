@@ -1,4 +1,3 @@
-html
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -270,6 +269,7 @@ html
     document.head.appendChild(_jspdfFallback);
   }
 </script>
+<script src="vendor/xlsx.full.min.js"></script>
 <style>
   .peta-upload{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-container);border:1.5px dashed var(--outline);border-radius:var(--radius-md);padding:14px;font-size:13px;font-weight:700;color:var(--on-surface-variant);cursor:pointer;margin-bottom:12px;}
   .peta-upload input{display:none;}
@@ -1726,7 +1726,7 @@ function openExportSheet(fromProgram){
         ${EXPORT_COLS.map(c=>`<div class="chk-row"><input type="checkbox" id="exp-${c.key}" ${c.checked?'checked':''}><label for="exp-${c.key}">${c.label}</label></div>`).join('')}
         <div class="export-fmt">
           <button class="fmt-btn pdf" onclick="doExport('pdf')">📄 PDF</button>
-          <button class="fmt-btn csv" onclick="doExport('csv')">📊 Excel (CSV)</button>
+          <button class="fmt-btn csv" onclick="doExport('xlsx')">📊 Excel (.xlsx)</button>
         </div>
       </div>
     </div>`;
@@ -1804,16 +1804,17 @@ async function saveOrShareBlob(blob, filename, mimeType){
       const written = await Filesystem.writeFile({
         path: filename,
         data: base64,
-        directory: Directory.Documents,
+        directory: Directory.Cache,
         recursive: true
       });
-      try{
-        if(window.Capacitor.Plugins.Share){
-          await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Buka atau bagikan file' });
-        }
-      }catch(shareErr){ /* file tetap tersimpan */ }
+      if(window.Capacitor.Plugins.Share){
+        await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Simpan atau bagikan file' });
+        return 'shared';
+      }
       return 'saved-native';
-    }catch(err){ /* lanjut fallback */ }
+    }catch(err){
+      toast('Gagal simpan native: ' + (err && err.message ? err.message : JSON.stringify(err)));
+    }
   }
   try{
     const file = new File([blob], filename, {type: mimeType});
@@ -1840,12 +1841,20 @@ async function doExport(fmt){
     const {cols, rows} = getExportRows();
     if(rows.length===0){ toast('Tidak ada data yang cocok dengan filter'); return; }
     const headers = cols.map(c=>c.label);
-    if(fmt==='csv'){
-      let csv = headers.join(';')+'\n';
-      rows.forEach(r=>{ csv += headers.map(h=>'"'+String(r[h]).replace(/"/g,'""')+'"').join(';')+'\n'; });
-      const blob = new Blob(["\ufeff"+csv], {type:'text/csv;charset=utf-8;'});
-      const result = await saveOrShareBlob(blob, 'rekap-'+rekapMonth+'.csv', 'text/csv');
-      toast(result==='saved-native' ? 'CSV tersimpan di Documents' : (result==='shared' ? 'CSV siap dibagikan' : 'Excel (CSV) diunduh'));
+    if(fmt==='xlsx'){
+      if(!window.XLSX){
+        toast('Library Excel belum siap, coba lagi sebentar...');
+        return;
+      }
+      const sheetData = [headers, ...rows.map(r=>headers.map(h=>r[h]))];
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      ws['!cols'] = headers.map(h=>({ wch: Math.min(Math.max(h.length, 12), 40) }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
+      const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+      const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const result = await saveOrShareBlob(blob, 'rekap-'+rekapMonth+'.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      toast(result==='saved-native' ? 'Excel tersimpan di Documents' : (result==='shared' ? 'Excel siap dibagikan' : 'Excel (.xlsx) diunduh'));
       closeModal();
       return;
     }
