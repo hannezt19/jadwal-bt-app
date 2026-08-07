@@ -59,6 +59,7 @@
     width:100%;border:1.5px solid var(--outline);border-radius:14px;padding:12px;font-size:16px;min-height:48px;
     background:var(--surface-container);color:var(--on-surface);margin-bottom:12px;
   }
+  input.field-error{border-color:var(--danger)!important;background:rgba(211,47,47,.06);}
   textarea{resize:vertical;min-height:48px;}
   .grid2{display:grid;grid-template-columns:1fr;gap:8px 12px;}
   .grid2 .full{grid-column:1/-1;}
@@ -317,6 +318,26 @@ let ENTRIES = LS.get('mrg_entries', []);
   if(changed) LS.set('mrg_entries', ENTRIES);
 })();
 let SERVIS = LS.get('mrg_servis', []);
+let HM_RESETS = LS.get('mrg_hm_resets', []);
+function saveHmResets(){ LS.set('mrg_hm_resets', HM_RESETS); }
+function lastHmResetForBt(btId){
+  const list = HM_RESETS.filter(r=>r.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
+  return list[0] || null;
+}
+function maybeDetectHmReset(btId, newHmAkhirVal, entryDate){
+  if(newHmAkhirVal==='' || newHmAkhirVal==null || !btId) return;
+  const newVal = parseFloat(newHmAkhirVal);
+  if(isNaN(newVal)) return;
+  const prevMax = currentHmForBt(btId);
+  if(prevMax!==null && prevMax>50 && newVal < prevMax*0.7 && (prevMax-newVal)>100){
+    const ok = confirm('HM Akhir ('+newVal.toFixed(1)+') turun drastis dari catatan sebelumnya ('+prevMax.toFixed(1)+') untuk '+btLabel(btId)+'.\n\nApakah HM meter unit ini diganti/direset (misalnya karena rusak)?');
+    if(ok){
+      HM_RESETS.push({id: uid(), btId, date: entryDate || todayIso(), note: 'Reset otomatis terdeteksi: HM turun dari '+prevMax.toFixed(1)+' ke '+newVal.toFixed(1)});
+      saveHmResets();
+      toast('Dicatat: HM '+btLabel(btId)+' di-reset mulai '+fmtLabel(entryDate||todayIso()));
+    }
+  }
+}
 if(!USER.mainBt && BT_CODES[0]) USER.mainBt = BT_CODES[0].id;
 
 function saveUser(){ LS.set('mrg_user', USER); }
@@ -489,6 +510,18 @@ function computeOT(e){
 function hmPakai(e){ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); if(isNaN(a)||isNaN(b)) return 0; return Math.max(0, b-a); }
 
 /* ============ PERBAIKAN: validasi input ============ */
+function stripDots(v){ return v==null ? '' : String(v).replace(/\./g,''); }
+function fmtThousandsLive(v){
+  const clean = String(v||'').replace(/[^\d]/g,'');
+  if(clean==='') return '';
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function fmtHm1(v){
+  if(v===''||v==null) return '';
+  const n = parseFloat(String(v).replace(',','.'));
+  if(isNaN(n)) return '';
+  return n.toFixed(1);
+}
 function validateNumberInput(value, allowEmpty = true) {
   if (allowEmpty && value === '') return null;
   const num = parseFloat(value);
@@ -816,7 +849,7 @@ function renderJenisSubFields(e){
     case 'Muat Tebu':
       return `
         <div style="margin-top:10px;"><label class="flabel">Tipe</label><select onchange="quickSaveField('muatTipe', this.value)">${subOptionsHtml(MUAT_TIPE_OPTS, e.muatTipe)}</select></div>
-        ${e.muatTipe==='Produksi' ? `<div style="margin-top:10px;"><label class="flabel">Tonase (kg)</label><input type="text" inputmode="decimal" value="${escapeHtml(e.tonaseKg||'')}" onchange="quickSaveField('tonaseKg', this.value)"></div>
+        ${e.muatTipe==='Produksi' ? `<div style="margin-top:10px;"><label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg||''))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveField('tonaseKg', this.value)"></div>
         <div style="margin-top:10px;">${lokasiFieldHtml('fLokasiMuat','Lokasi', e.lokasiMuat)}</div>` : ''}
         ${e.muatTipe==='Bibit' ? `<div class="grid2" style="margin-top:10px;">
           ${lokasiFieldHtml('fLokasiMuat','Lokasi Muat', e.lokasiMuat)}
@@ -835,8 +868,24 @@ function renderJenisSubFields(e){
 }
 
 // ====== PERBAIKAN: quickSaveField dengan validasi ======
+function checkHmWarning(context){
+  let hmA, hmB, warnEl;
+  if(context==='qf'){
+    hmA = document.getElementById('qf-hmA'); hmB = document.getElementById('qf-hmB'); warnEl = document.getElementById('qf-hmWarning');
+  } else {
+    hmA = document.getElementById('ed-hmA-'+context); hmB = document.getElementById('ed-hmB-'+context); warnEl = document.getElementById('ed-hmWarning-'+context);
+  }
+  if(!hmA || !hmB) return;
+  const a = parseFloat(hmA.value), b = parseFloat(hmB.value);
+  const bad = !isNaN(a) && !isNaN(b) && b < a;
+  hmB.classList.toggle('field-error', bad);
+  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';
+}
 function quickSaveField(key, val) {
   const e = getTodayEntry();
+  if (['bbmLiter', 'tonaseKg'].includes(key)) {
+    val = stripDots(val);
+  }
   // Validasi
   if (['hmAwal', 'hmAkhir', 'bbmLiter', 'tonaseKg', 'otOverride'].includes(key)) {
     try {
@@ -847,6 +896,9 @@ function quickSaveField(key, val) {
       return;
     }
   }
+  if (['hmAwal', 'hmAkhir'].includes(key) && val !== '') {
+    val = parseFloat(val).toFixed(1);
+  }
   if (['s1Time', 's5Time', 'istMulai', 'istSelesai'].includes(key)) {
     try {
       val = validateTimeInput(val);
@@ -854,6 +906,9 @@ function quickSaveField(key, val) {
       toast(err.message);
       return;
     }
+  }
+  if (key === 'hmAkhir' && val !== '') {
+    maybeDetectHmReset(e.btId, val, e.date);
   }
   e[key] = val;
   // Cek apakah sudah ada di ENTRIES
@@ -914,9 +969,10 @@ function renderHari(){
     <div class="section-eyebrow">Hour Meter (HM) & BBM</div>
     <div class="card">
       <div class="grid2">
-        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal||'')}" onchange="quickSaveField('hmAwal', this.value)"></div>
-        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAkhir||'')}" onchange="quickSaveField('hmAkhir', this.value)"></div>
-        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="decimal" value="${escapeHtml(e.bbmLiter||'')}" onchange="quickSaveField('bbmLiter', this.value)"></div>
+        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal||'')}" onchange="this.value=fmtHm1(this.value);quickSaveField('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
+        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" class="${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a)?'field-error':'';})()}" value="${escapeHtml(e.hmAkhir||'')}" onchange="this.value=fmtHm1(this.value);quickSaveField('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
+        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter||''))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveField('bbmLiter', this.value)"></div>
+        <div id="qf-hmWarning">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
         <div><label class="flabel">Pemakaian HM</label><input type="text" value="${hmPakai(e)} jam" disabled></div>
       </div>
       <label class="flabel">Catatan (opsional)</label>
@@ -987,7 +1043,7 @@ function renderProgramJenisSubFields(e){
     case 'Muat Tebu':
       return `
         <div><label class="flabel">Tipe</label><select id="efMuatTipe" onchange="onProgramJenisChange('Muat Tebu')">${subOptionsHtml(MUAT_TIPE_OPTS, e.muatTipe)}</select></div>
-        ${e.muatTipe==='Produksi' ? `<div><label class="flabel">Tonase (kg)</label><input type="text" id="efTonase" inputmode="decimal" value="${escapeHtml(e.tonaseKg||'')}"></div>
+        ${e.muatTipe==='Produksi' ? `<div><label class="flabel">Tonase (kg)</label><input type="text" id="efTonase" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg||''))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
         ${lokasiFieldHtml('efLokasiMuat','Lokasi', e.lokasiMuat)}` : ''}
         ${e.muatTipe==='Bibit' ? `<div class="grid2">
           ${lokasiFieldHtml('efLokasiMuat','Lokasi Muat', e.lokasiMuat)}
@@ -1008,7 +1064,7 @@ function onProgramJenisChange(newKategori){
   const tempE = {
     jenisKategori: newKategori,
     antarTipe: gv('efAntarTipe'), antarKegiatan: gv('efAntarKegiatan'),
-    muatTipe: gv('efMuatTipe'), tonaseKg: gv('efTonase'),
+    muatTipe: gv('efMuatTipe'), tonaseKg: stripDots(gv('efTonase')),
     lokasiMuat: gv('efLokasiMuat'), lokasiBongkar: gv('efLokasiBongkar'),
     droneJenis: gv('efDroneJenis'), operatorShift: gv('efOperatorShift'), jenisKet: gv('efJenisKet')
   };
@@ -1060,7 +1116,7 @@ function saveEntryForm(id){
     hmAwal:'', hmAkhir:'', bbmLiter:'',
     jenisKategori,
     antarTipe: gv('efAntarTipe'), antarKegiatan: gv('efAntarKegiatan'),
-    muatTipe: gv('efMuatTipe'), tonaseKg: gv('efTonase'),
+    muatTipe: gv('efMuatTipe'), tonaseKg: stripDots(gv('efTonase')),
     lokasiMuat: gv('efLokasiMuat'), lokasiBongkar: gv('efLokasiBongkar'),
     droneJenis: gv('efDroneJenis'), operatorShift: gv('efOperatorShift'), jenisKet: gv('efJenisKet'),
     catatan: gv('efCatatan')
@@ -1103,9 +1159,10 @@ function renderHistoryList(list){
       </div>
       <div class="hrow-body"><div class="hrow-body-inner" onclick="event.stopPropagation()">
         <div class="grid2">
-          <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal||'')}"></div>
-          <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" value="${escapeHtml(e.hmAkhir||'')}"></div>
-          <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" value="${escapeHtml(e.bbmLiter||'')}"></div>
+          <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal||'')}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
+          <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" class="${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a)?'field-error':'';})()}" value="${escapeHtml(e.hmAkhir||'')}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
+          <div id="ed-hmWarning-${e.id}">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
+          <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter||''))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
           <div><label class="flabel">Lembur (jam)</label><input type="text" id="ed-ot-${e.id}" value="${escapeHtml(e.otOverride??'')}"></div>
           <div class="full"><label class="flabel">Catatan</label><input type="text" id="ed-cat-${e.id}" value="${escapeHtml(e.catatan||'')}"></div>
         </div>
@@ -1120,9 +1177,14 @@ function renderHistoryList(list){
 function toggleRow(id){ document.getElementById('hrow-'+id).classList.toggle('open'); }
 function saveRowEdit(id){
   const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
-  ENTRIES[idx].hmAwal = document.getElementById('ed-hmA-'+id).value;
-  ENTRIES[idx].hmAkhir = document.getElementById('ed-hmB-'+id).value;
-  ENTRIES[idx].bbmLiter = document.getElementById('ed-bbm-'+id).value;
+  const rawA = document.getElementById('ed-hmA-'+id).value;
+  const rawB = document.getElementById('ed-hmB-'+id).value;
+  if(rawB!=='' && parseFloat(rawB).toFixed(1) !== ENTRIES[idx].hmAkhir){
+    maybeDetectHmReset(ENTRIES[idx].btId, rawB, ENTRIES[idx].date);
+  }
+  ENTRIES[idx].hmAwal = rawA===''?'':parseFloat(rawA).toFixed(1);
+  ENTRIES[idx].hmAkhir = rawB===''?'':parseFloat(rawB).toFixed(1);
+  ENTRIES[idx].bbmLiter = stripDots(document.getElementById('ed-bbm-'+id).value);
   ENTRIES[idx].otOverride = document.getElementById('ed-ot-'+id).value===''?null:document.getElementById('ed-ot-'+id).value;
   ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
   saveEntries(); toast('Perubahan disimpan'); renderProgram(); renderRekap(); renderHari();
@@ -1130,6 +1192,36 @@ function saveRowEdit(id){
 function setHistFilter(f){ histFilter = f; renderProgram(); renderRekap(); }
 
 /* ============ PROGRAM ============ */
+function missingSayaDays(){
+  const today = todayIso();
+  const sayaDates = new Set(ENTRIES.filter(e=>e.ownerType==='saya').map(e=>e.date));
+  const days = [];
+  for(let i=1;i<=14;i++){
+    const d = new Date(today+'T00:00:00');
+    d.setDate(d.getDate()-i);
+    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!sayaDates.has(iso)) days.push(iso);
+  }
+  return days;
+}
+function openBackfillForm(dateIso){
+  openEntryForm({id:uid(), date:dateIso, dateEnd:dateIso, btId:USER.mainBt, ownerType:'saya', ownerName:USER.name||'Saya', partnerId:'',
+    s1Time:'', s5Time:'', istMulai:'11.00', istSelesai:'13.30', istLembur:false,
+    otOverride:null, jenisKategori:'Antar/Jemput Tenaga', antarKegiatan:'', antarTipe:'', muatTipe:'', tonaseKg:'',
+    lokasiMuat:'', lokasiBongkar:'', droneJenis:'', operatorShift:'', jenisKet:'', catatan:''});
+}
+function renderMissingDaysSection(){
+  const missing = missingSayaDays();
+  if(missing.length===0) return '';
+  return `
+    <div class="section-eyebrow">Belum Diisi (14 Hari Terakhir)</div>
+    <div class="card" style="border-color:var(--primary);">
+      <div class="field-sub" style="margin-bottom:8px;">Hari-hari ini belum ada catatan "Saya" — tap untuk isi cepat.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${missing.map(d=>`<button class="btn-sm" onclick="openBackfillForm('${d}')">${escapeHtml(fmtLabel(d).split(', ')[1]||fmtLabel(d))}</button>`).join('')}
+      </div>
+    </div>`;
+}
 function renderProgram(){
   const host = document.getElementById('screen-program');
   const list = ENTRIES.filter(e=>e.ownerType===histFilter).sort((a,b)=>b.date.localeCompare(a.date));
@@ -1144,6 +1236,7 @@ function renderProgram(){
   }
   host.innerHTML = `
     ${renderWeekPlanSection()}
+    ${histFilter==='saya' ? renderMissingDaysSection() : ''}
     <div class="section-eyebrow section-eyebrow-row">Riwayat Program<button class="pill-btn" onclick="openEntryForm(null)">+ Tambah</button></div>
     <div class="hist-tabs">
       <div class="hist-tab ${histFilter==='saya'?'active-saya':''}" onclick="setHistFilter('saya')">🟠 Saya</div>
@@ -1597,7 +1690,8 @@ function lastServisForBt(btId){
   return list[0] || null;
 }
 function currentHmForBt(btId){
-  const vals = ENTRIES.filter(e=>e.btId===btId && e.hmAkhir!=='' && e.hmAkhir!=null).map(e=>parseFloat(e.hmAkhir)).filter(v=>!isNaN(v));
+  const reset = lastHmResetForBt(btId);
+  const vals = ENTRIES.filter(e=>e.btId===btId && e.hmAkhir!=='' && e.hmAkhir!=null && (!reset || e.date >= reset.date)).map(e=>parseFloat(e.hmAkhir)).filter(v=>!isNaN(v));
   return vals.length ? Math.max(...vals) : null;
 }
 function hmServiceStatus(btId){
@@ -1668,7 +1762,7 @@ function renderRekap(){
     </div>
     <div class="card" style="${overdue?'border-color:var(--danger);':nearing?'border-color:var(--primary);':''}">
       <div class="field-label">Progres Menuju Servis Berkala (${intervalHm} jam HM)</div>
-      ${svc.baseHm===null ? `<div class="field-sub" style="margin-top:6px;">Belum ada catatan servis untuk ${escapeHtml(btLabel(mainBt))}. Tambahkan servis terakhir agar progres bisa dihitung.</div>` : `
+      ${svc.sisa===null ? `<div class="field-sub" style="margin-top:6px;">${svc.baseHm===null ? `Belum ada catatan servis untuk ${escapeHtml(btLabel(mainBt))}. Tambahkan servis terakhir agar progres bisa dihitung.` : `Belum ada data HM untuk ${escapeHtml(btLabel(mainBt))}. Progres akan muncul setelah ada entri dengan HM Akhir.`}</div>` : `
         <div style="background:var(--surface-container-high);border-radius:100px;height:10px;margin:10px 0 6px;overflow:hidden;">
           <div style="height:100%;border-radius:100px;width:${pct}%;background:${overdue?'var(--danger)':'var(--primary)'};"></div>
         </div>
