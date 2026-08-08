@@ -971,8 +971,8 @@ function renderHari(){
       <div class="grid2">
         <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal||'')}" onchange="this.value=fmtHm1(this.value);quickSaveField('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
         <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" class="${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a)?'field-error':'';})()}" value="${escapeHtml(e.hmAkhir||'')}" onchange="this.value=fmtHm1(this.value);quickSaveField('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
+        <div class="full" id="qf-hmWarning">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
         <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter||''))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveField('bbmLiter', this.value)"></div>
-        <div id="qf-hmWarning">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
         <div><label class="flabel">Pemakaian HM</label><input type="text" value="${hmPakai(e)} jam" disabled></div>
       </div>
       <label class="flabel">Catatan (opsional)</label>
@@ -1161,7 +1161,7 @@ function renderHistoryList(list){
         <div class="grid2">
           <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal||'')}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
           <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" class="${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a)?'field-error':'';})()}" value="${escapeHtml(e.hmAkhir||'')}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
-          <div id="ed-hmWarning-${e.id}">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
+          <div class="full" id="ed-hmWarning-${e.id}">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
           <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter||''))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
           <div><label class="flabel">Lembur (jam)</label><input type="text" id="ed-ot-${e.id}" value="${escapeHtml(e.otOverride??'')}"></div>
           <div class="full"><label class="flabel">Catatan</label><input type="text" id="ed-cat-${e.id}" value="${escapeHtml(e.catatan||'')}"></div>
