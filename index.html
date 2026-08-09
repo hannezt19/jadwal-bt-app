@@ -6,6 +6,16 @@
 <title>Jadwal BT</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#7A4A00">
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+  if (!window.jspdf) {
+    var _jspdfFallback = document.createElement('script');
+    _jspdfFallback.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
+    document.head.appendChild(_jspdfFallback);
+  }
+</script>
+<script src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
 <style>
 :root{
   --primary:#8A5A00; --on-primary:#FFFFFF; --primary-container:#FFDDAE; --on-primary-container:#2B1700;
@@ -60,6 +70,8 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
 .btn-block.outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-container);border:1.5px solid var(--outline);border-radius:100px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;color:var(--on-surface);}
 .chip.active{background:var(--primary-container);border-color:var(--primary-container);color:var(--on-primary-container);}
+.chk-row{display:flex;align-items:center;padding:8px 0;font-size:14px;}
+.chk-row input[type=radio]{width:auto;min-height:auto;margin:0;}
 
 /* Drawer (hamburger) */
 #drawerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:none;}
@@ -318,7 +330,7 @@ function deleteBlok(id){
 function getTodayEntry(){
   let e = ENTRIES.find(x=>x.date===todayIso());
   if(!e){
-    e = {id:uid(), date:todayIso(), btId:USER.mainBt||'', hmAwal:'', hmAkhir:'', bbmLiter:'', catatan:''};
+    e = {id:uid(), date:todayIso(), btId:USER.mainBt||'', hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:''};
     ENTRIES.push(e);
     saveEntries();
   }
@@ -342,14 +354,30 @@ function renderHari(){
     <div class="section-eyebrow">Hour Meter &amp; BBM</div>
     <div class="card">
       <div class="grid2">
-        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal)}" onchange="quickSave('hmAwal', this.value)"></div>
-        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAkhir)}" onchange="quickSave('hmAkhir', this.value)"></div>
-        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(e.bbmLiter)}" onchange="quickSave('bbmLiter', this.value)"></div>
+        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal)}" onchange="this.value=fmtHm1(this.value);quickSave('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
+        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" onchange="this.value=fmtHm1(this.value);quickSave('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
+        <div class="full" id="qf-hmWarning">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
+        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSave('bbmLiter', stripDots(this.value))"></div>
+        <div><label class="flabel">Jam Lembur</label><input type="text" inputmode="decimal" value="${escapeHtml(e.lembur)}" onchange="quickSave('lembur', this.value)"></div>
       </div>
       <label class="flabel">Catatan (opsional)</label>
       <textarea rows="2" onchange="quickSave('catatan', this.value)">${escapeHtml(e.catatan)}</textarea>
     </div>
   `;
+}
+function stripDots(v){ return v==null?'':String(v).replace(/\./g,''); }
+function fmtThousandsLive(v){ const c=String(v||'').replace(/[^\d]/g,''); return c===''?'':c.replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function fmtHm1(v){ if(v===''||v==null) return ''; const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?'':n.toFixed(1); }
+function hmBad(e){ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return !isNaN(a)&&!isNaN(b)&&b<a; }
+function checkHmWarning(ctx){
+  const hmA = document.getElementById((ctx==='qf'?'qf-hmA':'ed-hmA-'+ctx));
+  const hmB = document.getElementById((ctx==='qf'?'qf-hmB':'ed-hmB-'+ctx));
+  const warnEl = document.getElementById((ctx==='qf'?'qf-hmWarning':'ed-hmWarning-'+ctx));
+  if(!hmA||!hmB) return;
+  const a=parseFloat(hmA.value), b=parseFloat(hmB.value);
+  const bad = !isNaN(a)&&!isNaN(b)&&b<a;
+  hmB.classList.toggle('field-error', bad);
+  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>' : '';
 }
 function quickSave(key, val){
   const e = getTodayEntry();
@@ -363,13 +391,247 @@ function renderBeranda(){
   document.getElementById('screen-beranda').innerHTML = `<div class="card"><div class="empty-note">Beranda akan dibangun di Tahap 3.</div></div>`;
 }
 function renderProgram(){
-  document.getElementById('screen-program').innerHTML = `<div class="card"><div class="empty-note">Program (riwayat) akan dibangun di Tahap 2.</div></div>`;
+  const host = document.getElementById('screen-program');
+  const missing = missingDays();
+  const sorted = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const dupDates = findDuplicateDates();
+  host.innerHTML = `
+    ${missing.length>0 ? `
+    <div class="section-eyebrow">Belum Diisi (14 Hari Terakhir)</div>
+    <div class="card" style="border-color:var(--primary);">
+      <div class="field-sub" style="margin-bottom:8px;">Tap tanggal untuk isi cepat.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${missing.map(d=>`<button class="chip" onclick="openBackfill('${d}')">${fmtLabel(d).split(', ')[1]}</button>`).join('')}
+      </div>
+    </div>` : ''}
+    <div class="section-eyebrow section-eyebrow-row">Riwayat<button class="pill-btn sm" onclick="openBackfill(todayIso())">+ Tambah</button></div>
+    ${sorted.length===0 ? '<div class="card"><div class="empty-note">Belum ada riwayat.</div></div>' :
+      sorted.map(e=>{
+        const isDup = dupDates.has(e.date+'|'+e.btId);
+        return `
+        <div class="card" style="${isDup?'border-color:var(--danger);':''}">
+          <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleEditRow('${e.id}')">
+            <div>
+              <div style="font-weight:800;">${fmtLabel(e.date)}</div>
+              <div class="field-sub">${escapeHtml(btLabel(e.btId))} &middot; HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')} &middot; ${escapeHtml(e.bbmLiter||'0')} L</div>
+              ${isDup?'<div class="field-sub" style="color:var(--danger);font-weight:700;">&#9888;&#65039; Ada entri lain di tanggal &amp; unit yang sama</div>':''}
+            </div>
+            <span>&#9662;</span>
+          </div>
+          <div id="editrow-${e.id}" style="display:none;margin-top:12px;">
+            <div class="grid2">
+              <div><label class="flabel">No Unit</label><select id="ed-bt-${e.id}">${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}</select></div>
+              <div><label class="flabel">Tanggal</label><input type="date" id="ed-date-${e.id}" value="${e.date}"></div>
+              <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal)}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
+              <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
+              <div class="full" id="ed-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
+              <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
+              <div><label class="flabel">Jam Lembur</label><input type="text" id="ed-lembur-${e.id}" value="${escapeHtml(e.lembur)}"></div>
+            </div>
+            <label class="flabel">Catatan</label>
+            <textarea id="ed-cat-${e.id}" rows="2">${escapeHtml(e.catatan)}</textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn-block" style="flex:1;" onclick="saveEditRow('${e.id}')">Simpan</button>
+              <button class="pill-btn outline" onclick="deleteRow('${e.id}')">Hapus</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+  `;
+}
+function toggleEditRow(id){
+  const el = document.getElementById('editrow-'+id);
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+function saveEditRow(id){
+  const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
+  const rawA = document.getElementById('ed-hmA-'+id).value;
+  const rawB = document.getElementById('ed-hmB-'+id).value;
+  ENTRIES[idx].btId = document.getElementById('ed-bt-'+id).value;
+  ENTRIES[idx].date = document.getElementById('ed-date-'+id).value;
+  ENTRIES[idx].hmAwal = rawA===''?'':parseFloat(rawA).toFixed(1);
+  ENTRIES[idx].hmAkhir = rawB===''?'':parseFloat(rawB).toFixed(1);
+  ENTRIES[idx].bbmLiter = stripDots(document.getElementById('ed-bbm-'+id).value);
+  ENTRIES[idx].lembur = document.getElementById('ed-lembur-'+id).value;
+  ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
+  saveEntries();
+  toast('Perubahan disimpan');
+  renderProgram();
+}
+function deleteRow(id){
+  if(!confirm('Hapus entri ini?')) return;
+  ENTRIES = ENTRIES.filter(x=>x.id!==id);
+  saveEntries();
+  toast('Entri dihapus');
+  renderProgram();
+}
+function missingDays(){
+  const today = todayIso();
+  const dates = new Set(ENTRIES.map(e=>e.date));
+  const days = [];
+  for(let i=1;i<=14;i++){
+    const d = new Date(today+'T00:00:00'); d.setDate(d.getDate()-i);
+    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!dates.has(iso)) days.push(iso);
+  }
+  return days;
+}
+function findDuplicateDates(){
+  const count = {};
+  ENTRIES.forEach(e=>{ const k=e.date+'|'+e.btId; count[k]=(count[k]||0)+1; });
+  return new Set(Object.keys(count).filter(k=>count[k]>1));
+}
+function openBackfill(dateIso){
+  if(!USER.mainBt || UNITS.length===0){ toast('Isi Pengaturan Akun & Kelola No Unit dulu'); return; }
+  const e = {id:uid(), date:dateIso, btId:USER.mainBt, hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:''};
+  ENTRIES.push(e);
+  saveEntries();
+  toast('Baris baru ditambahkan, silakan diisi');
+  showScreen('program');
+  setTimeout(()=>{ const el=document.getElementById('editrow-'+e.id); if(el) el.style.display='block'; }, 50);
 }
 function renderPeta(){
   document.getElementById('screen-peta').innerHTML = `<div class="card"><div class="empty-note">Peta akan dibangun di Tahap 4.</div></div>`;
 }
 function renderRekap(){
-  document.getElementById('screen-rekap').innerHTML = `<div class="card"><div class="empty-note">Rekap &amp; Export akan dibangun di Tahap 2.</div></div>`;
+  const host = document.getElementById('screen-rekap');
+  const monthKey = todayIso().slice(0,7);
+  const monthEntries = ENTRIES.filter(e=>e.date.startsWith(monthKey));
+  const totalHm = monthEntries.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
+  const totalBbm = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
+  const totalLembur = monthEntries.reduce((s,e)=>s+(parseFloat(e.lembur)||0),0);
+  host.innerHTML = `
+    <div class="section-eyebrow">Bulan Ini</div>
+    <div class="grid2">
+      <div class="card"><div class="field-sub">Total HM</div><div style="font-size:22px;font-weight:800;">${totalHm.toFixed(1)}</div></div>
+      <div class="card"><div class="field-sub">Total BBM</div><div style="font-size:22px;font-weight:800;">${fmtThousandsLive(String(Math.round(totalBbm)))} L</div></div>
+      <div class="card"><div class="field-sub">Total Lembur</div><div style="font-size:22px;font-weight:800;">${totalLembur.toFixed(1)} j</div></div>
+      <div class="card"><div class="field-sub">Rasio L/HM</div><div style="font-size:22px;font-weight:800;">${totalHm>0?(totalBbm/totalHm).toFixed(2):'-'}</div></div>
+    </div>
+    <button class="btn-block" style="margin-top:8px;" onclick="openExportSheet()">&#8595; Export Laporan</button>
+  `;
+}
+function openExportSheet(){
+  openModal(`
+    <div class="mhead"><h2>Export / Cetak Laporan</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div class="section-eyebrow">Periode</div>
+    <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-month" value="month" checked onchange="updateExpModeUI()"><label for="exp-mode-month" style="margin-left:6px;">Bulan ini</label></div>
+    <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-all" value="all" onchange="updateExpModeUI()"><label for="exp-mode-all" style="margin-left:6px;">Semua periode</label></div>
+    <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-custom" value="custom" onchange="updateExpModeUI()"><label for="exp-mode-custom" style="margin-left:6px;">Rentang tanggal custom</label></div>
+    <div id="exp-customRange" style="display:none;margin:8px 0;">
+      <label class="flabel">Dari tanggal</label><input type="date" id="exp-dateFrom">
+      <label class="flabel">Sampai tanggal</label><input type="date" id="exp-dateTo">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn-block" style="flex:1;" onclick="doExport('pdf')">&#128196; PDF</button>
+      <button class="btn-block outline" style="flex:1;" onclick="doExport('xlsx')">&#128202; Excel</button>
+    </div>
+  `);
+}
+function updateExpModeUI(){
+  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
+  document.getElementById('exp-customRange').style.display = mode==='custom' ? 'block' : 'none';
+}
+function getExportRows(){
+  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
+  let rows;
+  if(mode==='all'){ rows = ENTRIES.slice(); }
+  else if(mode==='custom'){
+    const from = document.getElementById('exp-dateFrom').value;
+    const to = document.getElementById('exp-dateTo').value;
+    rows = ENTRIES.filter(e=>(!from||e.date>=from)&&(!to||e.date<=to));
+  } else {
+    const mk = todayIso().slice(0,7);
+    rows = ENTRIES.filter(e=>e.date.startsWith(mk));
+  }
+  rows.sort((a,b)=>a.date.localeCompare(b.date));
+  const headers = ['Tanggal','No Unit','HM Awal','HM Akhir','BBM (L)','Lembur (j)','Catatan'];
+  const data = rows.map(e=>({
+    'Tanggal': fmtLabel(e.date), 'No Unit': btLabel(e.btId), 'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-',
+    'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
+  }));
+  return {headers, rows:data};
+}
+function exportFileLabel(){
+  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
+  if(mode==='all') return 'semua-periode';
+  if(mode==='custom'){
+    const from = document.getElementById('exp-dateFrom').value || 'awal';
+    const to = document.getElementById('exp-dateTo').value || 'akhir';
+    return from+'_sd_'+to;
+  }
+  return todayIso().slice(0,7);
+}
+async function doExport(fmt){
+  const {headers, rows} = getExportRows();
+  if(rows.length===0){ toast('Tidak ada data pada periode ini'); return; }
+  if(fmt==='xlsx'){
+    if(!window.XLSX){ toast('Library Excel belum siap'); return; }
+    const sheetData = [headers, ...rows.map(r=>headers.map(h=>r[h]))];
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    ws['!cols'] = headers.map(h=>({wch: Math.max(h.length,12)}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const result = await saveOrShareBlob(blob, 'rekap-'+exportFileLabel()+'.xlsx');
+    toast(result==='shared'?'Excel siap dibagikan':'Excel diunduh');
+    closeModal();
+    return;
+  }
+  if(!window.jspdf){ toast('Library PDF belum siap'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape'});
+  doc.setFontSize(14);
+  doc.text('Laporan - '+exportFileLabel(), 10, 14);
+  if(typeof doc.autoTable === 'function'){
+    doc.autoTable({
+      head: [headers], body: rows.map(r=>headers.map(h=>String(r[h]))),
+      startY: 20, styles:{fontSize:8, cellPadding:2}, headStyles:{fillColor:[138,90,0]}, theme:'grid'
+    });
+  }
+  const pdfBlob = doc.output('blob');
+  const result = await saveOrShareBlob(pdfBlob, 'rekap-'+exportFileLabel()+'.pdf');
+  toast(result==='shared'?'PDF siap dibagikan':'PDF diunduh');
+  closeModal();
+}
+function isNativeApp(){ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+function blobToBase64(blob){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onloadend = ()=>resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+async function saveOrShareBlob(blob, filename){
+  if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
+    try{
+      const { Filesystem } = window.Capacitor.Plugins;
+      const base64 = await blobToBase64(blob);
+      const written = await Filesystem.writeFile({ path: filename, data: base64, directory: 'CACHE', recursive: true });
+      if(window.Capacitor.Plugins.Share){
+        await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Simpan atau bagikan file' });
+        return 'shared';
+      }
+      return 'saved-native';
+    }catch(err){
+      const msg = err && err.message ? err.message : JSON.stringify(err);
+      if(!/cancel/i.test(msg)) alert('Gagal simpan: '+msg);
+    }
+  }
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.rel='noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    return 'downloaded';
+  }catch(err){
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    return 'opened';
+  }
 }
 
 /* ================= INIT ================= */
