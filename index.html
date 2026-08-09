@@ -3,2233 +3,377 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#1C2333">
-<title>Jadwal & HM Terpadu</title>
+<title>Jadwal BT</title>
 <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7A4A00">
 <style>
-  :root{
-    --primary:#A8580E; --primary-container:#FFDDB0; --on-primary-container:#3A2200;
-    --secondary:#3A5B6E; --secondary-container:#D3E8F0;
-    --navy:#1C2333; --navy-2:#262F45;
-    --surface:#FFF8F2; --surface-container:#F4EDE3; --surface-container-high:#EDE3D3;
-    --on-surface:#211A12; --on-surface-variant:#6F6357; --outline:#E4DACB;
-    --danger:#B3261E; --danger-bg:#FBEAE8; --success:#3D6B3E;
-    --radius-lg:20px; --radius-md:16px; --radius-sm:12px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--surface);font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--on-surface);}
-  button,input,select,textarea{font-family:inherit;}
-  .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+:root{
+  --primary:#8A5A00; --on-primary:#FFFFFF; --primary-container:#FFDDAE; --on-primary-container:#2B1700;
+  --secondary:#5C5240; --secondary-container:#E6DCC6;
+  --success:#2E7D32; --success-container:#D7ECD9;
+  --danger:#B3261E; --danger-container:#F9DEDC;
+  --surface:#FFF8F3; --surface-container:#F3E8DA; --surface-container-high:#ECDFCB; --surface-container-low:#F8EFE4;
+  --on-surface:#1F1B13; --on-surface-variant:#4E4636;
+  --outline:#D6C6AC; --outline-variant:#E8DCC8;
+  --navy:#1C2333;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--surface);font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--on-surface);}
+button,input,select,textarea{font-family:inherit;}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
+#topbar{background:var(--navy);color:#fff;padding:14px 16px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+#topbar .hbtn{background:none;border:none;color:#fff;font-size:22px;padding:6px;cursor:pointer;line-height:1;}
+#topbar .titles{flex:1;min-width:0;}
+#topbar .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#D8CBE8;font-weight:700;}
+#topbar .titlemain{font-size:16px;font-weight:800;margin-top:2px;}
+#topbar .badge{background:var(--primary-container);color:var(--on-primary-container);font-size:12px;font-weight:700;padding:6px 12px;border-radius:100px;white-space:nowrap;}
+#screens{flex:1;overflow-y:auto;padding:16px 16px 100px;}
+.screen{display:none;}
+.screen.active{display:block;}
+#bottomnav{position:fixed;bottom:0;left:0;right:0;background:var(--navy);display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:40;}
+#bottomnav button{background:none;border:none;color:#9AA0B4;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;padding:6px 10px;border-radius:16px;cursor:pointer;}
+#bottomnav button svg{width:22px;height:22px;}
+#bottomnav button.active{color:var(--primary-container);background:rgba(255,255,255,.08);}
 
-  /* TOP BAR */
-  .topbar{background:var(--navy);color:#fff;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
-  .icon-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:#fff;cursor:pointer;flex-shrink:0;}
-  .icon-btn:active{background:rgba(255,255,255,0.12);}
-  .topbar-title{flex:1;min-width:0;}
-  .topbar-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#F2C98A;font-weight:700;}
-  .topbar-title h1{margin:2px 0 0;font-size:16px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .bt-chip{background:var(--primary-container);color:var(--on-primary-container);font-weight:700;font-size:12px;padding:6px 12px;border-radius:100px;flex-shrink:0;border:none;}
+.section-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--on-surface-variant);font-weight:700;margin:18px 0 8px;}
+.section-eyebrow:first-child{margin-top:0;}
+.section-eyebrow-row{display:flex;justify-content:space-between;align-items:center;}
+.card{background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:16px;margin-bottom:14px;}
+.card-flat{background:var(--surface-container);border:none;}
 
-  /* SCREENS */
-  .screen{display:none;flex:1;overflow-y:auto;padding:16px 16px 100px;}
-  .screen.active{display:block;}
-  .section-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--on-surface-variant);font-weight:700;margin:20px 2px 10px;display:block;}
-  .section-eyebrow:first-child{margin-top:0;}
-  .section-eyebrow-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
-  .card{background:#fff;border:1px solid var(--outline);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;}
-  .card-flat{background:var(--surface-container);border:none;}
-  .row-2{display:flex;gap:12px;}
-  .row-2 .card{flex:1;margin-bottom:0;}
-  .field-label{font-size:12px;font-weight:600;color:var(--on-surface-variant);margin-bottom:4px;}
-  .field-value{font-size:16px;font-weight:700;}
-  .field-sub{font-size:12px;color:var(--on-surface-variant);margin-top:2px;}
-  .empty-note{text-align:center;color:var(--on-surface-variant);font-size:12px;padding:24px 12px;}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+  width:100%;border:1.5px solid var(--outline);border-radius:14px;padding:12px;font-size:16px;min-height:48px;
+  background:var(--surface-container-low);color:var(--on-surface);margin-bottom:12px;
+}
+input.field-error{border-color:var(--danger)!important;background:var(--danger-container);}
+textarea{resize:vertical;min-height:48px;}
+label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface-variant);margin-bottom:4px;}
+.field-sub{font-size:12px;color:var(--on-surface-variant);}
+.grid2{display:grid;grid-template-columns:1fr;gap:8px 12px;}
+.grid2 .full{grid-column:1/-1;}
+@media (min-width:400px){ .grid2{grid-template-columns:1fr 1fr;} }
 
-  .hero-card{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
-  .hero-card::after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(242,169,59,.22),transparent 70%);}
-  .hero-label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#F2C98A;font-weight:700;}
-  .hero-num{font-size:28px;font-weight:800;margin:6px 0 2px;display:flex;align-items:baseline;gap:8px;}
-  .hero-num input{background:transparent;border:none;border-bottom:2px dashed rgba(242,169,59,.5);color:var(--primary-container);font-size:28px;font-weight:800;width:70px;font-family:inherit;}
-  .hero-num input:focus{outline:none;border-bottom-style:solid;}
-  .hero-num span{font-size:14px;font-weight:600;color:#C9CFDD;}
-  .hero-sub{font-size:12px;color:#B6BDCE;}
+.pill-btn{display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:var(--on-primary);border:none;border-radius:100px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;}
+.pill-btn.outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
+.pill-btn.sm{padding:7px 12px;font-size:12px;}
+.btn-block{display:block;width:100%;text-align:center;background:var(--primary);color:var(--on-primary);border:none;border-radius:16px;padding:14px;font-size:16px;font-weight:800;cursor:pointer;}
+.btn-block.outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-container);border:1.5px solid var(--outline);border-radius:100px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;color:var(--on-surface);}
+.chip.active{background:var(--primary-container);border-color:var(--primary-container);color:var(--on-primary-container);}
 
-  label.flabel{display:block;font-size:14px;font-weight:700;color:var(--on-surface-variant);margin-bottom:6px;}
-  input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
-    width:100%;border:1.5px solid var(--outline);border-radius:14px;padding:12px;font-size:16px;min-height:48px;
-    background:var(--surface-container);color:var(--on-surface);margin-bottom:12px;
-  }
-  input.field-error{border-color:var(--danger)!important;background:rgba(211,47,47,.06);}
-  textarea{resize:vertical;min-height:48px;}
-  .grid2{display:grid;grid-template-columns:1fr;gap:8px 12px;}
-  .grid2 .full{grid-column:1/-1;}
-  @media (min-width:400px){ .grid2{grid-template-columns:1fr 1fr;} }
+/* Drawer (hamburger) */
+#drawerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:none;}
+#drawerOverlay.show{display:block;}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:82%;max-width:320px;background:#fff;z-index:61;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;}
+#drawer.show{transform:translateX(0);}
+#drawer .dhead{background:var(--navy);color:#fff;padding:24px 20px;}
+#drawer .dhead .name{font-size:18px;font-weight:800;}
+#drawer .dhead .sub{font-size:12px;color:#B9C0D6;margin-top:2px;}
+#drawer .ditem{display:flex;align-items:center;gap:14px;padding:14px 20px;font-size:15px;font-weight:600;color:var(--on-surface);cursor:pointer;border-bottom:1px solid var(--outline-variant);}
+#drawer .ditem .ic{width:22px;text-align:center;}
+#drawer .dgroup{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant);font-weight:700;padding:16px 20px 4px;}
 
-  .pill-btn{display:inline-flex;align-items:center;gap:6px;background:var(--primary-container);color:var(--on-primary-container);font-size:12px;font-weight:700;padding:9px 16px;border-radius:100px;border:none;cursor:pointer;}
-  .pill-btn-lg{font-size:16px;font-weight:800;padding:17px 20px;gap:10px;}
-  .btn-filled{width:100%;background:var(--primary);color:#fff;font-size:14px;font-weight:700;padding:14px;border-radius:100px;border:none;cursor:pointer;}
-  .btn-outline{width:100%;background:transparent;color:var(--primary);font-size:14px;font-weight:700;padding:12px;border-radius:100px;border:1.5px solid var(--primary);cursor:pointer;}
-  .btn-sm{font-size:12px;font-weight:700;padding:7px 12px;border-radius:100px;border:1.5px solid var(--outline);background:#fff;color:var(--on-surface-variant);cursor:pointer;}
-  .btn-sm.primary{border-color:transparent;background:var(--primary-container);color:var(--on-primary-container);}
+/* Modal sheet */
+#modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:70;display:none;align-items:flex-end;}
+#modalOverlay.show{display:flex;}
+#modalSheet{background:var(--surface);width:100%;max-height:90vh;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px;}
+#modalSheet .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+#modalSheet .mhead h2{font-size:18px;margin:0;font-weight:800;}
+#modalSheet .mclose{background:var(--surface-container);border:none;border-radius:100px;width:36px;height:36px;font-size:18px;cursor:pointer;}
 
-  /* RIWAYAT */
-  .hist-tabs{display:flex;gap:8px;margin-bottom:12px;}
-  .hist-tab{flex:1;text-align:center;padding:9px;border-radius:100px;font-size:12px;font-weight:700;border:1.5px solid var(--outline);color:var(--on-surface-variant);cursor:pointer;background:#fff;}
-  .hist-tab.active-saya{background:var(--primary-container);color:var(--on-primary-container);border-color:transparent;}
-  .hist-tab.active-partner{background:var(--secondary-container);color:var(--secondary);border-color:transparent;}
-  .hrow{background:#fff;border:1px solid var(--outline);border-radius:var(--radius-md);margin-bottom:10px;overflow:hidden;}
-  .hrow-head{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;}
-  .hrow-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;}
-  .hrow-dot.partner{background:var(--secondary);}
-  .hrow-main{flex:1;min-width:0;}
-  .hrow-date{font-size:14px;font-weight:700;}
-  .hrow-sum{font-size:12px;color:var(--on-surface-variant);margin-top:1px;}
-  .hrow-chev{color:var(--on-surface-variant);transition:transform .2s;flex-shrink:0;}
-  .hrow.open .hrow-chev{transform:rotate(180deg);}
-  .hrow-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
-  .hrow.open .hrow-body{max-height:900px;border-top:1px solid var(--outline);}
-  .hrow-body-inner{padding:14px;}
-  .hrow-actions{display:flex;gap:8px;margin-top:2px;}
-  .btn-save{flex:1;background:var(--primary);color:#fff;border:none;border-radius:100px;padding:11px;font-weight:700;font-size:14px;}
-  .btn-del{background:var(--danger-bg);color:var(--danger);border:none;border-radius:100px;padding:11px 16px;font-weight:700;font-size:14px;}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:100px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s ease;z-index:90;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  .box-truck-table{width:100%;border-collapse:collapse;margin-top:4px;}
-  .box-truck-table th,.box-truck-table td{border:1px solid var(--outline);padding:8px 10px;font-size:12px;text-align:left;white-space:normal;word-break:break-word;}
-  .box-truck-table th{background:var(--navy);color:#fff;text-transform:uppercase;font-size:11px;letter-spacing:.04em;}
-  .box-truck-table tr:nth-child(even) td{background:var(--surface-container);}
-
-  /* NAV */
-  .navwrap{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:456px;z-index:50;padding:0;background:transparent;}
-  .screen{padding-bottom:110px;}
-  nav.tabbar{display:flex;background:var(--navy);border-radius:100px;padding:6px;gap:2px;box-shadow:0 8px 24px rgba(20,15,5,.25);}
-  nav.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border:none;background:transparent;color:#9099AD;border-radius:100px;cursor:pointer;}
-  nav.tabbar button.active{background:rgba(255,255,255,.12);color:#F2C98A;}
-  nav.tabbar svg{width:20px;height:20px;}
-  nav.tabbar .lbl{font-size:11px;font-weight:700;}
-
-  /* DRAWER */
-  .scrim{position:fixed;inset:0;background:rgba(15,10,5,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;}
-  .scrim.show{opacity:1;pointer-events:auto;}
-  .drawer{position:fixed;top:0;bottom:0;left:0;width:80%;max-width:320px;background:var(--surface);z-index:201;transform:translateX(-105%);transition:transform .25s ease;
-    border-radius:0 28px 28px 0;padding:calc(20px + env(safe-area-inset-top,0px)) 16px 20px;overflow-y:auto;}
-  .drawer.show{transform:translateX(0);}
-  .drawer-profile{display:flex;align-items:center;gap:12px;padding:8px 8px 20px;}
-  .avatar{width:44px;height:44px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;}
-  .drawer-name{font-weight:700;font-size:14px;}
-  .drawer-sub{font-size:12px;color:var(--on-surface-variant);}
-  .drawer-group-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--on-surface-variant);padding:14px 12px 6px;}
-  .drawer-item{display:flex;align-items:center;gap:14px;padding:12px 12px;border-radius:100px;color:var(--on-surface);font-size:14px;font-weight:600;cursor:pointer;}
-  .drawer-item:active{background:var(--surface-container-high);}
-
-  /* BOTTOM SHEET (modal umum) */
-  .sheet-scrim{position:fixed;inset:0;background:rgba(15,10,5,.45);z-index:210;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
-  .sheet-scrim.show{opacity:1;pointer-events:auto;}
-  .sheet{width:100%;max-width:480px;background:var(--surface);border-radius:24px 24px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom,0px));
-    transform:translateY(100%);transition:transform .25s ease;max-height:86vh;overflow-y:auto;}
-  .sheet-scrim.show .sheet{transform:translateY(0);}
-  .sheet-handle{width:36px;height:4px;background:var(--outline);border-radius:100px;margin:8px auto 14px;}
-  .sheet-title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
-  .sheet h3{margin:0;font-size:16px;}
-  .sheet .dsub{font-size:12px;color:var(--on-surface-variant);margin-bottom:14px;}
-  .sheet-close{background:none;border:none;font-size:16px;color:var(--on-surface-variant);cursor:pointer;padding:4px;}
-
-  .list-row{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--outline);}
-  .list-row:last-child{border-bottom:none;}
-  .list-row-name{font-size:14px;font-weight:600;}
-  .list-row-actions{display:flex;gap:6px;}
-  .icon-x{width:30px;height:30px;border-radius:50%;border:none;background:var(--danger-bg);color:var(--danger);font-weight:700;cursor:pointer;}
-  .icon-edit{width:30px;height:30px;border-radius:50%;border:none;background:var(--surface-container-high);color:var(--on-surface-variant);font-weight:700;cursor:pointer;}
-  .add-row{display:flex;gap:8px;margin-top:10px;}
-  .add-row input{margin-bottom:0;flex:1;}
-  .add-row button{flex-shrink:0;background:var(--navy);color:#fff;border:none;width:44px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;}
-
-  .chk-row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--outline);}
-  .chk-row input{width:19px;height:19px;accent-color:var(--primary);}
-  .chk-row label{font-size:14px;flex:1;}
-  .export-fmt{display:flex;gap:10px;margin-top:16px;}
-  .fmt-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;border-radius:16px;border:1.5px solid var(--outline);background:#fff;font-weight:700;font-size:12px;color:var(--on-surface);cursor:pointer;}
-  .fmt-btn.pdf{border-color:var(--danger);color:var(--danger);}
-  .fmt-btn.csv{border-color:var(--success);color:var(--success);}
-
-  .placeholder-box{text-align:center;padding:60px 20px;color:var(--on-surface-variant);}
-  .placeholder-box .pic{font-size:36px;margin-bottom:10px;}
-
-  .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:11px 20px;border-radius:100px;font-size:14px;font-weight:600;
-    opacity:0;transition:all .25s ease;z-index:300;pointer-events:none;white-space:nowrap;}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-
-  .kgt-add{width:20px;height:20px;line-height:18px;border-radius:50%;border:none;background:var(--primary-container);color:var(--on-primary-container);font-weight:800;font-size:12px;cursor:pointer;padding:0;}
-  .kgt-row{display:flex;gap:6px;margin-bottom:8px;}
-  .kgt-row input{margin-bottom:0;flex:1;}
-  .kgt-row .kgt-rm{flex-shrink:0;width:32px;border-radius:10px;border:1.5px solid var(--outline);background:#fff;color:var(--danger);font-weight:700;cursor:pointer;}
-  .loc-chip{display:flex;align-items:center;gap:6px;background:var(--primary-container);color:var(--on-primary-container);border-radius:100px;padding:7px 8px 7px 12px;font-size:12px;font-weight:700;}
-  .loc-chip button{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.12);color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
-
-  .badge-mini{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:100px;margin-left:6px;}
-  .badge-saya{background:var(--primary-container);color:var(--on-primary-container);}
-  .badge-partner{background:var(--secondary-container);color:var(--secondary);}
-  .loc-field-btn{width:100%;display:flex;align-items:center;gap:8px;text-align:left;background:var(--surface-variant,#efeae2);border:1.5px solid var(--outline);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--on-surface);cursor:pointer;}
-  .loc-field-btn.empty{color:var(--on-surface-variant);}
-  .loc-field-btn span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .lokpick-search{width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--outline);font-size:14px;margin-bottom:10px;}
-  .lokpick-list{max-height:38vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
-  .lokpick-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;background:var(--surface-variant,#efeae2);font-size:14px;font-weight:600;cursor:pointer;}
-  .lokpick-item:active{opacity:.7;}
-  .lokpick-actions{display:flex;gap:8px;margin-bottom:6px;}
-  .lokpick-map-wrap{position:relative;width:100%;border-radius:14px;overflow:hidden;background:#e9e3d8;margin-bottom:10px;max-height:34vh;overflow-y:auto;}
-  .lokpick-map-wrap img{width:100%;display:block;}
-  .lokpick-pin{position:absolute;transform:translate(-50%,-100%);font-size:16px;cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
-  .peta-toprow{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
-  .peta-toprow input[type=date]{flex:1;min-width:150px;padding:9px 10px;border-radius:12px;border:1.5px solid var(--outline);font-size:14px;}
-  .peta-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--on-surface-variant);margin-bottom:10px;}
-  .peta-selected{font-size:12px;}
+.empty-note{text-align:center;color:var(--on-surface-variant);padding:24px 12px;font-size:13px;}
+.list-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--outline-variant);}
+.list-row:last-child{border-bottom:none;}
+.icon-btn{background:none;border:none;font-size:16px;padding:6px;cursor:pointer;color:var(--on-surface-variant);}
 </style>
 </head>
 <body>
-<div class="app">
+<div id="app">
+  <div id="topbar">
+    <button class="hbtn" onclick="openDrawer()">&#9776;</button>
+    <div class="titles">
+      <div class="eyebrow" id="tb-eyebrow">BERANDA</div>
+      <div class="titlemain" id="tb-title">Ringkasan</div>
+    </div>
+    <div class="badge" id="tb-badge">-</div>
+  </div>
 
-  <div class="topbar">
-    <button class="icon-btn" onclick="openDrawer()">
-      <svg viewBox="0 -960 960 960" width="24" height="24" fill="currentColor"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z"/></svg>
+  <div id="screens">
+    <div class="screen active" id="screen-beranda"></div>
+    <div class="screen" id="screen-hari"></div>
+    <div class="screen" id="screen-program"></div>
+    <div class="screen" id="screen-peta"></div>
+    <div class="screen" id="screen-servis"></div>
+    <div class="screen" id="screen-rekap"></div>
+  </div>
+
+  <nav id="bottomnav">
+    <button data-tab="beranda" onclick="showScreen('beranda')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      <span>Beranda</span>
     </button>
-    <div class="topbar-title">
-      <div class="topbar-eyebrow" id="topEyebrow">Hari Ini</div>
-      <h1 id="topTitle">—</h1>
-    </div>
-    <button class="bt-chip" id="topBtChip" onclick="showScreen('hari')">—</button>
-  </div>
-
-  <!-- HARI INI -->
-  <div class="screen active" id="screen-hari"></div>
-  <!-- PROGRAM -->
-  <div class="screen" id="screen-program"></div>
-  <!-- PETA -->
-  <div class="screen" id="screen-peta"></div>
-  <!-- SERVIS -->
-  <div class="screen" id="screen-servis"></div>
-  <!-- REKAP -->
-  <div class="screen" id="screen-rekap"></div>
-
-  <div class="navwrap">
-    <nav class="tabbar">
-      <button data-tab="hari" onclick="showScreen('hari')">
-        <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"/></svg>
-        <span class="lbl">Hari Ini</span>
-      </button>
-      <button data-tab="program" onclick="showScreen('program')">
-        <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-160 0q-17 0-28.5-11.5T280-280q0-17 11.5-28.5T320-320q17 0 28.5 11.5T360-280q0 17-11.5 28.5T320-240Zm320 0q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z"/></svg>
-        <span class="lbl">Program</span>
-      </button>
-      <button data-tab="peta" onclick="showScreen('peta')">
-        <svg viewBox="0 -960 960 960" fill="currentColor"><path d="m600-120-240-84-186 72q-20 8-37-4.5T120-170v-560q0-13 7.5-23t20.5-15l212-72 240 84 186-72q20-8 37 4.5t17 33.5v560q0 13-7.5 23T812-192l-212 72Zm-40-98v-468l-160-56v468l160 56Zm80 0 120-40v-474l-120 46v468Zm-440-10 120-46v-468l-120 40v474Zm440-458v468-468Zm-320-56v468-468Z"/></svg>
-        <span class="lbl">Peta</span>
-      </button>
-      <button data-tab="servis" onclick="showScreen('servis')">
-        <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M686-132 444-376q-20 8-40.5 12t-43.5 4q-100 0-170-70t-70-170q0-36 10-68.5t28-61.5l146 146 72-72-146-146q29-18 61.5-28t68.5-10q100 0 170 70t70 170q0 23-4 43.5T584-516l244 242q12 12 12 29t-12 29l-84 84q-12 12-29 12t-29-12Zm29-85 27-27-256-256q18-20 26-46.5t8-53.5q0-60-38.5-104.5T386-758l74 74q12 12 12 28t-12 28L332-500q-12 12-28 12t-28-12l-74-74q9 57 53.5 95.5T360-440q26 0 52-8t47-25l256 256ZM472-488Z"/></svg>
-        <span class="lbl">Layanan</span>
-      </button>
-      <button data-tab="rekap" onclick="showScreen('rekap')">
-        <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M640-160v-280h160v280H640Zm-240 0v-640h160v640H400Zm-240 0v-440h160v440H160Z"/></svg>
-        <span class="lbl">Rekap</span>
-      </button>
-    </nav>
-  </div>
-
-  <div class="scrim" id="scrim" onclick="closeDrawer()"></div>
-  <div class="drawer" id="drawer">
-    <div class="drawer-profile">
-      <div class="avatar" id="drawerAvatar">?</div>
-      <div>
-        <div class="drawer-name" id="drawerName">—</div>
-        <div class="drawer-sub" id="drawerSub">—</div>
-      </div>
-    </div>
-    <div class="drawer-group-label">Akun & Data Utama</div>
-    <div class="drawer-item" onclick="closeDrawer();openSettingSheet()"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z"/></svg>&nbsp; Setting Akun</div>
-    <div class="drawer-item" onclick="closeDrawer();openBtPartnerSheet()"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="M240-160q-50 0-85-35t-35-85H40v-440q0-33 23.5-56.5T120-800h560v160h120l120 160v200h-80q0 50-35 85t-85 35q-50 0-85-35t-35-85H360q0 50-35 85t-85 35Zm0-80q17 0 28.5-11.5T280-280q0-17-11.5-28.5T240-320q-17 0-28.5 11.5T200-280q0 17 11.5 28.5T240-240ZM120-360h32q17-18 39-29t49-11q27 0 49 11t39 29h272v-360H120v360Zm600 120q17 0 28.5-11.5T760-280q0-17-11.5-28.5T720-320q-17 0-28.5 11.5T680-280q0 17 11.5 28.5T720-240Zm-40-200h170l-90-120h-80v120ZM360-540Z"/></svg>&nbsp; Kelola No Unit & Sopir</div>
-    <div class="drawer-item" onclick="closeDrawer();openJenisSheet()"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="M240-80q-50 0-85-35t-35-85v-120h120v-560l60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60v680q0 50-35 85t-85 35H240Zm480-80q17 0 28.5-11.5T760-200v-560H320v440h360v120q0 17 11.5 28.5T720-160ZM360-600v-80h240v80H360Zm0 120v-80h240v80H360Zm320-120q-17 0-28.5-11.5T640-640q0-17 11.5-28.5T680-680q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600Zm0 120q-17 0-28.5-11.5T640-520q0-17 11.5-28.5T680-560q17 0 28.5 11.5T720-520q0 17-11.5 28.5T680-480ZM240-160h360v-80H200v40q0 17 11.5 28.5T240-160Zm-40 0v-80 80Z"/></svg>&nbsp; Kelola Jenis Layanan</div>
-    <div class="drawer-item" onclick="closeDrawer();openBlokSheet()"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/></svg>&nbsp; Kelola Blok/Petak (Rute)</div>
-    <div class="drawer-item" onclick="closeDrawer();openLiburSheet()"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z"/></svg>&nbsp; Kelola Hari Libur</div>
-    <div class="drawer-item" onclick="closeDrawer();showScreen('peta')"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="m600-120-240-84-186 72q-20 8-37-4.5T120-170v-560q0-13 7.5-23t20.5-15l212-72 240 84 186-72q20-8 37 4.5t17 33.5v560q0 13-7.5 23T812-192l-212 72Zm-40-98v-468l-160-56v468l160 56Zm80 0 120-40v-474l-120 46v468Zm-440-10 120-46v-468l-120 40v474Zm440-458v468-468Zm-320-56v468-468Z"/></svg>&nbsp; Buka Peta</div>
-    <div class="drawer-item" onclick="closeDrawer();openServiceSettingSheet()"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="M686-132 444-376q-20 8-40.5 12t-43.5 4q-100 0-170-70t-70-170q0-36 10-68.5t28-61.5l146 146 72-72-146-146q29-18 61.5-28t68.5-10q100 0 170 70t70 170q0 23-4 43.5T584-516l244 242q12 12 12 29t-12 29l-84 84q-12 12-29 12t-29-12Zm29-85 27-27-256-256q18-20 26-46.5t8-53.5q0-60-38.5-104.5T386-758l74 74q12 12 12 28t-12 28L332-500q-12 12-28 12t-28-12l-74-74q9 57 53.5 95.5T360-440q26 0 52-8t47-25l256 256ZM472-488Z"/></svg>&nbsp; Standar Servis Berkala</div>
-    <div class="drawer-group-label">Lainnya</div>
-    <div class="drawer-item" onclick="closeDrawer();showScreen('rekap');setTimeout(openExportSheet,300)"><svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>&nbsp; Export Data</div>
-  </div>
-
-  <div id="modalHost"></div>
-  <div class="toast" id="toast"></div>
-  <datalist id="blokDatalist"></datalist>
+    <button data-tab="hari" onclick="showScreen('hari')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
+      <span>Hari Ini</span>
+    </button>
+    <button data-tab="program" onclick="showScreen('program')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      <span>Program</span>
+    </button>
+    <button data-tab="peta" onclick="showScreen('peta')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>
+      <span>Peta</span>
+    </button>
+    <button data-tab="rekap" onclick="showScreen('rekap')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+      <span>Rekap</span>
+    </button>
+  </nav>
 </div>
 
-<script src="vendor/jspdf.umd.min.js"></script>
+<div id="drawerOverlay" onclick="closeDrawer()"></div>
+<div id="drawer">
+  <div class="dhead">
+    <div class="name" id="dw-name">Nama belum diisi</div>
+    <div class="sub" id="dw-unit">Unit default: -</div>
+  </div>
+  <div class="dgroup">Akun</div>
+  <div class="ditem" onclick="openSettingAkun()"><span class="ic">&#9881;</span> Pengaturan Akun</div>
+  <div class="dgroup">Master Data</div>
+  <div class="ditem" onclick="openKelolaUnit()"><span class="ic">&#128666;</span> No Unit</div>
+  <div class="ditem" onclick="openKelolaBlok()"><span class="ic">&#128506;</span> No Blok</div>
+</div>
+
+<div id="modalOverlay"><div id="modalSheet"></div></div>
+<div id="toast"></div>
+
 <script>
-  // Fallback: kalau file vendor lokal gagal dimuat, ambil dari CDN
-  if (!window.jspdf) {
-    var _jspdfFallback = document.createElement('script');
-    _jspdfFallback.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
-    document.head.appendChild(_jspdfFallback);
-  }
-</script>
-<script src="vendor/jspdf.plugin.autotable.min.js"></script>
-<script src="vendor/xlsx.full.min.js"></script>
-<style>
-  .peta-upload{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-container);border:1.5px dashed var(--outline);border-radius:var(--radius-md);padding:14px;font-size:12px;font-weight:700;color:var(--on-surface-variant);cursor:pointer;margin-bottom:12px;}
-  .peta-upload input{display:none;}
-  .peta-selected{background:var(--primary-container);color:var(--on-primary-container);border-radius:var(--radius-md);padding:12px 14px;font-size:14px;font-weight:700;margin-bottom:12px;}
-  .peta-imgwrap{position:relative;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--outline);background:var(--surface-container);touch-action:manipulation;}
-  .peta-imgwrap img{width:100%;display:block;height:auto;}
-  .peta-scrollbox{width:100%;height:62vh;overflow:auto;border-radius:var(--radius-lg);border:1px solid var(--outline);margin-bottom:8px;background:var(--surface-container);-webkit-overflow-scrolling:touch;}
-  .peta-zoom-bar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;}
-  .peta-zoom-btn{width:40px;height:40px;border-radius:100px;border:1.5px solid var(--outline);background:var(--surface-container-high);font-size:16px;font-weight:800;color:var(--on-surface);display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .peta-zoom-label{align-self:center;font-size:12px;font-weight:700;color:var(--on-surface-variant);min-width:42px;text-align:center;}
-  .peta-pin{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-26px;cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
-</style>
-<script>
-/* ============ STORAGE ============ */
+/* ================= DATA LAYER ================= */
 const LS = {
-  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ /* penuh/diblokir, abaikan */ } }
+  get(key, def){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }catch(e){ return def; } },
+  set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; } }
 };
-let USER = LS.get('mrg_user', {name:'', mainBt:''});
-let BT_CODES = LS.get('mrg_bt', [{id:'bt12',label:'BT.12'},{id:'bt13',label:'BT.13'}]);
-let PARTNERS = LS.get('mrg_partners', []);
-let WEEKPLAN = LS.get('mrg_weekplan', {from:'', to:'', rows:[]});
-let weekPlanBtFilter = 'all';
-function saveWeekPlan(){ LS.set('mrg_weekplan', WEEKPLAN); }
-let LIBUR = LS.get('mrg_libur', []); // [{date,label}]
-let ENTRIES = LS.get('mrg_entries', []);
-(function migrateLegacyLokasiRute(){
-  let changed = false;
-  ENTRIES.forEach(e=>{
-    let arr = e.lokasiRute;
-    if(typeof arr === 'string') arr = arr ? [arr] : [];
-    if(Array.isArray(arr) && arr.length>0){
-      const firstUsedForMuat = !e.lokasiMuat;
-      if(firstUsedForMuat) e.lokasiMuat = arr[0];
-      const extra = firstUsedForMuat ? arr.slice(1) : arr;
-      if(extra.length){
-        const note = 'Lokasi lama: ' + extra.join(', ');
-        e.catatan = e.catatan ? (e.catatan+'\n'+note) : note;
-      }
-      changed = true;
-    }
-    if(e.lokasiRute !== undefined) delete e.lokasiRute;
-  });
-  if(changed) LS.set('mrg_entries', ENTRIES);
-})();
-let SERVIS = LS.get('mrg_servis', []);
-let HM_RESETS = LS.get('mrg_hm_resets', []);
-function saveHmResets(){ LS.set('mrg_hm_resets', HM_RESETS); }
-function lastHmResetForBt(btId){
-  const list = HM_RESETS.filter(r=>r.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
-  return list[0] || null;
-}
-function maybeDetectHmReset(btId, newHmAkhirVal, entryDate){
-  if(newHmAkhirVal==='' || newHmAkhirVal==null || !btId) return;
-  const newVal = parseFloat(newHmAkhirVal);
-  if(isNaN(newVal)) return;
-  const prevMax = currentHmForBt(btId);
-  if(prevMax!==null && prevMax>50 && newVal < prevMax*0.7 && (prevMax-newVal)>100){
-    const ok = confirm('HM Akhir ('+newVal.toFixed(1)+') turun drastis dari catatan sebelumnya ('+prevMax.toFixed(1)+') untuk '+btLabel(btId)+'.\n\nApakah HM meter unit ini diganti/direset (misalnya karena rusak)?');
-    if(ok){
-      HM_RESETS.push({id: uid(), btId, date: entryDate || todayIso(), note: 'Reset otomatis terdeteksi: HM turun dari '+prevMax.toFixed(1)+' ke '+newVal.toFixed(1)});
-      saveHmResets();
-      toast('Dicatat: HM '+btLabel(btId)+' di-reset mulai '+fmtLabel(entryDate||todayIso()));
-    }
-  }
-}
-if(!USER.mainBt && BT_CODES[0]) USER.mainBt = BT_CODES[0].id;
-
-function saveUser(){ LS.set('mrg_user', USER); }
-function saveBt(){ LS.set('mrg_bt', BT_CODES); }
-function savePartners(){ LS.set('mrg_partners', PARTNERS); }
-function saveLibur(){ LS.set('mrg_libur', LIBUR); }
-function saveEntries(){ LS.set('mrg_entries', ENTRIES); }
-function saveServis(){ LS.set('mrg_servis', SERVIS); }
-
-/* ============ HELPERS ============ */
-const ICON_PATHS = {
-  home: "M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z",
-  calendar_month: "M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-160 0q-17 0-28.5-11.5T280-280q0-17 11.5-28.5T320-320q17 0 28.5 11.5T360-280q0 17-11.5 28.5T320-240Zm320 0q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z",
-  build: "M686-132 444-376q-20 8-40.5 12t-43.5 4q-100 0-170-70t-70-170q0-36 10-68.5t28-61.5l146 146 72-72-146-146q29-18 61.5-28t68.5-10q100 0 170 70t70 170q0 23-4 43.5T584-516l244 242q12 12 12 29t-12 29l-84 84q-12 12-29 12t-29-12Zm29-85 27-27-256-256q18-20 26-46.5t8-53.5q0-60-38.5-104.5T386-758l74 74q12 12 12 28t-12 28L332-500q-12 12-28 12t-28-12l-74-74q9 57 53.5 95.5T360-440q26 0 52-8t47-25l256 256ZM472-488Z",
-  bar_chart: "M640-160v-280h160v280H640Zm-240 0v-640h160v640H400Zm-240 0v-440h160v440H160Z",
-  local_shipping: "M240-160q-50 0-85-35t-35-85H40v-440q0-33 23.5-56.5T120-800h560v160h120l120 160v200h-80q0 50-35 85t-85 35q-50 0-85-35t-35-85H360q0 50-35 85t-85 35Zm0-80q17 0 28.5-11.5T280-280q0-17-11.5-28.5T240-320q-17 0-28.5 11.5T200-280q0 17 11.5 28.5T240-240ZM120-360h32q17-18 39-29t49-11q27 0 49 11t39 29h272v-360H120v360Zm600 120q17 0 28.5-11.5T760-280q0-17-11.5-28.5T720-320q-17 0-28.5 11.5T680-280q0 17 11.5 28.5T720-240Zm-40-200h170l-90-120h-80v120ZM360-540Z",
-  groups: "M0-240v-63q0-43 44-70t116-27q13 0 25 .5t23 2.5q-14 21-21 44t-7 48v65H0Zm240 0v-65q0-32 17.5-58.5T307-410q32-20 76.5-30t96.5-10q53 0 97.5 10t76.5 30q32 20 49 46.5t17 58.5v65H240Zm540 0v-65q0-26-6.5-49T754-397q11-2 22.5-2.5t23.5-.5q72 0 116 26.5t44 70.5v63H780Zm-455-80h311q-10-20-55.5-35T480-370q-55 0-100.5 15T325-320ZM160-440q-33 0-56.5-23.5T80-520q0-34 23.5-57t56.5-23q34 0 57 23t23 57q0 33-23 56.5T160-440Zm640 0q-33 0-56.5-23.5T720-520q0-34 23.5-57t56.5-23q34 0 57 23t23 57q0 33-23 56.5T800-440Zm-320-40q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T600-600q0 50-34.5 85T480-480Zm0-80q17 0 28.5-11.5T520-600q0-17-11.5-28.5T480-640q-17 0-28.5 11.5T440-600q0 17 11.5 28.5T480-560Zm1 240Zm-1-280Z",
-  manage_history: "M120-560v-240h80v94q51-64 124.5-99T480-840q150 0 255 105t105 255h-80q0-117-81.5-198.5T480-760q-69 0-129 32t-101 88h110v80H120Zm2 120h82q12 93 76.5 157.5T435-204l48 84q-138 0-242-91.5T122-440Zm412 70-94-94v-216h80v184l56 56-42 70ZM719 0l-12-60q-12-5-22.5-10.5T663-84l-58 18-40-68 46-40q-2-13-2-26t2-26l-46-40 40-68 58 18q11-8 21.5-13.5T707-340l12-60h80l12 60q12 5 23 11.5t21 14.5l58-20 40 70-46 40q2 13 2 25t-2 25l46 40-40 68-58-18q-11 8-21.5 13.5T811-60L799 0h-80Zm40-120q33 0 56.5-23.5T839-200q0-33-23.5-56.5T759-280q-33 0-56.5 23.5T679-200q0 33 23.5 56.5T759-120Z",
-  close: "m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z",
-  menu: "M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z",
-  delete: "M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z",
-  edit: "M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z",
-  add: "M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v240Z",
-  print: "M640-640v-120H320v120h-80v-200h480v200h-80Zm-480 80h640-640Zm560 100q17 0 28.5-11.5T760-500q0-17-11.5-28.5T720-540q-17 0-28.5 11.5T680-500q0 17 11.5 28.5T720-460Zm-80 260v-160H320v160h320Zm80 80H240v-160H80v-240q0-51 35-85.5t85-34.5h560q51 0 85.5 34.5T880-520v240H720v160Zm80-240v-160q0-17-11.5-28.5T760-560H200q-17 0-28.5 11.5T160-520v160h80v-80h480v80h80Z",
-  download: "M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z",
-  share: "M720-80q-50 0-85-35t-35-85q0-7 1-14.5t3-13.5L322-392q-17 15-38 23.5t-44 8.5q-50 0-85-35t-35-85q0-50 35-85t85-35q23 0 44 8.5t38 23.5l282-164q-2-6-3-13.5t-1-14.5q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-23 0-44-8.5T638-672L356-508q2 6 3 13.5t1 14.5q0 7-1 14.5t-3 13.5l282 164q17-15 38-23.5t44-8.5q50 0 85 35t35 85q0 50-35 85t-85 35Zm0-640q17 0 28.5-11.5T760-760q0-17-11.5-28.5T720-800q-17 0-28.5 11.5T680-760q0 17 11.5 28.5T720-720ZM240-440q17 0 28.5-11.5T280-480q0-17-11.5-28.5T240-520q-17 0-28.5 11.5T200-480q0 17 11.5 28.5T240-440Zm480 280q17 0 28.5-11.5T760-200q0-17-11.5-28.5T720-240q-17 0-28.5 11.5T680-200q0 17 11.5 28.5T720-160Zm0-600ZM240-480Zm480 280Z",
-  settings: "m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z",
-  sync: "M160-160v-80h110l-16-14q-52-46-73-105t-21-119q0-111 66.5-197.5T400-790v84q-72 26-116 88.5T240-478q0 45 17 87.5t53 78.5l10 10v-98h80v240H160Zm400-10v-84q72-26 116-88.5T720-482q0-45-17-87.5T650-648l-10-10v98h-80v-240h240v80H690l16 14q49 49 71.5 106.5T800-482q0 111-66.5 197.5T560-170Z",
-  receipt_long: "M240-80q-50 0-85-35t-35-85v-120h120v-560l60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60v680q0 50-35 85t-85 35H240Zm480-80q17 0 28.5-11.5T760-200v-560H320v440h360v120q0 17 11.5 28.5T720-160ZM360-600v-80h240v80H360Zm0 120v-80h240v80H360Zm320-120q-17 0-28.5-11.5T640-640q0-17 11.5-28.5T680-680q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600Zm0 120q-17 0-28.5-11.5T640-520q0-17 11.5-28.5T680-560q17 0 28.5 11.5T720-520q0 17-11.5 28.5T680-480ZM240-160h360v-80H200v40q0 17 11.5 28.5T240-160Zm-40 0v-80 80Z",
-  event: "M580-240q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z",
-  photo_camera: "M480-260q75 0 127.5-52.5T660-440q0-75-52.5-127.5T480-620q-75 0-127.5 52.5T300-440q0 75 52.5 127.5T480-260Zm0-80q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H638l-73-80H395l-73 80H160v480Zm320-240Z",
-  map: "m600-120-240-84-186 72q-20 8-37-4.5T120-170v-560q0-13 7.5-23t20.5-15l212-72 240 84 186-72q20-8 37 4.5t17 33.5v560q0 13-7.5 23T812-192l-212 72Zm-40-98v-468l-160-56v468l160 56Zm80 0 120-40v-474l-120 46v468Zm-440-10 120-46v-468l-120 40v474Zm440-458v468-468Zm-320-56v468-468Z",
-  location_on: "M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z",
-  filter_alt: "M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Zm40-308 198-252H282l198 252Zm0 0Z",
-  check_circle: "m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z",
-  warning: "m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z",
-  info: "M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z",
-};
-function icon(name, size, extraStyle){
-  const p = ICON_PATHS[name];
-  if(!p) return '';
-  const s = size||24;
-  return `<svg viewBox="0 -960 960 960" width="${s}" height="${s}" fill="currentColor" style="${extraStyle||''}"><path d="${p}"/></svg>`;
-}
-const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis',"Jumat",'Sabtu'];
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-const MONTH_NAMES_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const NORMAL_HOURS = {1:7,2:7,3:7,4:7,5:6.5,6:5.5,0:0};
-const JENIS_KATEGORI = ['Antar/Jemput Tenaga','Muat Tebu','Drone','Operator','Lainnya'];
-const ANTAR_TIPE_OPTS = ['Harian','Vendor'];
-const MUAT_TIPE_OPTS = ['Produksi','Bibit'];
-const OPERATOR_SHIFT_OPTS = ['Operator Pagi','Operator Siang','Piket Mekanik dan Irigasi'];
-const KEGIATAN_ANTAR_DEFAULT = ['Spraying','Gleaning','Tebang','Weeding','Klentek'];
-const DRONE_JENIS_DEFAULT = ['ZPK','Prevathone'];
-let KEGIATAN_ANTAR_LIST = LS.get('mrg_kegiatan_antar', KEGIATAN_ANTAR_DEFAULT.map(v=>({value:v,locked:true})));
-let DRONE_JENIS_LIST = LS.get('mrg_drone_jenis', DRONE_JENIS_DEFAULT.map(v=>({value:v,locked:true})));
-function saveKegiatanAntar(){ LS.set('mrg_kegiatan_antar', KEGIATAN_ANTAR_LIST); }
-function saveDroneJenis(){ LS.set('mrg_drone_jenis', DRONE_JENIS_LIST); }
-
-// ====== PERBAIKAN: escapeHtml ======
-function escapeHtml(str) {
-  if (!str) return '';
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  };
-  return String(str).replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-// ====== PERBAIKAN: IndexedDB untuk gambar peta ======
-const DB_NAME = 'PetaDB';
-const STORE_NAME = 'images';
-const DB_VERSION = 1;
-function openPetaDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = (ev) => {
-      const db = ev.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-async function savePetaImageToDB(dataUrl) {
-  const db = await openPetaDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.put(dataUrl, 'petaImage');
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
-async function loadPetaImageFromDB() {
-  const db = await openPetaDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.get('petaImage');
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-function enumerateDates(start, end){
-  const dates = []; let cur = new Date(start+'T00:00:00'); const last = new Date((end||start)+'T00:00:00');
-  if(last < cur) return [start];
-  while(cur <= last){
-    dates.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0'));
-    cur.setDate(cur.getDate()+1);
-  }
-  return dates;
-}
+function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function dow(iso){ return new Date(iso+'T00:00:00').getDay(); }
-function monthKey(iso){ return iso.slice(0,7); }
-function fmtLabel(iso){ const d=new Date(iso+'T00:00:00'); return DAY_NAMES[d.getDay()]+', '+d.getDate()+' '+MONTH_NAMES[d.getMonth()]+' '+d.getFullYear(); }
-function isHoliday(iso){ return LIBUR.some(h=>h.date===iso); }
-function btLabel(id){ const b=BT_CODES.find(x=>x.id===id); return b?b.label:'—'; }
-function toMinutes(t){
-  if(!t) return null;
-  // support time input: HH:MM
-  if (t.includes(':')) {
-    const parts = t.split(':');
-    const h = parseInt(parts[0],10), m = parseInt(parts[1],10);
-    if (!isNaN(h) && !isNaN(m) && h>=0 && h<=23 && m>=0 && m<=59) return h*60 + m;
-    return null;
-  }
-  // fallback: numeric
-  const clean = t.trim().replace(/[^0-9:.]/g,'').replace('.',':');
-  let h, m;
-  if(clean.includes(':')){
-    const parts = clean.split(':');
-    if(parts.length<2) return null;
-    h = parseInt(parts[0],10); m = parseInt(parts[1],10);
-  } else if(clean.length===3 || clean.length===4){
-    const padded = clean.padStart(4,'0');
-    h = parseInt(padded.slice(0,2),10); m = parseInt(padded.slice(2,4),10);
-  } else if(clean.length<=2){
-    h = parseInt(clean,10); m = 0;
-  } else {
-    return null;
-  }
-  if(isNaN(h)||isNaN(m)||h>23||m>59) return null;
-  return h*60+m;
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtLabel(iso){
+  if(!iso) return '-';
+  const d = new Date(iso+'T00:00:00');
+  const hari = ['Minggu','Senin','Selasa','Rabu','Kamis',"Jumat",'Sabtu'][d.getDay()];
+  const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][d.getMonth()];
+  return hari+', '+d.getDate()+' '+bulan+' '+d.getFullYear();
 }
-function fmtHoursNum(mins){ return Math.round((mins/60)*10)/10; }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(window._toastT); window._toastT=setTimeout(()=>t.classList.remove('show'),2200); }
 
-function computeOT(e){
-  const isFullOt = dow(e.date)===0 || isHoliday(e.date);
-  const t1 = toMinutes(e.s1Time), t5 = toMinutes(e.s5Time);
-  let span = (t1!==null && t5!==null) ? Math.max(0, t5-t1) : 0;
-  const rs = toMinutes(e.istMulai), re = toMinutes(e.istSelesai);
-  let restMin = (rs!==null && re!==null) ? Math.max(0, re-rs) : 0;
-  if(e.istLembur) restMin = 0;
-  const totalMin = Math.max(0, span-restMin);
-  const normalMin = isFullOt ? 0 : (NORMAL_HOURS[dow(e.date)]||0)*60;
-  let otMin = isFullOt ? totalMin : Math.max(0, totalMin-normalMin);
-  if(e.otOverride !== null && e.otOverride !== undefined && e.otOverride !== '') otMin = Number(e.otOverride)*60;
-  return {totalMin, otMin, isFullOt};
-}
-function hmPakai(e){ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); if(isNaN(a)||isNaN(b)) return 0; return Math.max(0, b-a); }
+let USER = LS.get('v2_user', {name:'', mainBt:''});
+let UNITS = LS.get('v2_units', []);       // [{id, kode}]
+let BLOKS = LS.get('v2_bloks', []);       // [{id, kode}]
+let ENTRIES = LS.get('v2_entries', []);   // daily log entries
+function saveUser(){ LS.set('v2_user', USER); }
+function saveUnits(){ LS.set('v2_units', UNITS); }
+function saveBloks(){ LS.set('v2_bloks', BLOKS); }
+function saveEntries(){ LS.set('v2_entries', ENTRIES); }
 
-/* ============ PERBAIKAN: validasi input ============ */
-function stripDots(v){ return v==null ? '' : String(v).replace(/\./g,''); }
-function fmtThousandsLive(v){
-  const clean = String(v||'').replace(/[^\d]/g,'');
-  if(clean==='') return '';
-  return clean.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-}
-function fmtHm1(v){
-  if(v===''||v==null) return '';
-  const n = parseFloat(String(v).replace(',','.'));
-  if(isNaN(n)) return '';
-  return n.toFixed(1);
-}
-function validateNumberInput(value, allowEmpty = true) {
-  if (allowEmpty && value === '') return null;
-  const num = parseFloat(value);
-  if (isNaN(num)) throw new Error('Harus berupa angka');
-  return num;
-}
-function validateTimeInput(value) {
-  if (value === '') return '';
-  const mins = toMinutes(value);
-  if (mins === null) throw new Error('Format jam salah (contoh: 07:00 atau 0700)');
-  return value;
-}
-
-/* ============ PERBAIKAN: getTodayEntry() ============ */
-function getTodayEntry() {
-  let e = ENTRIES.find(x => x.date === todayIso() && x.ownerType === 'saya');
-  if (!e) {
-    e = { id: uid(), date: todayIso(), btId: USER.mainBt, ownerType: 'saya', ownerName: USER.name || 'Saya',
-      s1Time: '', s5Time: '', kegiatanPagi: [''], kegiatanSore: [''],
-      istMulai: '11.00', istSelesai: '13.30', istLembur: false,
-      otOverride: null, hmAwal: '', hmAkhir: '', bbmLiter: '',
-      jenisKategori: JENIS_KATEGORI[0], jenisKet: '', catatan: '',
-      antarTipe: '', antarKegiatan: '', muatTipe: '', tonaseKg: '',
-      lokasiMuat: '', lokasiBongkar: '', droneJenis: '', operatorShift: '' };
-    ENTRIES.push(e);
-    saveEntries();
-  }
-  normKegiatan(e);
-  return e;
-}
-
-/* ============ NAV / SCREENS ============ */
+/* ================= NAVIGATION ================= */
+const TITLES = {
+  beranda:['BERANDA', 'Ringkasan'],
+  hari:['HARI INI', ()=>fmtLabel(todayIso())],
+  program:['PROGRAM', 'Jadwal & Riwayat Kerja'],
+  peta:['PETA', 'Lokasi Kerja'],
+  rekap:['REKAP', 'Laporan Bulanan']
+};
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
-  document.querySelectorAll('nav.tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
-  const titles = {hari:['Hari Ini', fmtLabel(todayIso())], program:['Program','Jadwal & Riwayat Kerja'], peta:['Peta','Lokasi Kerja'], servis:['Servis','Riwayat Perbaikan'], rekap:['Rekap','Laporan Bulanan']};
-  document.getElementById('topEyebrow').textContent = titles[name][0];
-  document.getElementById('topTitle').textContent = titles[name][1];
-  try{
-    if(name==='hari') renderHari();
-    if(name==='program') renderProgram();
-    if(name==='peta') renderPeta();
-    if(name==='servis') renderServis();
-    if(name==='rekap') renderRekap();
-  }catch(err){
-    const host = document.getElementById('screen-'+name);
-    host.innerHTML = `
-      <div class="card" style="border-color:var(--danger);">
-        <div class="field-label" style="color:var(--danger);">Ada masalah menampilkan halaman ini</div>
-        <div class="field-sub" style="margin:8px 0;">Pesan teknis: ${escapeHtml((err && err.message) ? err.message : 'error tidak diketahui')}</div>
-        <button class="btn-outline" onclick="location.reload()">${icon('sync',16)} Muat Ulang Aplikasi</button>
-      </div>`;
-  }
+  document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  const t = TITLES[name];
+  document.getElementById('tb-eyebrow').textContent = t[0];
+  document.getElementById('tb-title').textContent = typeof t[1]==='function' ? t[1]() : t[1];
+  document.getElementById('tb-badge').textContent = USER.mainBt ? btLabel(USER.mainBt) : '-';
+  if(name==='beranda') renderBeranda();
+  if(name==='hari') renderHari();
+  if(name==='program') renderProgram();
+  if(name==='rekap') renderRekap();
+  if(name==='peta') renderPeta();
 }
+function btLabel(id){ const u = UNITS.find(x=>x.id===id); return u ? u.kode : '-'; }
+
+/* ================= DRAWER ================= */
 function openDrawer(){
-  document.getElementById('drawerAvatar').textContent = (USER.name||'?').charAt(0).toUpperCase();
-  document.getElementById('drawerName').textContent = escapeHtml(USER.name || 'Belum diisi');
-  document.getElementById('drawerSub').textContent = 'BT tanggung jawab: '+escapeHtml(btLabel(USER.mainBt));
+  document.getElementById('dw-name').textContent = USER.name || 'Nama belum diisi';
+  document.getElementById('dw-unit').textContent = 'Unit default: '+(USER.mainBt ? btLabel(USER.mainBt) : '-');
+  document.getElementById('drawerOverlay').classList.add('show');
   document.getElementById('drawer').classList.add('show');
-  document.getElementById('scrim').classList.add('show');
 }
-function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); document.getElementById('scrim').classList.remove('show'); }
-function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
+function closeDrawer(){
+  document.getElementById('drawerOverlay').classList.remove('show');
+  document.getElementById('drawer').classList.remove('show');
+}
 
-/* ============ DIALOG KUSTOM ============ */
-function showConfirm(message, onYes){
-  window._pendingConfirmCb = onYes;
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div style="font-size:14px;font-weight:700;margin-bottom:18px;">${escapeHtml(message)}</div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn-outline" style="flex:1;" onclick="closeModal()">Batal</button>
-          <button class="btn-filled" style="flex:1;background:var(--danger);" onclick="runConfirmYes()">Hapus</button>
-        </div>
-      </div>
-    </div>`;
+/* ================= MODAL HELPER ================= */
+function openModal(html){
+  document.getElementById('modalSheet').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
 }
-function runConfirmYes(){ const cb = window._pendingConfirmCb; closeModal(); if(cb) cb(); }
-function showPrompt(message, defaultValue, onSubmit){
-  window._pendingPromptCb = onSubmit;
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div style="font-size:14px;font-weight:700;margin-bottom:12px;">${escapeHtml(message)}</div>
-        <input type="text" id="promptInputVal" value="${escapeHtml(defaultValue||'')}">
-        <div style="display:flex;gap:10px;margin-top:4px;">
-          <button class="btn-outline" style="flex:1;" onclick="closeModal()">Batal</button>
-          <button class="btn-filled" style="flex:1;" onclick="runPromptSubmit()">Simpan</button>
-        </div>
-      </div>
-    </div>`;
-  setTimeout(()=>{ const el=document.getElementById('promptInputVal'); if(el){ el.focus(); el.select(); } }, 60);
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+
+/* ================= PENGATURAN AKUN ================= */
+function openSettingAkun(){
+  closeDrawer();
+  openModal(`
+    <div class="mhead"><h2>Pengaturan Akun</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <label class="flabel">Nama Kamu</label>
+    <input type="text" id="setNama" value="${escapeHtml(USER.name)}" placeholder="mis. Yohanes">
+    <label class="flabel">Unit Default</label>
+    <select id="setUnit">
+      <option value="">- Pilih unit -</option>
+      ${UNITS.map(u=>`<option value="${u.id}" ${USER.mainBt===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}
+    </select>
+    <button class="btn-block" onclick="saveSettingAkun()">Simpan</button>
+  `);
 }
-function runPromptSubmit(){
-  const el = document.getElementById('promptInputVal');
-  const val = el ? el.value : '';
-  const cb = window._pendingPromptCb;
+function saveSettingAkun(){
+  USER.name = document.getElementById('setNama').value.trim();
+  USER.mainBt = document.getElementById('setUnit').value;
+  saveUser();
   closeModal();
-  if(cb) cb(val);
+  toast('Pengaturan akun disimpan');
+  showScreen(document.querySelector('#bottomnav button.active').dataset.tab);
 }
 
-// ====== PERBAIKAN: penggabungan duplikat (mergeDuplicateEntries) ======
-function mergeDuplicateEntries() {
-  const groups = {};
-  const order = [];
-  ENTRIES.forEach(e => {
-    const key = e.date + '|' + e.ownerType + '|' + (e.ownerName || '');
-    if (!groups[key]) { groups[key] = []; order.push(key); }
-    groups[key].push(e);
-  });
-  let mergedCount = 0;
-  const result = [];
-  order.forEach(key => {
-    const list = groups[key];
-    if (list.length === 1) { result.push(list[0]); return; }
-    mergedCount += list.length - 1;
-    const base = Object.assign({}, list[0]);
-    const scalarKeys = ['btId', 's1Time', 's5Time', 'istMulai', 'istSelesai', 'istLembur', 'otOverride', 'hmAwal', 'hmAkhir', 'bbmLiter', 'jenisKategori', 'antarTipe', 'antarKegiatan', 'muatTipe', 'tonaseKg', 'lokasiMuat', 'lokasiBongkar', 'droneJenis', 'operatorShift'];
-    scalarKeys.forEach(k => {
-      for (let i = 0; i < list.length; i++) {
-        if (list[i][k] !== undefined && list[i][k] !== null && list[i][k] !== '') {
-          base[k] = list[i][k];
-          break;
-        }
-      }
-    });
-    // Gabungkan catatan dan jenisKet dengan unik
-    ['catatan', 'jenisKet'].forEach(k => {
-      const vals = list.map(e => e[k]).filter(v => v && v.trim());
-      if (vals.length) {
-        const unique = [...new Set(vals.map(v => v.trim()))];
-        base[k] = unique.join('\n');
-      } else {
-        base[k] = '';
-      }
-    });
-    ['kegiatanPagi', 'kegiatanSore'].forEach(k => {
-      const seen = [];
-      list.forEach(e => {
-        let arr = e[k];
-        if (typeof arr === 'string') arr = arr ? [arr] : [];
-        (arr || []).forEach(v => { if (v && !seen.includes(v)) seen.push(v); });
-      });
-      base[k] = seen.length ? seen : [''];
-    });
-    result.push(base);
-  });
-  if (mergedCount > 0) { ENTRIES = result; saveEntries(); }
-  return mergedCount;
+/* ================= KELOLA UNIT ================= */
+function openKelolaUnit(){
+  closeDrawer();
+  renderKelolaUnitModal();
+}
+function renderKelolaUnitModal(){
+  openModal(`
+    <div class="mhead"><h2>Kelola No Unit</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="text" id="newUnitKode" placeholder="mis. BT.14" style="margin-bottom:0;">
+      <button class="pill-btn" onclick="addUnit()">+ Tambah</button>
+    </div>
+    <div class="card card-flat">
+      ${UNITS.length===0 ? '<div class="empty-note">Belum ada unit. Tambahkan di atas.</div>' :
+        UNITS.map(u=>`<div class="list-row"><span>${escapeHtml(u.kode)}</span><button class="icon-btn" onclick="deleteUnit('${u.id}')">&#128465;</button></div>`).join('')}
+    </div>
+  `);
+}
+function addUnit(){
+  const val = document.getElementById('newUnitKode').value.trim();
+  if(!val){ toast('Isi nomor unit dulu'); return; }
+  if(UNITS.some(u=>u.kode.toLowerCase()===val.toLowerCase())){ toast('Unit ini sudah ada'); return; }
+  UNITS.push({id:uid(), kode:val});
+  saveUnits();
+  renderKelolaUnitModal();
+  toast('Unit ditambahkan');
+}
+function deleteUnit(id){
+  if(!confirm('Hapus unit ini? Data entri lama yang memakai unit ini tidak akan terhapus, tapi labelnya akan hilang.')) return;
+  UNITS = UNITS.filter(u=>u.id!==id);
+  saveUnits();
+  renderKelolaUnitModal();
+  toast('Unit dihapus');
 }
 
-function normKegiatan(e){
-  ['kegiatanPagi','kegiatanSore'].forEach(k=>{
-    if(typeof e[k]==='string'){ e[k] = e[k] ? [e[k]] : ['']; }
-    if(!Array.isArray(e[k]) || e[k].length===0) e[k]=[''];
-  });
+/* ================= KELOLA BLOK ================= */
+function openKelolaBlok(){
+  closeDrawer();
+  renderKelolaBlokModal();
+}
+function renderKelolaBlokModal(){
+  openModal(`
+    <div class="mhead"><h2>Kelola No Blok</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="text" id="newBlokKode" placeholder="mis. BU 30" style="margin-bottom:0;">
+      <button class="pill-btn" onclick="addBlok()">+ Tambah</button>
+    </div>
+    <div class="card card-flat">
+      ${BLOKS.length===0 ? '<div class="empty-note">Belum ada blok. Tambahkan di atas.</div>' :
+        BLOKS.map(b=>`<div class="list-row"><span>${escapeHtml(b.kode)}</span><button class="icon-btn" onclick="deleteBlok('${b.id}')">&#128465;</button></div>`).join('')}
+    </div>
+  `);
+}
+function addBlok(){
+  const val = document.getElementById('newBlokKode').value.trim();
+  if(!val){ toast('Isi nomor blok dulu'); return; }
+  if(BLOKS.some(b=>b.kode.toLowerCase()===val.toLowerCase())){ toast('Blok ini sudah ada'); return; }
+  BLOKS.push({id:uid(), kode:val});
+  saveBloks();
+  renderKelolaBlokModal();
+  toast('Blok ditambahkan');
+}
+function deleteBlok(id){
+  if(!confirm('Hapus blok ini?')) return;
+  BLOKS = BLOKS.filter(b=>b.id!==id);
+  saveBloks();
+  renderKelolaBlokModal();
+  toast('Blok dihapus');
+}
+
+/* ================= HARI INI ================= */
+function getTodayEntry(){
+  let e = ENTRIES.find(x=>x.date===todayIso());
+  if(!e){
+    e = {id:uid(), date:todayIso(), btId:USER.mainBt||'', hmAwal:'', hmAkhir:'', bbmLiter:'', catatan:''};
+    ENTRIES.push(e);
+    saveEntries();
+  }
   return e;
 }
-const LOKASI_RUTE_KATEGORI = ['Antar/Jemput Tenaga','Drone','Muat Tebu'];
-function kegiatanListHtml(e, field){
-  return e[field].map((v,i)=>`
-    <div class="kgt-row">
-      <input type="text" value="${escapeHtml(v||'')}" placeholder="mis. Pel. Umum" onchange="updateKegiatan('${field}', ${i}, this.value)">
-      ${e[field].length>1 ? `<button type="button" class="kgt-rm" onclick="removeKegiatan('${field}', ${i})">${icon('close',14)}</button>` : ''}
-    </div>`).join('');
-}
-function addKegiatan(field){
-  const e = getTodayEntry(); e[field].push(''); quickSaveField(field, e[field]);
-}
-function updateKegiatan(field, idx, val){
-  const e = getTodayEntry(); e[field][idx] = val; quickSaveField(field, e[field]);
-}
-function removeKegiatan(field, idx){
-  const e = getTodayEntry(); e[field].splice(idx,1); if(e[field].length===0) e[field]=['']; quickSaveField(field, e[field]);
-}
-function btOptionsHtml(selId){
-  return BT_CODES.map(b=>`<option value="${b.id}" ${b.id===selId?'selected':''}>${escapeHtml(b.label)}</option>`).join('');
-}
-function jenisOptionsHtml(sel){
-  return JENIS_KATEGORI.map(k=>`<option ${k===sel?'selected':''}>${escapeHtml(k)}</option>`).join('');
-}
-function changeJenisKategori(val){
-  const e = getTodayEntry();
-  quickSaveField('jenisKategori', val);
-}
-function subOptionsHtml(opts, sel){
-  return '<option value="">Pilih...</option>' + opts.map(o=>`<option ${o===sel?'selected':''}>${escapeHtml(o)}</option>`).join('');
-}
-function extendableOptionsHtml(list, sel){
-  return '<option value="">Pilih...</option>'
-    + list.map(it=>`<option value="${escapeHtml(it.value)}" ${it.value===sel?'selected':''}>${escapeHtml(it.value)}</option>`).join('')
-    + `<option value="__new__">+ Tambah baru...</option>`;
-}
-function addBlokIfNew(label){
-  if(!BLOK_LIST.some(b=>b.label===label)){ BLOK_LIST.push({id:uid(), label, source:'manual'}); saveBlok(); refreshBlokDatalist(); }
-}
-/* ============ LOKASI PICKER ============ */
-function blokSearchList(query){
-  const q = (query||'').trim().toLowerCase();
-  if(!q) return BLOK_LIST;
-  let res = BLOK_LIST.filter(b=>b.label.toLowerCase().startsWith(q));
-  if(res.length===0) res = BLOK_LIST.filter(b=>b.label.toLowerCase().includes(q));
-  return res;
-}
-function lokpickListHtml(query){
-  const list = blokSearchList(query);
-  if(list.length===0) return '<div class="empty-note" style="padding:14px 4px;">Tidak ada blok yang cocok. Ketuk "+ Tambah manual" untuk menambahkannya.</div>';
-  return list.map(b=>`<div class="lokpick-item" onclick="lokpickSelect('${escapeHtml(b.label.replace(/'/g,"\\'"))}')">${escapeHtml(b.label)}</div>`).join('');
-}
-function lokpickMapHtml(){
-  if(!PETA_IMAGE) return '<div class="empty-note" style="padding:14px 4px;">Belum ada gambar peta. Upload dulu lewat menu Peta.</div>';
-  if(PETA_PINS.length===0) return '<div class="empty-note" style="padding:14px 4px;">Peta sudah ada, tapi belum ada titik lokasi ditandai.</div>';
-  return `<div class="lokpick-map-wrap"><img src="${PETA_IMAGE}">${PETA_PINS.map(p=>`<div class="lokpick-pin" style="left:${p.xPct}%;top:${p.yPct}%;" title="${escapeHtml(p.label)}" onclick="lokpickSelect('${escapeHtml(p.label.replace(/'/g,"\\'"))}')">📍</div>`).join('')}</div>`;
-}
-function openLokasiPicker(currentValue, onSelect){
-  window._lokPick = {value:currentValue||'', onSelect, query:'', showMap:false};
-  renderLokasiPickerSheet();
-}
-function renderLokasiPickerSheet(){
-  const st = window._lokPick || {query:'', showMap:false};
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this){window._lokPick=null;closeModal();}">
-      <div class="sheet">
-        <div class="sheet-title-row"><h3>Pilih Lokasi</h3><button class="sheet-close" onclick="window._lokPick=null;closeModal()">${icon('close',18)}</button></div>
-        <input class="lokpick-search" id="lokpickSearchInput" type="text" placeholder="Ketik untuk cari, mis. 11" value="${escapeHtml((st.query||''))}" oninput="lokpickOnInput(this.value)">
-        <div class="lokpick-actions">
-          <button type="button" class="btn-sm" onclick="lokpickAddManual()">+ Tambah manual</button>
-          <button type="button" class="btn-sm" onclick="lokpickToggleMap()">📍 ${st.showMap?'Tutup Peta':'Buka Peta'}</button>
-        </div>
-        <div id="lokpickMapHost">${st.showMap ? lokpickMapHtml() : ''}</div>
-        <div class="lokpick-list" id="lokpickListHost">${lokpickListHtml(st.query)}</div>
-      </div>
-    </div>`;
-  setTimeout(()=>{ const el=document.getElementById('lokpickSearchInput'); if(el) el.focus(); }, 60);
-}
-function lokpickOnInput(val){
-  if(window._lokPick) window._lokPick.query = val;
-  const host = document.getElementById('lokpickListHost');
-  if(host) host.innerHTML = lokpickListHtml(val);
-}
-function lokpickToggleMap(){
-  if(!window._lokPick) return;
-  window._lokPick.showMap = !window._lokPick.showMap;
-  renderLokasiPickerSheet();
-}
-function lokpickSelect(label){
-  const st = window._lokPick;
-  window._lokPick = null;
-  closeModal();
-  if(st && st.onSelect) st.onSelect(label);
-}
-function lokpickAddManual(){
-  showPrompt('Tambah lokasi/petak manual (mis. 11 TS 20):', '', function(val){
-    if(val && val.trim()){
-      addBlokIfNew(val.trim());
-      lokpickSelect(val.trim());
-    } else {
-      renderLokasiPickerSheet();
-    }
-  });
-}
-function lokasiFieldHtml(id, label, value){
-  const val = value||'';
-  return `<div><label class="flabel">${escapeHtml(label)}</label>
-    <input type="hidden" id="${id}" value="${escapeHtml(val)}">
-    <button type="button" class="loc-field-btn ${val?'':'empty'}" id="${id}_btn" onclick="pickLokasiInto('${id}')">${icon('location_on',16)}<span>${escapeHtml(val?val:'Pilih lokasi...')}</span></button>
-  </div>`;
-}
-function pickLokasiInto(inputId){
-  const inputEl = document.getElementById(inputId);
-  const cur = inputEl ? inputEl.value : '';
-  openLokasiPicker(cur, function(val){
-    addBlokIfNew(val);
-    const el = document.getElementById(inputId);
-    if(el) el.value = val;
-    const btn = document.getElementById(inputId+'_btn');
-    if(btn){ btn.classList.remove('empty'); const sp=btn.querySelector('span'); if(sp) sp.textContent = val; }
-    if(inputId==='fLokasiMuat') quickSaveField('lokasiMuat', val);
-    if(inputId==='fLokasiBongkar') quickSaveField('lokasiBongkar', val);
-  });
-}
-function handleAntarKegiatanChange(selectEl){
-  if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan kegiatan baru:', '', function(val){
-      if(val && val.trim()){
-        KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
-        saveKegiatanAntar();
-        const e = getTodayEntry();
-        quickSaveField('antarKegiatan', val.trim());
-      } else { renderHari(); }
-    });
-  } else {
-    const e = getTodayEntry();
-    quickSaveField('antarKegiatan', selectEl.value);
-  }
-}
-function handleDroneJenisChange(selectEl){
-  if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan jenis drone baru:', '', function(val){
-      if(val && val.trim()){
-        DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
-        saveDroneJenis();
-        const e = getTodayEntry();
-        quickSaveField('droneJenis', val.trim());
-      } else { renderHari(); }
-    });
-  } else {
-    const e = getTodayEntry();
-    quickSaveField('droneJenis', selectEl.value);
-  }
-}
-function renderJenisSubFields(e){
-  switch(e.jenisKategori){
-    case 'Antar/Jemput Tenaga':
-      return `
-        <div class="grid2" style="margin-top:10px;">
-          <div><label class="flabel">Tipe</label><select onchange="quickSaveField('antarTipe', this.value)">${subOptionsHtml(ANTAR_TIPE_OPTS, e.antarTipe)}</select></div>
-          <div><label class="flabel">Kegiatan</label><select onchange="handleAntarKegiatanChange(this)">${extendableOptionsHtml(KEGIATAN_ANTAR_LIST, e.antarKegiatan)}</select></div>
-        </div>
-        <div style="margin-top:10px;">${lokasiFieldHtml('fLokasiMuat','Lokasi', e.lokasiMuat)}</div>`;
-    case 'Muat Tebu':
-      return `
-        <div style="margin-top:10px;"><label class="flabel">Tipe</label><select onchange="quickSaveField('muatTipe', this.value)">${subOptionsHtml(MUAT_TIPE_OPTS, e.muatTipe)}</select></div>
-        ${e.muatTipe==='Produksi' ? `<div style="margin-top:10px;"><label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg||''))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveField('tonaseKg', this.value)"></div>
-        <div style="margin-top:10px;">${lokasiFieldHtml('fLokasiMuat','Lokasi', e.lokasiMuat)}</div>` : ''}
-        ${e.muatTipe==='Bibit' ? `<div class="grid2" style="margin-top:10px;">
-          ${lokasiFieldHtml('fLokasiMuat','Lokasi Muat', e.lokasiMuat)}
-          ${lokasiFieldHtml('fLokasiBongkar','Lokasi Bongkar', e.lokasiBongkar)}
-        </div>` : ''}`;
-    case 'Drone':
-      return `<div style="margin-top:10px;"><label class="flabel">Jenis</label><select onchange="handleDroneJenisChange(this)">${extendableOptionsHtml(DRONE_JENIS_LIST, e.droneJenis)}</select></div>
-        <div style="margin-top:10px;">${lokasiFieldHtml('fLokasiMuat','Lokasi', e.lokasiMuat)}</div>`;
-    case 'Operator':
-      return `<div style="margin-top:10px;"><label class="flabel">Shift</label><select onchange="quickSaveField('operatorShift', this.value)">${subOptionsHtml(OPERATOR_SHIFT_OPTS, e.operatorShift)}</select></div>`;
-    case 'Lainnya':
-      return `<div style="margin-top:10px;"><label class="flabel">Keterangan (manual)</label><input type="text" value="${escapeHtml(e.jenisKet||'')}" placeholder="tulis manual" onchange="quickSaveField('jenisKet', this.value)"></div>`;
-    default:
-      return '';
-  }
-}
-
-// ====== PERBAIKAN: quickSaveField dengan validasi ======
-function checkHmWarning(context){
-  let hmA, hmB, warnEl;
-  if(context==='qf'){
-    hmA = document.getElementById('qf-hmA'); hmB = document.getElementById('qf-hmB'); warnEl = document.getElementById('qf-hmWarning');
-  } else {
-    hmA = document.getElementById('ed-hmA-'+context); hmB = document.getElementById('ed-hmB-'+context); warnEl = document.getElementById('ed-hmWarning-'+context);
-  }
-  if(!hmA || !hmB) return;
-  const a = parseFloat(hmA.value), b = parseFloat(hmB.value);
-  const bad = !isNaN(a) && !isNaN(b) && b < a;
-  hmB.classList.toggle('field-error', bad);
-  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';
-}
-function quickSaveField(key, val) {
-  const e = getTodayEntry();
-  if (['bbmLiter', 'tonaseKg'].includes(key)) {
-    val = stripDots(val);
-  }
-  // Validasi
-  if (['hmAwal', 'hmAkhir', 'bbmLiter', 'tonaseKg', 'otOverride'].includes(key)) {
-    try {
-      const num = validateNumberInput(val, true);
-      if (num !== null) val = String(num);
-    } catch (err) {
-      toast(err.message);
-      return;
-    }
-  }
-  if (['hmAwal', 'hmAkhir'].includes(key) && val !== '') {
-    val = parseFloat(val).toFixed(1);
-  }
-  if (['s1Time', 's5Time', 'istMulai', 'istSelesai'].includes(key)) {
-    try {
-      val = validateTimeInput(val);
-    } catch (err) {
-      toast(err.message);
-      return;
-    }
-  }
-  if (key === 'hmAkhir' && val !== '') {
-    maybeDetectHmReset(e.btId, val, e.date);
-  }
-  e[key] = val;
-  // Cek apakah sudah ada di ENTRIES
-  const exists = ENTRIES.find(x => x.id === e.id);
-  if (!exists) { ENTRIES.push(e); }
-  saveEntries();
-  renderHari();
-}
-
-/* ============ HARI INI ============ */
 function renderHari(){
-  document.getElementById('topBtChip').textContent = btLabel(USER.mainBt);
-  const e = getTodayEntry();
-  const ot = computeOT(e);
-  const holiday = dow(e.date)===0 || isHoliday(e.date);
   const host = document.getElementById('screen-hari');
-  host.innerHTML = `
-    <div class="hero-card">
-      <div class="hero-label">Potensi Lembur Hari Ini</div>
-      <div class="hero-num"><input type="text" inputmode="decimal" id="fOtOverride" value="${e.otOverride!==null&&e.otOverride!==undefined?e.otOverride:fmtHoursNum(ot.otMin)}" onchange="quickSaveField('otOverride', this.value===''?null:this.value)"><span>jam</span></div>
-      <div class="hero-sub">${holiday ? 'Hari libur — seluruh jam dihitung lembur' : 'Otomatis dari jam antar & pulang · bisa diubah manual'}</div>
-    </div>
-
-    <div class="section-eyebrow">Truck & Layanan</div>
-    <div class="card">
-      <label class="flabel">No Unit</label>
-      <select id="fBt" onchange="quickSaveField('btId', this.value)">${btOptionsHtml(e.btId)}</select>
-      <label class="flabel" style="margin-top:10px;">Jenis Layanan</label>
-      <select id="fJenis" onchange="changeJenisKategori(this.value)">${jenisOptionsHtml(e.jenisKategori)}</select>
-      ${renderJenisSubFields(e)}
-    </div>
-
-    <div class="section-eyebrow">5 Tahap Kegiatan</div>
-    <div class="card">
-      <div class="grid2">
-        <div><label class="flabel">1. Absen Berangkat</label><input type="time" step="60" value="${e.s1Time||''}" onchange="quickSaveField('s1Time', this.value)"></div>
-        <div><label class="flabel">5. Absen Pulang</label><input type="time" step="60" value="${e.s5Time||''}" onchange="quickSaveField('s5Time', this.value)"></div>
-        <div>
-          <label class="flabel" style="display:flex;justify-content:space-between;align-items:center;">2. Kegiatan Pagi <button type="button" class="kgt-add" onclick="addKegiatan('kegiatanPagi')">+</button></label>
-          ${kegiatanListHtml(e, 'kegiatanPagi')}
-        </div>
-        <div>
-          <label class="flabel" style="display:flex;justify-content:space-between;align-items:center;">4. Kegiatan Sore <button type="button" class="kgt-add" onclick="addKegiatan('kegiatanSore')">+</button></label>
-          ${kegiatanListHtml(e, 'kegiatanSore')}
-        </div>
-      </div>
-      <label class="flabel" style="margin-top:4px;">3. Istirahat Siang</label>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button type="button" class="btn-sm ${!e.istLembur?'primary':''}" onclick="quickSaveField('istLembur', false)">☕ Istirahat</button>
-        <button type="button" class="btn-sm ${e.istLembur?'primary':''}" onclick="quickSaveField('istLembur', true)">⏱ Lembur, tidak istirahat</button>
-      </div>
-      ${!e.istLembur ? `<div class="grid2">
-        <div><label class="flabel">Mulai Istirahat</label><input type="time" step="60" value="${e.istMulai||''}" onchange="quickSaveField('istMulai', this.value)"></div>
-        <div><label class="flabel">Mulai Kerja Lagi</label><input type="time" step="60" value="${e.istSelesai||''}" onchange="quickSaveField('istSelesai', this.value)"></div>
-      </div>` : ''}
-    </div>
-
-    <div class="section-eyebrow">Hour Meter (HM) & BBM</div>
-    <div class="card">
-      <div class="grid2">
-        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal||'')}" onchange="this.value=fmtHm1(this.value);quickSaveField('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
-        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" class="${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a)?'field-error':'';})()}" value="${escapeHtml(e.hmAkhir||'')}" onchange="this.value=fmtHm1(this.value);quickSaveField('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
-        <div class="full" id="qf-hmWarning">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
-        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter||''))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveField('bbmLiter', this.value)"></div>
-        <div><label class="flabel">Pemakaian HM</label><input type="text" value="${hmPakai(e)} jam" disabled></div>
-      </div>
-      <label class="flabel">Catatan (opsional)</label>
-      <textarea onchange="quickSaveField('catatan', this.value)">${escapeHtml(e.catatan||'')}</textarea>
-    </div>
-  `;
-  window._todayEntry = e; // tetap simpan untuk referensi cepat
-}
-
-/* ============ ENTRY FORM ============ */
-function openEntryForm(existing){
-  const e = existing || {id:uid(), date:todayIso(), dateEnd:todayIso(), btId:USER.mainBt, ownerType:'partner', ownerName:'', partnerId:'',
-    s1Time:'', s5Time:'', istMulai:'11.00', istSelesai:'13.30', istLembur:false,
-    otOverride:null, jenisKategori:'Antar/Jemput Tenaga', antarKegiatan:'', antarTipe:'', muatTipe:'', tonaseKg:'',
-    lokasiMuat:'', lokasiBongkar:'', droneJenis:'', operatorShift:'', jenisKet:'', catatan:''};
-  window._efOtManual = false;
-  const sopirVal = e.ownerType==='saya' ? 'saya' : e.partnerId;
-  const sopirOpts = `<option value="saya" ${sopirVal==='saya'?'selected':''}>Saya (${escapeHtml(USER.name||'akun ini')})</option>`
-    + PARTNERS.map(p=>`<option value="${p.id}" ${p.id===sopirVal?'selected':''}>${escapeHtml(p.name)}</option>`).join('');
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>${existing?'Ubah Catatan':'Tambah Catatan'}</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="dsub">Isi 1 tanggal, atau rentang tanggal untuk durasi program (mis. jadwal seminggu). Kalau tanggalnya sudah ada catatan sebelumnya, otomatis digabung/diperbarui — tidak dobel.</div>
-        <div class="grid2">
-          <div><label class="flabel">Tanggal Mulai</label><input type="date" id="efDate" value="${e.date}" onchange="updateProgramOtPreview()"></div>
-          <div><label class="flabel">Tanggal Selesai</label><input type="date" id="efDateEnd" value="${e.dateEnd||e.date}"></div>
-          <div><label class="flabel">No Unit</label><select id="efBt">${btOptionsHtml(e.btId)}</select></div>
-          <div><label class="flabel">Sopir</label><select id="efSopir">${sopirOpts}</select></div>
-          <div class="full"><label class="flabel">Jenis Layanan</label><select id="efJenisKategori" onchange="onProgramJenisChange(this.value)">${jenisOptionsHtml(e.jenisKategori)}</select></div>
-          <div class="full" id="efJenisSubWrap">${renderProgramJenisSubFields(e)}</div>
-          <div><label class="flabel">Absen Berangkat</label><input type="time" step="60" id="efS1" value="${e.s1Time||''}" onchange="updateProgramOtPreview()"></div>
-          <div><label class="flabel">Absen Pulang</label><input type="time" step="60" id="efS5" value="${e.s5Time||''}" onchange="updateProgramOtPreview()"></div>
-          <div class="full"><label class="flabel">Overtime (jam)</label><input type="text" id="efOt" inputmode="decimal" value="${e.otOverride??''}" placeholder="otomatis dari absen, bisa diubah" oninput="window._efOtManual=true;"></div>
-          <div class="full"><label class="flabel">Catatan</label><textarea id="efCatatan">${escapeHtml(e.catatan||'')}</textarea></div>
-        </div>
-        <button class="btn-filled" onclick="saveEntryForm('${e.id}')">Simpan Catatan</button>
-      </div>
-    </div>`;
-}
-function calcOtPreviewMin(dateStr, s1, s5){
-  if(!dateStr) return 0;
-  const isFullOt = dow(dateStr)===0 || isHoliday(dateStr);
-  const t1 = toMinutes(s1), t5 = toMinutes(s5);
-  let span = (t1!==null && t5!==null) ? Math.max(0, t5-t1) : 0;
-  let restMin = isFullOt ? 0 : 150;
-  const totalMin = Math.max(0, span-restMin);
-  const normalMin = isFullOt ? 0 : (NORMAL_HOURS[dow(dateStr)]||0)*60;
-  return isFullOt ? totalMin : Math.max(0, totalMin-normalMin);
-}
-function updateProgramOtPreview(){
-  if(window._efOtManual) return;
-  const dateEl = document.getElementById('efDate'), s1El = document.getElementById('efS1'), s5El = document.getElementById('efS5');
-  if(!dateEl || !s1El || !s5El) return;
-  const otMin = calcOtPreviewMin(dateEl.value, s1El.value, s5El.value);
-  const otField = document.getElementById('efOt');
-  if(otField) otField.value = otMin>0 ? fmtHoursNum(otMin) : '';
-}
-function renderProgramJenisSubFields(e){
-  switch(e.jenisKategori){
-    case 'Antar/Jemput Tenaga':
-      return `<div class="grid2">
-        <div><label class="flabel">Tipe</label><select id="efAntarTipe">${subOptionsHtml(ANTAR_TIPE_OPTS, e.antarTipe)}</select></div>
-        <div><label class="flabel">Kegiatan</label><select id="efAntarKegiatan" onchange="handleAntarKegiatanChangeForm(this)">${extendableOptionsHtml(KEGIATAN_ANTAR_LIST, e.antarKegiatan)}</select></div>
-      </div>
-      ${lokasiFieldHtml('efLokasiMuat','Lokasi', e.lokasiMuat)}`;
-    case 'Muat Tebu':
-      return `
-        <div><label class="flabel">Tipe</label><select id="efMuatTipe" onchange="onProgramJenisChange('Muat Tebu')">${subOptionsHtml(MUAT_TIPE_OPTS, e.muatTipe)}</select></div>
-        ${e.muatTipe==='Produksi' ? `<div><label class="flabel">Tonase (kg)</label><input type="text" id="efTonase" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg||''))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
-        ${lokasiFieldHtml('efLokasiMuat','Lokasi', e.lokasiMuat)}` : ''}
-        ${e.muatTipe==='Bibit' ? `<div class="grid2">
-          ${lokasiFieldHtml('efLokasiMuat','Lokasi Muat', e.lokasiMuat)}
-          ${lokasiFieldHtml('efLokasiBongkar','Lokasi Bongkar', e.lokasiBongkar)}
-        </div>` : ''}`;
-    case 'Drone':
-      return `<div><label class="flabel">Jenis</label><select id="efDroneJenis" onchange="handleDroneJenisChangeForm(this)">${extendableOptionsHtml(DRONE_JENIS_LIST, e.droneJenis)}</select></div>
-      ${lokasiFieldHtml('efLokasiMuat','Lokasi', e.lokasiMuat)}`;
-    case 'Operator':
-      return `<div><label class="flabel">Shift</label><select id="efOperatorShift">${subOptionsHtml(OPERATOR_SHIFT_OPTS, e.operatorShift)}</select></div>`;
-    case 'Lainnya':
-      return `<div><label class="flabel">Keterangan (manual)</label><input type="text" id="efJenisKet" value="${escapeHtml(e.jenisKet||'')}" placeholder="tulis manual"></div>`;
-    default: return '';
-  }
-}
-function onProgramJenisChange(newKategori){
-  const gv = id => document.getElementById(id) ? document.getElementById(id).value : '';
-  const tempE = {
-    jenisKategori: newKategori,
-    antarTipe: gv('efAntarTipe'), antarKegiatan: gv('efAntarKegiatan'),
-    muatTipe: gv('efMuatTipe'), tonaseKg: stripDots(gv('efTonase')),
-    lokasiMuat: gv('efLokasiMuat'), lokasiBongkar: gv('efLokasiBongkar'),
-    droneJenis: gv('efDroneJenis'), operatorShift: gv('efOperatorShift'), jenisKet: gv('efJenisKet')
-  };
-  document.getElementById('efJenisSubWrap').innerHTML = renderProgramJenisSubFields(tempE);
-}
-function handleAntarKegiatanChangeForm(selectEl){
-  if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan kegiatan baru:', '', function(val){
-      if(val && val.trim()){
-        KEGIATAN_ANTAR_LIST.push({value:val.trim(), locked:false});
-        saveKegiatanAntar();
-        const opt = document.createElement('option');
-        opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
-        selectEl.insertBefore(opt, selectEl.lastElementChild);
-      } else { selectEl.value = ''; }
-    });
-  }
-}
-function handleDroneJenisChangeForm(selectEl){
-  if(selectEl.value === '__new__'){
-    showPrompt('Tambahkan jenis drone baru:', '', function(val){
-      if(val && val.trim()){
-        DRONE_JENIS_LIST.push({value:val.trim(), locked:false});
-        saveDroneJenis();
-        const opt = document.createElement('option');
-        opt.value = val.trim(); opt.textContent = val.trim(); opt.selected = true;
-        selectEl.insertBefore(opt, selectEl.lastElementChild);
-      } else { selectEl.value = ''; }
-    });
-  }
-}
-function saveEntryForm(id){
-  const sopirVal = document.getElementById('efSopir').value;
-  const partnerObj = PARTNERS.find(p=>p.id===sopirVal);
-  const ownerType = sopirVal==='saya' ? 'saya' : 'partner';
-  const partnerId = ownerType==='partner' ? sopirVal : '';
-  const dateStart = document.getElementById('efDate').value;
-  const dateEnd = document.getElementById('efDateEnd').value || dateStart;
-  const dates = enumerateDates(dateStart, dateEnd);
-  const btId = document.getElementById('efBt').value;
-  const jenisKategori = document.getElementById('efJenisKategori').value;
-  const gv = elId => document.getElementById(elId) ? document.getElementById(elId).value : '';
-  const base = {
-    btId, ownerType, partnerId,
-    ownerName: ownerType==='saya' ? (USER.name||'Saya') : (partnerObj?partnerObj.name:'Sopir'),
-    s1Time: gv('efS1'), s5Time: gv('efS5'),
-    istMulai:'11.00', istSelesai:'13.30', istLembur:false,
-    otOverride: gv('efOt')===''?null:gv('efOt'),
-    hmAwal:'', hmAkhir:'', bbmLiter:'',
-    jenisKategori,
-    antarTipe: gv('efAntarTipe'), antarKegiatan: gv('efAntarKegiatan'),
-    muatTipe: gv('efMuatTipe'), tonaseKg: stripDots(gv('efTonase')),
-    lokasiMuat: gv('efLokasiMuat'), lokasiBongkar: gv('efLokasiBongkar'),
-    droneJenis: gv('efDroneJenis'), operatorShift: gv('efOperatorShift'), jenisKet: gv('efJenisKet'),
-    catatan: gv('efCatatan')
-  };
-  let createdCount = 0, updatedCount = 0;
-  dates.forEach(d=>{
-    const idx = ENTRIES.findIndex(x=>x.date===d && x.btId===btId && x.ownerType===ownerType && (ownerType==='saya' || x.partnerId===partnerId));
-    if(idx>=0){ ENTRIES[idx] = {...ENTRIES[idx], ...base, date:d}; updatedCount++; }
-    else { ENTRIES.push({id:uid(), date:d, ...base}); createdCount++; }
-  });
-  saveEntries(); closeModal();
-  let msg;
-  if(createdCount && updatedCount) msg = `${createdCount} catatan baru dibuat, ${updatedCount} digabung ke yang sudah ada`;
-  else if(updatedCount) msg = `${updatedCount} catatan digabung/diperbarui (sudah ada sebelumnya)`;
-  else msg = dates.length>1 ? `Catatan disimpan untuk ${dates.length} hari` : 'Catatan disimpan';
-  toast(msg);
-  renderProgram(); renderHari(); renderRekap();
-}
-function deleteEntry(id){
-  showConfirm('Hapus catatan ini?', function(){
-    ENTRIES = ENTRIES.filter(x=>x.id!==id); saveEntries(); toast('Catatan dihapus'); renderProgram(); renderRekap();
-  });
-}
-
-/* ============ RIWAYAT (accordion) ============ */
-let histFilter = 'saya';
-function renderHistoryList(list){
-  if(!list.length) return `<div class="empty-note">Belum ada catatan.</div>`;
-  return list.map(e=>{
-    const ot = computeOT(e);
-    const isSaya = e.ownerType==='saya';
-    return `<div class="hrow" id="hrow-${e.id}">
-      <div class="hrow-head" onclick="toggleRow('${e.id}')">
-        <div class="hrow-dot ${isSaya?'':'partner'}"></div>
-        <div class="hrow-main">
-          <div class="hrow-date">${escapeHtml(fmtLabel(e.date))}</div>
-          <div class="hrow-sum">${escapeHtml(btLabel(e.btId))}${e.jenisKategori?' · '+escapeHtml(jenisDetailText(e)):''} · HM ${escapeHtml(e.hmAwal||'-')}→${escapeHtml(e.hmAkhir||'-')} · Lembur ${fmtHoursNum(ot.otMin)}j · ${escapeHtml(resolveOwnerName(e))}</div>
-        </div>
-        <svg class="hrow-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-      </div>
-      <div class="hrow-body"><div class="hrow-body-inner" onclick="event.stopPropagation()">
-        <div class="grid2">
-          <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal||'')}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
-          <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" class="${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a)?'field-error':'';})()}" value="${escapeHtml(e.hmAkhir||'')}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
-          <div class="full" id="ed-hmWarning-${e.id}">${(function(){const a=parseFloat(e.hmAwal),b=parseFloat(e.hmAkhir);return (!isNaN(a)&&!isNaN(b)&&b<a) ? '<div class="field-sub" style="color:var(--danger);margin:-6px 0 8px;">⚠️ HM Akhir lebih kecil dari HM Awal — cek kembali.</div>' : '';})()}</div>
-          <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter||''))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
-          <div><label class="flabel">Lembur (jam)</label><input type="text" id="ed-ot-${e.id}" value="${escapeHtml(e.otOverride??'')}"></div>
-          <div class="full"><label class="flabel">Catatan</label><input type="text" id="ed-cat-${e.id}" value="${escapeHtml(e.catatan||'')}"></div>
-        </div>
-        <div class="hrow-actions">
-          <button class="btn-save" onclick="saveRowEdit('${e.id}')">Simpan Perubahan</button>
-          <button class="btn-del" onclick="deleteEntry('${e.id}')">Hapus</button>
-        </div>
-      </div></div>
-    </div>`;
-  }).join('');
-}
-function toggleRow(id){ document.getElementById('hrow-'+id).classList.toggle('open'); }
-function saveRowEdit(id){
-  const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
-  const rawA = document.getElementById('ed-hmA-'+id).value;
-  const rawB = document.getElementById('ed-hmB-'+id).value;
-  if(rawB!=='' && parseFloat(rawB).toFixed(1) !== ENTRIES[idx].hmAkhir){
-    maybeDetectHmReset(ENTRIES[idx].btId, rawB, ENTRIES[idx].date);
-  }
-  ENTRIES[idx].hmAwal = rawA===''?'':parseFloat(rawA).toFixed(1);
-  ENTRIES[idx].hmAkhir = rawB===''?'':parseFloat(rawB).toFixed(1);
-  ENTRIES[idx].bbmLiter = stripDots(document.getElementById('ed-bbm-'+id).value);
-  ENTRIES[idx].otOverride = document.getElementById('ed-ot-'+id).value===''?null:document.getElementById('ed-ot-'+id).value;
-  ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
-  saveEntries(); toast('Perubahan disimpan'); renderProgram(); renderRekap(); renderHari();
-}
-function setHistFilter(f){ histFilter = f; renderProgram(); renderRekap(); }
-
-/* ============ PROGRAM ============ */
-function missingSayaDays(){
-  const today = todayIso();
-  const sayaDates = new Set(ENTRIES.filter(e=>e.ownerType==='saya').map(e=>e.date));
-  const days = [];
-  for(let i=1;i<=14;i++){
-    const d = new Date(today+'T00:00:00');
-    d.setDate(d.getDate()-i);
-    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    if(!sayaDates.has(iso)) days.push(iso);
-  }
-  return days;
-}
-function openBackfillForm(dateIso){
-  openEntryForm({id:uid(), date:dateIso, dateEnd:dateIso, btId:USER.mainBt, ownerType:'saya', ownerName:USER.name||'Saya', partnerId:'',
-    s1Time:'', s5Time:'', istMulai:'11.00', istSelesai:'13.30', istLembur:false,
-    otOverride:null, jenisKategori:'Antar/Jemput Tenaga', antarKegiatan:'', antarTipe:'', muatTipe:'', tonaseKg:'',
-    lokasiMuat:'', lokasiBongkar:'', droneJenis:'', operatorShift:'', jenisKet:'', catatan:''});
-}
-function renderMissingDaysSection(){
-  const missing = missingSayaDays();
-  if(missing.length===0) return '';
-  return `
-    <div class="section-eyebrow">Belum Diisi (14 Hari Terakhir)</div>
-    <div class="card" style="border-color:var(--primary);">
-      <div class="field-sub" style="margin-bottom:8px;">Hari-hari ini belum ada catatan "Saya" — tap untuk isi cepat.</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${missing.map(d=>`<button class="btn-sm" onclick="openBackfillForm('${d}')">${escapeHtml(fmtLabel(d).split(', ')[1]||fmtLabel(d))}</button>`).join('')}
-      </div>
-    </div>`;
-}
-function renderProgram(){
-  const host = document.getElementById('screen-program');
-  const list = ENTRIES.filter(e=>e.ownerType===histFilter).sort((a,b)=>b.date.localeCompare(a.date));
-  if(!WEEKPLAN.from || !WEEKPLAN.to){
-    const today = todayIso();
-    const monday = new Date(today+'T00:00:00');
-    const wd = monday.getDay(); const diffToMon = wd===0?-6:1-wd;
-    monday.setDate(monday.getDate()+diffToMon);
-    const sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
-    const isoOf = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    WEEKPLAN.from = isoOf(monday); WEEKPLAN.to = isoOf(sunday);
-  }
-  host.innerHTML = `
-    ${renderWeekPlanSection()}
-    ${histFilter==='saya' ? renderMissingDaysSection() : ''}
-    <div class="section-eyebrow section-eyebrow-row">Riwayat Program<button class="pill-btn" onclick="openEntryForm(null)">+ Tambah</button></div>
-    <div class="hist-tabs">
-      <div class="hist-tab ${histFilter==='saya'?'active-saya':''}" onclick="setHistFilter('saya')">🟠 Saya</div>
-      <div class="hist-tab ${histFilter==='partner'?'active-partner':''}" onclick="setHistFilter('partner')">🔵 Sopir</div>
-    </div>
-    ${renderHistoryList(list)}
-    <button class="pill-btn pill-btn-lg" style="margin:16px 0 4px 0;width:100%;justify-content:center;" onclick="openBoxTruckSheet()">${icon('print',16)} Tabel Box Truck (Cetak)</button>
-    <button class="pill-btn pill-btn-lg" style="margin:0 0 4px;width:100%;justify-content:center;" onclick="openExportSheet(true)">${icon('download',16)} Export / Cetak per Sopir</button>
-  `;
-}
-function renderWeekPlanSection(){
-  const rows = WEEKPLAN.rows.filter(r=>weekPlanBtFilter==='all' || r.btId===weekPlanBtFilter);
-  const btFilterOpts = `<option value="all" ${weekPlanBtFilter==='all'?'selected':''}>Semua BT</option>`
-    + BT_CODES.map(b=>`<option value="${b.id}" ${weekPlanBtFilter===b.id?'selected':''}>${escapeHtml(b.label)}</option>`).join('');
-  const cards = rows.length ? rows.map(r=>`
-    <div class="card" style="position:relative;">
-      <button class="btn-sm" style="position:absolute;top:12px;right:12px;padding:5px 9px;" onclick="removeWeekPlanRow('${r.id}')">${icon('close',13)}</button>
-      <div class="grid2">
-        <div>
-          <label class="field-label">BT</label>
-          <select onchange="updateWeekPlanRow('${r.id}','btId',this.value)">${btOptionsHtml(r.btId)}</select>
-        </div>
-        <div>
-          <label class="field-label">Sopir</label>
-          <select onchange="updateWeekPlanRow('${r.id}','partnerId',this.value)">
-            <option value="">Pilih sopir</option>
-            ${PARTNERS.map(p=>`<option value="${p.id}" ${r.partnerId===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="full">
-          <label class="field-label">Kegiatan</label>
-          <input type="text" value="${escapeHtml(r.kegiatan||'')}" placeholder="mis. Pel. Umum" onchange="updateWeekPlanRow('${r.id}','kegiatan',this.value)">
-        </div>
-      </div>
-    </div>
-  `).join('') : `<div class="empty-note">Belum ada rencana di periode ini${weekPlanBtFilter!=='all'?' untuk BT ini':''}.</div>`;
-  return `
-    <div class="section-eyebrow">Periode Tabel</div>
-    <div class="card">
-      <div class="grid2">
-        <div><label class="field-label">Dari Tanggal</label><input type="date" value="${WEEKPLAN.from}" onchange="updateWeekPlanPeriod('from',this.value)"></div>
-        <div><label class="field-label">Sampai Tanggal</label><input type="date" value="${WEEKPLAN.to}" onchange="updateWeekPlanPeriod('to',this.value)"></div>
-      </div>
-    </div>
-    <div class="section-eyebrow section-eyebrow-row">Program Mingguan
-      <select style="width:auto;min-width:130px;margin-bottom:0;" onchange="setWeekPlanBtFilter(this.value)">${btFilterOpts}</select>
-    </div>
-    ${cards}
-    <button class="pill-btn pill-btn-lg" style="width:100%;justify-content:center;margin-bottom:20px;" onclick="addWeekPlanRow()">+ Tambah Baris</button>
-  `;
-}
-function updateWeekPlanPeriod(field, value){ WEEKPLAN[field]=value; saveWeekPlan(); renderProgram(); }
-function setWeekPlanBtFilter(val){ weekPlanBtFilter = val; renderProgram(); }
-function addWeekPlanRow(){
-  WEEKPLAN.rows.push({id:uid(), btId: weekPlanBtFilter!=='all'?weekPlanBtFilter:(BT_CODES[0]?BT_CODES[0].id:''), partnerId:'', kegiatan:''});
-  saveWeekPlan(); renderProgram();
-}
-function updateWeekPlanRow(id, field, value){
-  const r = WEEKPLAN.rows.find(x=>x.id===id); if(!r) return;
-  r[field]=value; saveWeekPlan();
-  if(field==='kegiatan') return;
-  renderProgram();
-}
-function removeWeekPlanRow(id){
-  WEEKPLAN.rows = WEEKPLAN.rows.filter(x=>x.id!==id); saveWeekPlan(); renderProgram();
-}
-function openBoxTruckSheet(){
-  const today = todayIso();
-  const monday = new Date(today+'T00:00:00');
-  const wd = monday.getDay(); const diffToMon = wd===0?-6:1-wd;
-  monday.setDate(monday.getDate()+diffToMon);
-  const sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
-  const isoOf = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Tabel Box Truck</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="grid2">
-          <div><label class="flabel">Dari Tanggal</label><input type="date" id="btkFrom" value="${isoOf(monday)}"></div>
-          <div><label class="flabel">Sampai Tanggal</label><input type="date" id="btkTo" value="${isoOf(sunday)}"></div>
-        </div>
-        <button class="btn-filled" onclick="renderBoxTruckPreview()">Tampilkan Tabel</button>
-        <div id="btkPreviewWrap"></div>
-      </div>
-    </div>`;
-  renderBoxTruckPreview();
-}
-function renderBoxTruckPreview(){
-  const from = document.getElementById('btkFrom').value;
-  const to = document.getElementById('btkTo').value;
-  const rows = ENTRIES.filter(e=>e.date>=from && e.date<=to).sort((a,b)=>a.btId.localeCompare(b.btId)||a.date.localeCompare(b.date));
-  const fromLabel = fmtLabel(from).split(', ')[1], toLabel = fmtLabel(to).split(', ')[1];
-  const trs = rows.map(e=>`
-    <tr>
-      <td>${escapeHtml(btLabel(e.btId))}</td>
-      <td>${escapeHtml(resolveOwnerName(e))}</td>
-      <td>${escapeHtml(e.s1Time||'-')} ${e.s5Time?'s/d '+escapeHtml(e.s5Time):''}</td>
-      <td>${escapeHtml(jenisDetailText(e))}</td>
-    </tr>`).join('');
-  document.getElementById('btkPreviewWrap').innerHTML = `
-    <div id="boxTruckPrintArea" style="margin-top:14px;">
-      <div style="text-align:center;font-weight:800;font-size:14px;">DAFTAR KEGIATAN BOX TRUCK</div>
-      <div style="text-align:center;font-size:12px;color:var(--on-surface-variant);margin-bottom:10px;">Tgl, ${escapeHtml(fromLabel)} s/d ${escapeHtml(toLabel)}</div>
-      <table class="box-truck-table">
-        <thead><tr><th>BT</th><th>Sopir</th><th>Jam</th><th>Kegiatan</th></tr></thead>
-        <tbody>${trs || '<tr><td colspan="4" style="text-align:center;padding:16px;">Tidak ada data di rentang ini</td></tr>'}</tbody>
-      </table>
-    </div>
-    <button class="btn-filled" style="margin-top:14px;" onclick="printBoxTruckTable()">${icon('print',16)} Cetak / Simpan PDF</button>
-  `;
-}
-function printBoxTruckTable(){
-  const area = document.getElementById('boxTruckPrintArea');
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Tabel Box Truck</title>
-    <style>
-      body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#1a1a1a;}
-      table{width:100%;border-collapse:collapse;margin-top:10px;}
-      th,td{border:1px solid #333;padding:8px 10px;font-size:12px;text-align:left;white-space:normal;word-break:break-word;}
-      th{background:#1C2333;color:#fff;text-transform:uppercase;font-size:11px;}
-      tr:nth-child(even) td{background:#f5f5f5;}
-    </style></head><body>${area.innerHTML}</body></html>`);
-  w.document.close();
-  setTimeout(()=>{ w.print(); }, 300);
-}
-
-/* ============ PETA (dengan IndexedDB) ============ */
-let PETA_PINS = LS.get('mrg_peta_pins', []);
-function savePetaPins(){ LS.set('mrg_peta_pins', PETA_PINS); }
-let petaZoom = 100;
-let petaSelectedDate = todayIso();
-
-function petaColorMapForDate(dateIso){
-  const map = {};
-  function mark(label, color){
-    if(!label) return;
-    if(!map[label]) map[label] = color;
-    else if(map[label] !== color) map[label] = 'orange';
-  }
-  ENTRIES.filter(e=>e.date===dateIso && e.ownerType==='saya').forEach(e=>{
-    if(e.jenisKategori==='Muat Tebu' && e.muatTipe==='Bibit'){
-      mark(e.lokasiMuat, 'green');
-      mark(e.lokasiBongkar, 'red');
-    } else if(LOKASI_RUTE_KATEGORI.includes(e.jenisKategori)){
-      mark(e.lokasiMuat, 'green');
-    }
-  });
-  return map;
-}
-function petaPinEmoji(color){
-  return color==='green' ? '🟢' : color==='red' ? '🔴' : color==='orange' ? '🟠' : '📍';
-}
-function petaDateChange(val){
-  petaSelectedDate = val || todayIso();
-  renderPeta();
-}
-function petaGoToday(){
-  petaSelectedDate = todayIso();
-  renderPeta();
-}
-
-// Async karena menggunakan IndexedDB
-async function renderPeta(){
-  const host = document.getElementById('screen-peta');
-  const imageData = await loadPetaImageFromDB();
-  if(!imageData){
-    host.innerHTML = `
-      <div class="section-eyebrow">Peta Kebun</div>
-      <label class="peta-upload" for="petaFileInput">${icon('photo_camera',18)} Pilih Gambar Peta dari HP
-        <input type="file" id="petaFileInput" accept="image/*" onchange="handlePetaUpload(event)">
-      </label>
-      <div class="empty-note">Belum ada gambar peta. Pilih foto/scan peta kebun dari galeri HP-mu — tersimpan permanen di aplikasi, bisa dipakai tanpa internet.</div>
-    `;
+  if(!USER.mainBt || UNITS.length===0){
+    host.innerHTML = `<div class="card"><div class="empty-note">Kamu belum punya Unit default atau daftar unit masih kosong.<br><br>Buka menu &#9776; &rarr; Pengaturan Akun &amp; Kelola No Unit dulu ya.</div></div>`;
     return;
   }
-  const colorMap = petaColorMapForDate(petaSelectedDate);
-  const isToday = petaSelectedDate === todayIso();
-  host.innerHTML = `
-    <div class="section-eyebrow section-eyebrow-row">Peta Kebun
-      <button class="btn-sm" onclick="document.getElementById('petaFileInput2').click()">${icon('sync',14)} Ganti Gambar</button>
-    </div>
-    <input type="file" id="petaFileInput2" accept="image/*" style="display:none;" onchange="handlePetaUpload(event)">
-    <div class="peta-toprow">
-      <input type="date" value="${petaSelectedDate}" onchange="petaDateChange(this.value)">
-      ${!isToday ? `<button class="btn-sm" onclick="petaGoToday()">Hari Ini</button>` : ''}
-    </div>
-    <div class="peta-zoom-bar">
-      <div class="peta-zoom-btn" onclick="petaZoomBy(-25)">−</div>
-      <div class="peta-zoom-label">${petaZoom}%</div>
-      <div class="peta-zoom-btn" onclick="petaZoomBy(25)">+</div>
-    </div>
-    <div class="peta-scrollbox" id="petaScrollbox">
-      <div class="peta-imgwrap" id="petaImgWrap" style="width:${petaZoom}%;">
-        <img src="${imageData}" id="petaImgEl" onclick="handlePetaTap(event)">
-        ${PETA_PINS.map(p=>`<div class="peta-pin" style="left:${p.xPct}%;top:${p.yPct}%;" title="${escapeHtml(p.label)}" onclick="event.stopPropagation();selectPetaPin('${p.id}')">${petaPinEmoji(colorMap[p.label])}</div>`).join('')}
-      </div>
-    </div>
-    <div class="peta-legend" style="margin-top:10px;">🟢 Lokasi utama / Muat &nbsp; 🔴 Lokasi Bongkar &nbsp; 🟠 Dipakai sebagai keduanya</div>
-    <div class="dsub" style="margin:4px 0 8px;">Ketuk di atas peta untuk menandai lokasi baru. Ketuk pin yang sudah ada untuk mengisinya ke Hari Ini atau melihat riwayat. Warna pin mengikuti tanggal yang dipilih.</div>
-    <div id="petaSelWrap"></div>
-  `;
-}
-function petaZoomBy(delta){
-  const box = document.getElementById('petaScrollbox');
-  const prevScrollX = box?box.scrollLeft:0, prevScrollY = box?box.scrollTop:0;
-  const prevZoom = petaZoom;
-  petaZoom = Math.max(100, Math.min(600, petaZoom + delta));
-  renderPeta();
-  const newBox = document.getElementById('petaScrollbox');
-  if(newBox && prevZoom>0){
-    const ratio = petaZoom/prevZoom;
-    newBox.scrollLeft = prevScrollX*ratio;
-    newBox.scrollTop = prevScrollY*ratio;
-  }
-}
-async function handlePetaUpload(ev){
-  const file = ev.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const img = new Image();
-    img.onload = async () => {
-      const maxW = 1400;
-      const scale = Math.min(1, maxW / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      await savePetaImageToDB(dataUrl);
-      PETA_PINS = []; savePetaPins();
-      toast('Gambar peta disimpan');
-      renderPeta();
-    };
-    img.onerror = () => toast('Gagal membaca gambar');
-    img.src = reader.result;
-  };
-  reader.onerror = () => toast('Gagal membaca file');
-  reader.readAsDataURL(file);
-}
-let _pendingPetaTap = null;
-const KODE_DIVISI_LIST = ['TS','BS','BU','TU'];
-function handlePetaTap(ev){
-  const rect = ev.target.getBoundingClientRect();
-  const xPct = ((ev.clientX - rect.left) / rect.width * 100).toFixed(2);
-  const yPct = ((ev.clientY - rect.top) / rect.height * 100).toFixed(2);
-  _pendingPetaTap = {xPct, yPct};
-  openPetakLabelSheet();
-}
-function openPetakLabelSheet(){
-  const recent = BLOK_LIST.slice(-10).reverse();
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this){_pendingPetaTap=null;closeModal();}">
-      <div class="sheet">
-        <div class="sheet-title-row"><h3>Nomor Petak/Blok</h3><button class="sheet-close" onclick="_pendingPetaTap=null;closeModal()">${icon('close',18)}</button></div>
-        <div class="grid2">
-          <div><label class="flabel">Nomor Blok</label><input type="text" inputmode="numeric" id="petakBlokInput" placeholder="mis. 11" autofocus></div>
-          <div><label class="flabel">Kode Divisi</label><select id="petakKodeInput">${KODE_DIVISI_LIST.map(k=>`<option value="${k}">${k}</option>`).join('')}</select></div>
-        </div>
-        <label class="flabel">Nomor Petak</label>
-        <input type="text" inputmode="numeric" id="petakNomorInput" placeholder="mis. 20">
-        ${recent.length ? `<label class="flabel" style="margin-top:12px;">Baru dipakai</label>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
-          ${recent.map(b=>`<button type="button" class="btn-sm" onclick="fillPetakFromRecent('${escapeHtml(b.label.replace(/'/g,"\\'"))}')">${escapeHtml(b.label)}</button>`).join('')}
-        </div>` : ''}
-        <button class="btn-filled" style="margin-top:14px;" onclick="confirmPetaTapLabel()">Simpan Titik</button>
-      </div>
-    </div>`;
-}
-function fillPetakFromRecent(label){
-  const parts = label.trim().split(/\s+/);
-  if(parts.length>=3){
-    document.getElementById('petakBlokInput').value = parts[0];
-    document.getElementById('petakKodeInput').value = KODE_DIVISI_LIST.includes(parts[1]) ? parts[1] : KODE_DIVISI_LIST[0];
-    document.getElementById('petakNomorInput').value = parts.slice(2).join(' ');
-  }
-}
-function confirmPetaTapLabel(){
-  const blok = document.getElementById('petakBlokInput').value.trim();
-  const kode = document.getElementById('petakKodeInput').value;
-  const petak = document.getElementById('petakNomorInput').value.trim();
-  if(!blok || !petak){ toast('Isi dulu nomor blok dan petaknya'); return; }
-  if(!_pendingPetaTap) return;
-  const val = blok+' '+kode+' '+petak;
-  const pin = {id:uid(), xPct:_pendingPetaTap.xPct, yPct:_pendingPetaTap.yPct, label:val};
-  PETA_PINS.push(pin); savePetaPins();
-  if(!BLOK_LIST.some(b=>b.label===pin.label)){ BLOK_LIST.push({id:uid(), label:pin.label, source:'peta'}); saveBlok(); refreshBlokDatalist(); }
-  _pendingPetaTap = null;
-  closeModal();
-  toast('Titik lokasi ditambahkan');
-  renderPeta();
-}
-function selectPetaPin(id){
-  const p = PETA_PINS.find(x=>x.id===id); if(!p) return;
-  let infoHtml = '';
-  if(petaSelectedDate !== todayIso()){
-    const matches = ENTRIES.filter(e=>e.date===petaSelectedDate && e.ownerType==='saya' &&
-      (e.lokasiMuat===p.label || e.lokasiBongkar===p.label));
-    if(matches.length){
-      infoHtml = '<div class="peta-selected" style="margin-top:6px;">' + matches.map(e=>{
-        const isBibit = e.jenisKategori==='Muat Tebu' && e.muatTipe==='Bibit';
-        const peran = isBibit ? (e.lokasiBongkar===p.label ? 'Lokasi Bongkar' : 'Lokasi Muat') : 'Lokasi';
-        return `${escapeHtml(btLabel(e.btId))} · ${escapeHtml(e.jenisKategori)}${isBibit?' - Bibit':''} · ${peran}`;
-      }).join('<br>') + '</div>';
-    } else {
-      infoHtml = '<div class="peta-selected" style="margin-top:6px;">Tidak dipakai di tanggal ini.</div>';
-    }
-  }
-  document.getElementById('petaSelWrap').innerHTML = `
-    <div class="peta-selected">📍 ${escapeHtml(p.label)}</div>
-    ${infoHtml}
-    <div style="display:flex;gap:8px;margin-top:8px;">
-      <button class="btn-sm primary" onclick="applyPetaPinToRute('${p.id}')">Isi ke Lokasi Hari Ini</button>
-      <button class="btn-sm" onclick="removePetaPin('${p.id}')" style="color:var(--danger);">Hapus Titik</button>
-    </div>`;
-}
-function applyPetaPinToRute(id){
-  const p = PETA_PINS.find(x=>x.id===id); if(!p) return;
-  showScreen('hari');
-  setTimeout(()=>{
-    const e = getTodayEntry();
-    if(!LOKASI_RUTE_KATEGORI.includes(e.jenisKategori)){
-      toast('Ganti Jenis Layanan ke Antar/Jemput Tenaga, Muat Tebu, atau Drone dulu');
-      return;
-    }
-    if(e.jenisKategori==='Muat Tebu' && e.muatTipe==='Bibit'){
-      document.getElementById('modalHost').innerHTML = `
-        <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-          <div class="sheet">
-            <div class="sheet-title-row"><h3>Isi ke kolom mana?</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-            <div class="dsub">Lokasi "${escapeHtml(p.label)}" mau diisi ke kolom mana?</div>
-            <div style="display:flex;gap:10px;">
-              <button class="btn-filled" style="flex:1;" onclick="closeModal();applyPetaPinToField('lokasiMuat','${escapeHtml(p.label.replace(/'/g,"\\'"))}')">🟢 Lokasi Muat</button>
-              <button class="btn-filled" style="flex:1;background:var(--danger);" onclick="closeModal();applyPetaPinToField('lokasiBongkar','${escapeHtml(p.label.replace(/'/g,"\\'"))}')">🔴 Lokasi Bongkar</button>
-            </div>
-          </div>
-        </div>`;
-      return;
-    }
-    applyPetaPinToField('lokasiMuat', p.label);
-  }, 30);
-}
-function applyPetaPinToField(field, label){
   const e = getTodayEntry();
-  const doFill = ()=>{ quickSaveField(field, label); toast('Lokasi diisi: '+label); };
-  if(e[field] && e[field]!==label){
-    showConfirm(`Ganti lokasi dari "${e[field]}" ke "${label}"?`, doFill);
-  } else {
-    doFill();
-  }
-}
-function removePetaPin(id){
-  showConfirm('Hapus titik lokasi ini dari peta?', function(){
-    PETA_PINS = PETA_PINS.filter(x=>x.id!==id); savePetaPins(); toast('Titik dihapus'); renderPeta();
-  });
-}
-
-/* ============ SERVIS ============ */
-function renderServis(){
-  const host = document.getElementById('screen-servis');
-  const list = [...SERVIS].sort((a,b)=>b.date.localeCompare(a.date));
   host.innerHTML = `
-    <div class="section-eyebrow section-eyebrow-row">Riwayat Servis<button class="pill-btn" onclick="openServisForm(null)">+ Tambah</button></div>
-    ${list.length===0 ? '<div class="empty-note">Belum ada catatan servis.</div>' : list.map(s=>`
-      <div class="hrow" id="srow-${s.id}">
-        <div class="hrow-head" onclick="toggleSRow('${s.id}')">
-          <div class="hrow-dot" style="background:var(--success);"></div>
-          <div class="hrow-main"><div class="hrow-date">${escapeHtml(fmtLabel(s.date))}</div><div class="hrow-sum">${escapeHtml(btLabel(s.btId))} · HM ${escapeHtml(s.hm||'-')}</div></div>
-          <svg class="hrow-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </div>
-        <div class="hrow-body"><div class="hrow-body-inner" onclick="event.stopPropagation()">
-          <div class="field-label">Catatan Perbaikan</div>
-          <div style="font-size:14px;margin-bottom:12px;">${escapeHtml(s.catatan||'—')}</div>
-          <div class="hrow-actions"><button class="btn-del" style="flex:1;" onclick="deleteServis('${s.id}')">Hapus</button></div>
-        </div></div>
-      </div>`).join('')}
+    <div class="section-eyebrow">Truck &amp; Unit</div>
+    <div class="card">
+      <label class="flabel">No Unit</label>
+      <select onchange="quickSave('btId', this.value)">
+        ${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="section-eyebrow">Hour Meter &amp; BBM</div>
+    <div class="card">
+      <div class="grid2">
+        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal)}" onchange="quickSave('hmAwal', this.value)"></div>
+        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAkhir)}" onchange="quickSave('hmAkhir', this.value)"></div>
+        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(e.bbmLiter)}" onchange="quickSave('bbmLiter', this.value)"></div>
+      </div>
+      <label class="flabel">Catatan (opsional)</label>
+      <textarea rows="2" onchange="quickSave('catatan', this.value)">${escapeHtml(e.catatan)}</textarea>
+    </div>
   `;
 }
-function toggleSRow(id){ document.getElementById('srow-'+id).classList.toggle('open'); }
-function openServisForm(prefillBt, prefillHm){
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Tambah Servis</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="dsub">Menyimpan catatan ini akan mereset hitungan progres menuju servis berikutnya.</div>
-        <label class="flabel">Tanggal</label><input type="date" id="svDate" value="${todayIso()}">
-        <label class="flabel">No Unit</label><select id="svBt">${btOptionsHtml(prefillBt||USER.mainBt)}</select>
-        <label class="flabel">HM saat servis</label><input type="text" id="svHm" inputmode="decimal" value="${prefillHm!=null&&prefillHm!=='null'?prefillHm:''}">
-        <label class="flabel">Catatan Perbaikan</label><textarea id="svCatatan" placeholder="mis. Ganti oli & filter"></textarea>
-        <button class="btn-filled" onclick="saveServisForm()">Simpan</button>
-      </div>
-    </div>`;
-}
-function saveServisForm(){
-  SERVIS.push({id:uid(), date:document.getElementById('svDate').value, btId:document.getElementById('svBt').value,
-    hm:document.getElementById('svHm').value, catatan:document.getElementById('svCatatan').value});
-  saveServis(); closeModal(); toast('Catatan servis disimpan — progres direset'); renderServis(); renderRekap();
-}
-function deleteServis(id){
-  const s = SERVIS.find(x=>x.id===id);
-  if(!s) return;
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet" style="text-align:center;">
-        <div class="sheet-handle"></div>
-        <h3 style="margin:4px 0 10px;">Hapus Riwayat Servis</h3>
-        <div class="card card-flat" style="text-align:left;margin-bottom:18px;">
-          <div class="field-label">Tanggal</div><div style="font-size:14px;font-weight:700;margin-bottom:8px;">${escapeHtml(fmtLabel(s.date))}</div>
-          <div class="field-label">No Unit</div><div style="font-size:14px;font-weight:700;margin-bottom:8px;">${escapeHtml(btLabel(s.btId))}</div>
-          <div class="field-label">HM saat servis</div><div style="font-size:14px;font-weight:700;">${escapeHtml(s.hm||'-')}</div>
-        </div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn-outline" style="flex:1;" onclick="closeModal()">Batal</button>
-          <button style="flex:1;background:#B3261E;color:#fff;font-size:14px;font-weight:700;padding:12px;border-radius:100px;border:none;cursor:pointer;" onclick="confirmDeleteServis('${id}')">Hapus</button>
-        </div>
-      </div>
-    </div>`;
-}
-function confirmDeleteServis(id){
-  SERVIS = SERVIS.filter(x=>x.id!==id); saveServis(); closeModal(); toast('Riwayat servis dihapus'); renderServis(); renderRekap();
+function quickSave(key, val){
+  const e = getTodayEntry();
+  e[key] = val;
+  saveEntries();
+  toast('Tersimpan');
 }
 
-/* ============ REKAP ============ */
-let rekapMonth = todayIso().slice(0,7);
-let SERVICE_SETTING = LS.get('mrg_servis_setting', {intervalHm:240, warnBeforeHm:20});
-function saveServiceSetting(){ LS.set('mrg_servis_setting', SERVICE_SETTING); }
-function openServiceSettingSheet(){
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Standar Servis Berkala</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="dsub">Menentukan kapan progres servis dianggap "mendekati" dan "harus segera"</div>
-        <label class="flabel">Interval Servis (jam HM)</label>
-        <input type="text" inputmode="numeric" id="svIntervalInput" value="${SERVICE_SETTING.intervalHm}">
-        <label class="flabel">Mulai Peringatan (jam sebelum interval tercapai)</label>
-        <input type="text" inputmode="numeric" id="svWarnInput" value="${SERVICE_SETTING.warnBeforeHm}">
-        <button class="btn-filled" onclick="saveServiceSettingForm()">Simpan</button>
-      </div>
-    </div>`;
+/* ================= PLACEHOLDER SCREENS (tahap berikutnya) ================= */
+function renderBeranda(){
+  document.getElementById('screen-beranda').innerHTML = `<div class="card"><div class="empty-note">Beranda akan dibangun di Tahap 3.</div></div>`;
 }
-function saveServiceSettingForm(){
-  const iv = parseFloat(document.getElementById('svIntervalInput').value)||240;
-  const wb = parseFloat(document.getElementById('svWarnInput').value)||0;
-  SERVICE_SETTING = {intervalHm: iv, warnBeforeHm: wb};
-  saveServiceSetting(); closeModal(); toast('Standar servis diperbarui'); renderRekap();
+function renderProgram(){
+  document.getElementById('screen-program').innerHTML = `<div class="card"><div class="empty-note">Program (riwayat) akan dibangun di Tahap 2.</div></div>`;
 }
-function lastServisForBt(btId){
-  const list = SERVIS.filter(s=>s.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
-  return list[0] || null;
-}
-function currentHmForBt(btId){
-  const reset = lastHmResetForBt(btId);
-  const vals = ENTRIES.filter(e=>e.btId===btId && e.hmAkhir!=='' && e.hmAkhir!=null && (!reset || e.date >= reset.date)).map(e=>parseFloat(e.hmAkhir)).filter(v=>!isNaN(v));
-  return vals.length ? Math.max(...vals) : null;
-}
-function hmServiceStatus(btId){
-  const last = lastServisForBt(btId);
-  const current = currentHmForBt(btId);
-  const baseHm = last ? parseFloat(last.hm)||0 : null;
-  const sisa = (baseHm!==null && current!==null) ? Math.max(0, current-baseHm) : null;
-  return {last, current, baseHm, sisa};
-}
-function sopirOtSummary(monthEntries){
-  const map = {};
-  monthEntries.forEach(e=>{
-    const key = resolveOwnerName(e);
-    const ot = computeOT(e).otMin/60;
-    map[key] = (map[key]||0) + ot;
-  });
-  return Object.entries(map).map(([name,jam])=>({name,jam})).filter(x=>x.jam>0).sort((a,b)=>b.jam-a.jam);
-}
-function sopirOtBarsHtml(list){
-  if(!list.length) return `<div class="empty-note">Belum ada data lembur bulan ini.</div>`;
-  const max = Math.max(...list.map(x=>x.jam), 0.1);
-  return list.map((x,i)=>`
-    <div style="margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px;"><span>${i===0?'🏆 ':''}${escapeHtml(x.name)}</span><span>${x.jam.toFixed(1)} jam</span></div>
-      <div style="background:var(--surface-container-high);border-radius:100px;height:10px;overflow:hidden;">
-        <div style="height:100%;border-radius:100px;width:${Math.max(4,(x.jam/max)*100)}%;background:${i===0?'var(--danger)':'var(--primary)'};"></div>
-      </div>
-    </div>`).join('');
+function renderPeta(){
+  document.getElementById('screen-peta').innerHTML = `<div class="card"><div class="empty-note">Peta akan dibangun di Tahap 4.</div></div>`;
 }
 function renderRekap(){
-  const host = document.getElementById('screen-rekap');
-  const monthEntries = ENTRIES.filter(e=>monthKey(e.date)===rekapMonth);
-  const totalHm = monthEntries.reduce((s,e)=>s+hmPakai(e),0);
-  const totalBbm = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
-  const totalOt = monthEntries.reduce((s,e)=>s+computeOT(e).otMin,0)/60;
-  const ratio = totalHm>0 ? (totalBbm/totalHm).toFixed(2) : '0.00';
-  const list = monthEntries.filter(e=>e.ownerType===histFilter).sort((a,b)=>b.date.localeCompare(a.date));
-  const sopirOt = sopirOtSummary(monthEntries);
-
-  const mainBt = USER.mainBt;
-  const mainBtEntriesMonth = monthEntries.filter(e=>e.btId===mainBt);
-  const mainBtBbmMonth = mainBtEntriesMonth.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
-  const svc = hmServiceStatus(mainBt);
-  const intervalHm = SERVICE_SETTING.intervalHm;
-  const pct = svc.sisa!==null ? Math.min(100, Math.round((svc.sisa/intervalHm)*100)) : null;
-  const overdue = svc.sisa!==null && svc.sisa>=intervalHm;
-  const nearing = svc.sisa!==null && !overdue && svc.sisa>=(intervalHm-SERVICE_SETTING.warnBeforeHm);
-  const warn = overdue || nearing;
-
-  host.innerHTML = `
-    <div class="section-eyebrow">Ringkasan</div>
-    <input type="month" value="${rekapMonth}" style="width:auto;margin:0 0 10px;padding:8px 12px;font-size:14px;min-height:auto;" onchange="rekapMonth=this.value;renderRekap()">
-    <div class="row-2" style="margin-bottom:12px;">
-      <div class="card"><div class="field-label">Total HM</div><div class="field-value">${totalHm.toFixed(1)}</div></div>
-      <div class="card"><div class="field-label">Total BBM</div><div class="field-value">${totalBbm.toFixed(0)} L</div></div>
-    </div>
-    <div class="row-2" style="margin-bottom:12px;">
-      <div class="card"><div class="field-label">Rasio L/HM</div><div class="field-value" style="font-size:16px;">${ratio}</div></div>
-      <div class="card"><div class="field-label">Total Lembur</div><div class="field-value" style="font-size:16px;">${totalOt.toFixed(1)}j</div></div>
-    </div>
-
-    <div class="section-eyebrow">Filter BT Saya — ${escapeHtml(btLabel(mainBt))}</div>
-    <div class="card">
-      <div class="row-2" style="margin-bottom:2px;">
-        <div><div class="field-label">BBM bulan ini (${escapeHtml(btLabel(mainBt))})</div><div class="field-value" style="font-size:16px;">${mainBtBbmMonth.toFixed(0)} L</div></div>
-        <div><div class="field-label">HM Sekarang</div><div class="field-value" style="font-size:16px;">${svc.current!==null?svc.current.toFixed(1):'—'}</div></div>
-      </div>
-    </div>
-    <div class="card" style="${overdue?'border-color:var(--danger);':nearing?'border-color:var(--primary);':''}">
-      <div class="field-label">Progres Menuju Servis Berkala (${intervalHm} jam HM)</div>
-      ${svc.sisa===null ? `<div class="field-sub" style="margin-top:6px;">${svc.baseHm===null ? `Belum ada catatan servis untuk ${escapeHtml(btLabel(mainBt))}. Tambahkan servis terakhir agar progres bisa dihitung.` : `Belum ada data HM untuk ${escapeHtml(btLabel(mainBt))}. Progres akan muncul setelah ada entri dengan HM Akhir.`}</div>` : `
-        <div style="background:var(--surface-container-high);border-radius:100px;height:10px;margin:10px 0 6px;overflow:hidden;">
-          <div style="height:100%;border-radius:100px;width:${pct}%;background:${overdue?'var(--danger)':'var(--primary)'};"></div>
-        </div>
-        <div class="field-sub">${svc.sisa.toFixed(1)} jam terpakai sejak servis terakhir (${escapeHtml(fmtLabel(svc.last.date))}, HM ${svc.baseHm})${overdue?' — sudah melewati batas, segera servis!':nearing?' — sudah mendekati batas servis':''}</div>
-      `}
-      <button class="btn-outline" style="margin-top:12px;" onclick="openServisForm('${mainBt}', ${svc.current!==null?svc.current:'null'})">${icon('build',16)} Catat Servis Berkala (Reset)</button>
-    </div>
-
-    <div class="section-eyebrow">Overtime per Sopir (bulan ini)</div>
-    <div class="card">
-      ${sopirOtBarsHtml(sopirOt)}
-    </div>
-
-    <div class="section-eyebrow">Riwayat</div>
-    <div class="hist-tabs">
-      <div class="hist-tab ${histFilter==='saya'?'active-saya':''}" onclick="setHistFilter('saya')">🟠 Saya</div>
-      <div class="hist-tab ${histFilter==='partner'?'active-partner':''}" onclick="setHistFilter('partner')">🔵 Sopir</div>
-    </div>
-    ${renderHistoryList(list)}
-    <button class="pill-btn pill-btn-lg" style="margin:16px 0 4px;width:100%;justify-content:center;" onclick="openExportSheet()">${icon('download',16)} Export Laporan</button>
-  `;
+  document.getElementById('screen-rekap').innerHTML = `<div class="card"><div class="empty-note">Rekap &amp; Export akan dibangun di Tahap 2.</div></div>`;
 }
 
-/* ============ EXPORT ============ */
-const EXPORT_COLS = [
-  {key:'date', label:'Tanggal', checked:true},
-  {key:'btId', label:'No Unit', checked:true},
-  {key:'sopir', label:'Sopir', checked:true},
-  {key:'hm', label:'HM Awal / Akhir', checked:true},
-  {key:'bbm', label:'BBM (liter)', checked:true},
-  {key:'jenis', label:'Jenis Layanan & Rute', checked:false},
-  {key:'ot', label:'Jam Lembur', checked:true},
-  {key:'catatan', label:'Catatan', checked:false},
-];
-function resolveOwnerName(e){
-  if(e.ownerType === 'saya') return USER.name || 'Saya';
-  return e.ownerName || 'Sopir';
-}
-function allSopirNames(){
-  const names = new Set();
-  names.add(USER.name||'Saya');
-  PARTNERS.forEach(p=>names.add(p.name));
-  ENTRIES.forEach(e=>{ names.add(resolveOwnerName(e)); });
-  return Array.from(names);
-}
-function updateExportModeUI(){
-  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
-  document.getElementById('exp-customRange').style.display = mode==='custom' ? 'block' : 'none';
-}
-function openExportSheet(fromProgram){
-  const names = allSopirNames();
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Export / Cetak Laporan</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="dsub">Periode</div>
-        <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-month" value="month" ${fromProgram?'':'checked'} onchange="updateExportModeUI()"><label for="exp-mode-month">Bulan ${MONTH_NAMES_FULL[parseInt(rekapMonth.split('-')[1])-1]} ${rekapMonth.split('-')[0]}</label></div>
-        <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-all" value="all" ${fromProgram?'checked':''} onchange="updateExportModeUI()"><label for="exp-mode-all">Semua periode</label></div>
-        <div class="chk-row"><input type="radio" name="exp-mode" id="exp-mode-custom" value="custom" onchange="updateExportModeUI()"><label for="exp-mode-custom">Rentang tanggal custom</label></div>
-        <div id="exp-customRange" style="display:none;margin:6px 0 12px;gap:8px;align-items:center;">
-          <div class="dsub" style="margin-bottom:4px;">Dari tanggal</div>
-          <input type="date" id="exp-dateFrom" style="width:auto;margin-bottom:8px;">
-          <div class="dsub" style="margin-bottom:4px;">Sampai tanggal</div>
-          <input type="date" id="exp-dateTo" style="width:auto;">
-        </div>
-        <div class="dsub">Filter Sopir (kosongkan semua = semua sopir)</div>
-        <div style="max-height:140px;overflow:auto;margin-bottom:10px;">
-          ${names.map(n=>`<div class="chk-row"><input type="checkbox" class="exp-sopir-chk" value="${escapeHtml(n)}"><label>${escapeHtml(n)}</label></div>`).join('')}
-        </div>
-        <div class="dsub">Kolom yang disertakan</div>
-        ${EXPORT_COLS.map(c=>`<div class="chk-row"><input type="checkbox" id="exp-${c.key}" ${c.checked?'checked':''}><label for="exp-${c.key}">${c.label}</label></div>`).join('')}
-        <div class="export-fmt">
-          <button class="fmt-btn pdf" onclick="doExport('pdf')">📄 PDF</button>
-          <button class="fmt-btn csv" onclick="doExport('xlsx')">📊 Excel (.xlsx)</button>
-        </div>
-      </div>
-    </div>`;
-}
-function jenisDetailText(e){
-  const kat = e.jenisKategori || '-';
-  const rute = e.lokasiMuat || '-';
-  switch(kat){
-    case 'Antar/Jemput Tenaga':
-      return kat+' - '+(e.antarTipe||'-')+' - '+(e.antarKegiatan||'-')+' - '+rute;
-    case 'Muat Tebu':
-      if(e.muatTipe==='Produksi') return kat+' - Produksi - '+rute;
-      if(e.muatTipe==='Bibit') return kat+' - Bibit - '+(e.lokasiMuat||'-')+' + '+(e.lokasiBongkar||'-');
-      return kat+' - -';
-    case 'Drone':
-      return kat+' - '+(e.droneJenis||'-')+' - '+rute;
-    case 'Operator':
-      return kat+' - '+(e.operatorShift||'-');
-    case 'Lainnya':
-      return kat+' - '+(e.jenisKet||'-');
-    default:
-      return kat;
-  }
-}
-function sanitizePdfText(s){
-  return String(s)
-    .replace(/→/g, '->')
-    .replace(/—/g, '-')
-    .replace(/–/g, '-')
-    .replace(/[’‘]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/•/g, '-');
-}
-function getExportRows(){
-  const cols = EXPORT_COLS.filter(c=>document.getElementById('exp-'+c.key).checked);
-  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
-  const selectedSopir = Array.from(document.querySelectorAll('.exp-sopir-chk:checked')).map(el=>el.value);
-  let filtered;
-  if(mode==='all'){
-    filtered = ENTRIES.slice();
-  } else if(mode==='custom'){
-    const from = document.getElementById('exp-dateFrom').value;
-    const to = document.getElementById('exp-dateTo').value;
-    filtered = ENTRIES.filter(e => (!from || e.date >= from) && (!to || e.date <= to));
-  } else {
-    filtered = ENTRIES.filter(e=>monthKey(e.date)===rekapMonth);
-  }
-  if(selectedSopir.length>0){
-    filtered = filtered.filter(e=>selectedSopir.includes(resolveOwnerName(e)));
-  }
-  filtered.sort((a,b)=>a.date.localeCompare(b.date));
-  const rows = filtered.map(e=>{
-    const ot = computeOT(e); const o={};
-    cols.forEach(c=>{
-      if(c.key==='date') o[c.label]=fmtLabel(e.date);
-      if(c.key==='btId') o[c.label]=btLabel(e.btId);
-      if(c.key==='sopir') o[c.label]=resolveOwnerName(e);
-      if(c.key==='hm') o[c.label]=(e.hmAwal||'-')+' -> '+(e.hmAkhir||'-')+' ('+hmPakai(e)+' jam)';
-      if(c.key==='bbm') o[c.label]=(e.bbmLiter||0)+' L';
-      if(c.key==='jenis') o[c.label]=jenisDetailText(e);
-      if(c.key==='ot') o[c.label]=fmtHoursNum(ot.otMin)+' jam';
-      if(c.key==='catatan') o[c.label]=e.catatan||'-';
-    });
-    return o;
-  });
-  return {cols, rows};
-}
-function blobToBase64(blob){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onloadend = ()=> resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-function isNativeApp(){
-  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-}
-async function saveOrShareBlob(blob, filename, mimeType){
-  if(isNativeApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
-    try{
-      const { Filesystem } = window.Capacitor.Plugins;
-      const base64 = await blobToBase64(blob);
-      const written = await Filesystem.writeFile({
-        path: filename,
-        data: base64,
-        directory: 'CACHE',
-        recursive: true
-      });
-      if(window.Capacitor.Plugins.Share){
-        await window.Capacitor.Plugins.Share.share({ title: filename, url: written.uri, dialogTitle: 'Simpan atau bagikan file' });
-        return 'shared';
-      }
-      return 'saved-native';
-    }catch(err){
-      const msg = err && err.message ? err.message : JSON.stringify(err);
-      if(/cancel/i.test(msg)){
-        return 'canceled';
-      }
-      alert('Gagal simpan native: ' + msg);
-      return 'failed';
-    }
-  }
-  try{
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.rel = 'noopener';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url), 4000);
-    return 'downloaded';
-  }catch(err){
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    return 'opened';
-  }
-}
-function exportFileLabel(){
-  const mode = document.querySelector('input[name="exp-mode"]:checked').value;
-  if(mode==='all') return 'semua-periode';
-  if(mode==='custom'){
-    const from = document.getElementById('exp-dateFrom').value || 'awal';
-    const to = document.getElementById('exp-dateTo').value || 'akhir';
-    return from+'_sd_'+to;
-  }
-  return rekapMonth;
-}
-async function doExport(fmt){
-  try {
-    const {cols, rows} = getExportRows();
-    if(rows.length===0){ toast('Tidak ada data yang cocok dengan filter'); return; }
-    const headers = cols.map(c=>c.label);
-    if(fmt==='xlsx'){
-      if(!window.XLSX){
-        toast('Library Excel belum siap, coba lagi sebentar...');
-        return;
-      }
-      const sheetData = [headers, ...rows.map(r=>headers.map(h=>r[h]))];
-      const ws = XLSX.utils.aoa_to_sheet(sheetData);
-      ws['!cols'] = headers.map(h=>({ wch: Math.min(Math.max(h.length, 12), 40) }));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
-      const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-      const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      const result = await saveOrShareBlob(blob, 'rekap-'+exportFileLabel()+'.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      toast(result==='saved-native' ? 'Excel tersimpan di Documents' : (result==='shared' ? 'Excel siap dibagikan' : 'Excel (.xlsx) diunduh'));
-      closeModal();
-      return;
-    }
-    if(!window.jspdf){
-      toast('Library PDF belum siap, coba lagi sebentar (memuat dari internet)...');
-      return;
-    }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: headers.length>5 ? 'landscape' : 'portrait' });
-    doc.setFont('helvetica', 'normal');
-    const marginX = 10;
-    doc.setFontSize(14);
-    doc.text(sanitizePdfText('Laporan - '+exportFileLabel()), marginX, 14);
-    if(typeof doc.autoTable === 'function'){
-      doc.autoTable({
-        head: [headers.map(h=>sanitizePdfText(h))],
-        body: rows.map(r=>headers.map(h=>sanitizePdfText(String(r[h]==null?'-':r[h])))),
-        startY: 20,
-        margin: {left: marginX, right: marginX},
-        styles: {fontSize: 8, cellPadding: 2, font: 'helvetica'},
-        headStyles: {fillColor: [28,35,51]},
-        theme: 'grid'
-      });
-    } else {
-      // Fallback kalau library tabel gagal dimuat: susun sebagai teks bertumpuk
-      let y = 26;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const usableWidth = pageWidth - marginX*2;
-      rows.forEach(r=>{
-        doc.setFontSize(9);
-        headers.forEach(h=>{
-          const line = sanitizePdfText(h+': '+r[h]);
-          const split = doc.splitTextToSize(line, usableWidth);
-          doc.text(split, marginX, y); y += split.length*4.6;
-        });
-        y += 4;
-        if(y > 280){ doc.addPage(); y=16; }
-      });
-    }
-    const pdfBlob = doc.output('blob');
-    const result = await saveOrShareBlob(pdfBlob, 'rekap-'+exportFileLabel()+'.pdf', 'application/pdf');
-    toast(result==='saved-native' ? 'PDF tersimpan di Documents' : (result==='shared' ? 'PDF siap dibagikan' : 'PDF diunduh'));
-    closeModal();
-  } catch(err) {
-    toast('Gagal export: ' + (err.message || 'error tidak diketahui'));
-  }
-}
-
-/* ============ SETTING SHEET ============ */
-function openSettingSheet(){
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Setting Akun</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <label class="flabel">Nama Pengguna</label><input type="text" id="stName" value="${escapeHtml(USER.name||'')}">
-        <label class="flabel">BT Tanggung Jawab Utama</label><select id="stBt">${btOptionsHtml(USER.mainBt)}</select>
-        <button class="btn-filled" onclick="saveSetting()">Simpan</button>
-      </div>
-    </div>`;
-}
-function saveSetting(){
-  USER.name = document.getElementById('stName').value;
-  USER.mainBt = document.getElementById('stBt').value;
-  saveUser(); closeModal(); toast('Setting disimpan'); renderHari();
-}
-
-/* ============ KELOLA BT & PARTNER ============ */
-let bpTab = 'bt';
-function openBtPartnerSheet(){ bpTab='bt'; renderBtPartnerSheet(); }
-function renderBtPartnerSheet(){
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Kelola No Unit & Sopir</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="hist-tabs">
-          <div class="hist-tab ${bpTab==='bt'?'active-saya':''}" onclick="bpTab='bt';renderBtPartnerSheet()">No Unit</div>
-          <div class="hist-tab ${bpTab==='partner'?'active-partner':''}" onclick="bpTab='partner';renderBtPartnerSheet()">Sopir</div>
-        </div>
-        ${bpTab==='bt' ? BT_CODES.map(b=>`
-          <div class="list-row"><div class="list-row-name" onclick="renameBt('${b.id}')">${escapeHtml(b.label)}</div>
-            <div class="list-row-actions"><button class="icon-x" onclick="removeBt('${b.id}')">${icon('close',14)}</button></div></div>
-        `).join('') : (PARTNERS.length===0 ? '<div class="empty-note">Belum ada partner.</div>' : PARTNERS.map(p=>`
-          <div class="list-row"><div class="list-row-name" onclick="renamePartner('${p.id}')">${escapeHtml(p.name)}</div>
-            <div class="list-row-actions"><button class="icon-x" onclick="removePartner('${p.id}')">${icon('close',14)}</button></div></div>
-        `).join(''))}
-        <div class="add-row">
-          <input type="text" id="bpNewInput" placeholder="${bpTab==='bt'?'mis. BT.21':'mis. Rekan baru'}">
-          <button onclick="addBtOrPartner()">+</button>
-        </div>
-      </div>
-    </div>`;
-}
-function addBtOrPartner(){
-  const val = document.getElementById('bpNewInput').value.trim();
-  if(!val) return;
-  if(bpTab==='bt') BT_CODES.push({id:uid(), label:val}); else PARTNERS.push({id:uid(), name:val});
-  saveBt(); savePartners(); renderBtPartnerSheet(); toast('Ditambahkan');
-}
-function renameBt(id){
-  const b = BT_CODES.find(x=>x.id===id);
-  showPrompt('Ubah nama kode BT', b.label, function(val){
-    if(val && val.trim()){ b.label = val.trim(); saveBt(); renderBtPartnerSheet(); renderHari(); toast('No Unit diperbarui'); }
-  });
-}
-function removeBt(id){
-  showConfirm('Hapus kode BT ini?', function(){
-    BT_CODES = BT_CODES.filter(x=>x.id!==id); saveBt(); renderBtPartnerSheet(); toast('No Unit dihapus');
-  });
-}
-function renamePartner(id){
-  const p = PARTNERS.find(x=>x.id===id);
-  showPrompt('Ubah nama partner', p.name, function(val){
-    if(val && val.trim()){ p.name = val.trim(); savePartners(); renderBtPartnerSheet(); toast('Sopir diperbarui'); }
-  });
-}
-function removePartner(id){
-  showConfirm('Hapus partner ini?', function(){
-    PARTNERS = PARTNERS.filter(x=>x.id!==id); savePartners(); renderBtPartnerSheet(); toast('Sopir dihapus');
-  });
-}
-
-/* ============ KELOLA JENIS LAYANAN ============ */
-let jenisSheetTab = 'antar';
-function openJenisSheet(){ jenisSheetTab='antar'; renderJenisSheet(); }
-function jenisSubListRows(list, removeFn){
-  return list.map((it,i)=>`
-    <div class="list-row"><div class="list-row-name">${escapeHtml(it.value)}${it.locked?' <span style="color:#b08b5a;font-size:11px;">(default)</span>':''}</div>
-      <div class="list-row-actions">${it.locked?'':`<button class="icon-x" onclick="${removeFn}(${i})">${icon('close',14)}</button>`}</div></div>
-  `).join('');
-}
-function renderJenisSheet(){
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Kelola Jenis Layanan</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="dsub">5 kategori utama (Antar/Jemput Tenaga, Muat Tebu, Drone, Operator, Lainnya) sudah tetap dan tidak bisa diubah. Di bawah ini kamu hanya bisa mengelola sub-daftar yang bisa ditambah manual.</div>
-        <div class="hist-tabs" style="display:flex;gap:8px;margin:10px 0;">
-          <div class="hist-tab ${jenisSheetTab==='antar'?'active-saya':''}" onclick="jenisSheetTab='antar';renderJenisSheet()">Kegiatan Antar/Jemput</div>
-          <div class="hist-tab ${jenisSheetTab==='drone'?'active-partner':''}" onclick="jenisSheetTab='drone';renderJenisSheet()">Jenis Drone</div>
-        </div>
-        ${jenisSheetTab==='antar' ? jenisSubListRows(KEGIATAN_ANTAR_LIST,'removeKegiatanAntarItem') : jenisSubListRows(DRONE_JENIS_LIST,'removeDroneJenisItem')}
-        <div class="add-row">
-          <input type="text" id="jenisNewInput" placeholder="${jenisSheetTab==='antar'?'mis. Angkut Pupuk':'mis. Fungisida'}">
-          <button onclick="addJenisSubItem()">+</button>
-        </div>
-      </div>
-    </div>`;
-}
-function addJenisSubItem(){
-  const val = document.getElementById('jenisNewInput').value.trim();
-  if(!val) return;
-  if(jenisSheetTab==='antar'){ KEGIATAN_ANTAR_LIST.push({value:val,locked:false}); saveKegiatanAntar(); }
-  else{ DRONE_JENIS_LIST.push({value:val,locked:false}); saveDroneJenis(); }
-  renderJenisSheet(); toast('Ditambahkan');
-}
-function removeKegiatanAntarItem(i){
-  if(KEGIATAN_ANTAR_LIST[i].locked) return;
-  showConfirm('Hapus item ini?', function(){
-    KEGIATAN_ANTAR_LIST.splice(i,1); saveKegiatanAntar(); renderJenisSheet(); toast('Dihapus');
-  });
-}
-function removeDroneJenisItem(i){
-  if(DRONE_JENIS_LIST[i].locked) return;
-  showConfirm('Hapus item ini?', function(){
-    DRONE_JENIS_LIST.splice(i,1); saveDroneJenis(); renderJenisSheet(); toast('Dihapus');
-  });
-}
-
-/* ============ KELOLA BLOK/PETAK (RUTE) ============ */
-let BLOK_LIST = LS.get('mrg_blok', []);
-function saveBlok(){ LS.set('mrg_blok', BLOK_LIST); }
-function openBlokSheet(){ renderBlokSheet(); }
-function renderBlokSheet(){
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Kelola Blok/Petak</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="dsub">Daftar ini muncul sebagai saran otomatis di kolom Keterangan/Rute. Blok bisa ditambah manual di sini, atau otomatis masuk saat kamu menandai titik baru di tab Peta.</div>
-        ${BLOK_LIST.length===0 ? '<div class="empty-note">Belum ada blok/petak.</div>' : BLOK_LIST.map(b=>`
-          <div class="list-row"><div class="list-row-name">${escapeHtml(b.label)} ${b.source==='peta'?'<span class="badge-mini badge-partner">Peta</span>':''}</div>
-            <div class="list-row-actions"><button class="icon-x" onclick="removeBlok('${b.id}')">${icon('close',14)}</button></div></div>
-        `).join('')}
-        <div class="add-row">
-          <input type="text" id="blokNewInput" placeholder="mis. Blok 14 → PKS">
-          <button onclick="addBlokManual()">+</button>
-        </div>
-      </div>
-    </div>`;
-}
-function addBlokManual(){
-  const val = document.getElementById('blokNewInput').value.trim();
-  if(!val) return;
-  BLOK_LIST.push({id:uid(), label:val, source:'manual'}); saveBlok(); renderBlokSheet(); refreshBlokDatalist(); toast('Blok ditambahkan');
-}
-function removeBlok(id){
-  BLOK_LIST = BLOK_LIST.filter(x=>x.id!==id); saveBlok(); renderBlokSheet(); refreshBlokDatalist(); toast('Dihapus');
-}
-function refreshBlokDatalist(){
-  const dl = document.getElementById('blokDatalist');
-  if(dl) dl.innerHTML = BLOK_LIST.map(b=>`<option value="${escapeHtml(b.label)}">`).join('');
-}
-
-/* ============ KELOLA LIBUR ============ */
-function openLiburSheet(){ renderLiburSheet(); }
-function renderLiburSheet(){
-  const sorted = [...LIBUR].sort((a,b)=>a.date.localeCompare(b.date));
-  document.getElementById('modalHost').innerHTML = `
-    <div class="sheet-scrim show" onclick="if(event.target===this) closeModal()">
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title-row"><h3>Kelola Hari Libur</h3><button class="sheet-close" onclick="closeModal()">${icon('close',18)}</button></div>
-        <div class="dsub">Tanggal libur otomatis dihitung lembur penuh</div>
-        ${sorted.length===0 ? '<div class="empty-note">Belum ada tanggal libur.</div>' : sorted.map(h=>`
-          <div class="list-row"><div class="list-row-name">${escapeHtml(fmtLabel(h.date))}${h.label?' — '+escapeHtml(h.label):''}</div>
-            <div class="list-row-actions"><button class="icon-x" onclick="removeLibur('${h.date}')">${icon('close',14)}</button></div></div>
-        `).join('')}
-        <div class="add-row">
-          <input type="date" id="liburDateInput" style="flex:1;">
-          <input type="text" id="liburLabelInput" placeholder="Keterangan (opsional)" style="flex:1;">
-          <button onclick="addLibur()">+</button>
-        </div>
-      </div>
-    </div>`;
-}
-function addLibur(){
-  const date = document.getElementById('liburDateInput').value;
-  if(!date) return;
-  if(LIBUR.some(h=>h.date===date)){ toast('Tanggal ini sudah ditandai libur'); return; }
-  LIBUR.push({date, label:document.getElementById('liburLabelInput').value});
-  saveLibur(); renderLiburSheet(); toast('Hari libur ditambahkan');
-}
-function removeLibur(date){
-  LIBUR = LIBUR.filter(x=>x.date!==date); saveLibur(); renderLiburSheet(); toast('Ditandai bukan libur lagi');
-}
-
-/* ============ INIT ============ */
-refreshBlokDatalist();
-const _dupMerged = mergeDuplicateEntries();
-showScreen('hari');
-if(_dupMerged>0){ setTimeout(()=>toast(_dupMerged+' catatan ganda berhasil digabung'), 400); }
+/* ================= INIT ================= */
+showScreen('beranda');
 </script>
 </body>
 </html>
-```
-
----
