@@ -708,8 +708,92 @@ function renderRekap(){
       }).join('')}
   `;
 }
+/* ================= PETA ================= */
+let PETA_IMAGE = LS.get('v2_peta_image', null); // base64 dataURL
+let PETA_PINS = LS.get('v2_peta_pins', []);      // [{id, xPct, yPct, label, date}]
+function savePetaImage(){ LS.set('v2_peta_image', PETA_IMAGE); }
+function savePetaPins(){ LS.set('v2_peta_pins', PETA_PINS); }
 function renderPeta(){
-  document.getElementById('screen-peta').innerHTML = `<div class="card"><div class="empty-note">Peta akan dibangun di Tahap 4.</div></div>`;
+  const host = document.getElementById('screen-peta');
+  if(!PETA_IMAGE){
+    host.innerHTML = `
+      <div class="card">
+        <div class="empty-note">Belum ada gambar peta. Upload gambar peta kebun (dari galeri HP) untuk mulai menandai lokasi kerja.</div>
+        <input type="file" accept="image/*" id="petaFileInput" style="display:none;" onchange="handlePetaUpload(event)">
+        <button class="btn-block" onclick="document.getElementById('petaFileInput').click()">&#128247; Upload Gambar Peta</button>
+      </div>`;
+    return;
+  }
+  host.innerHTML = `
+    <div class="section-eyebrow section-eyebrow-row">Peta Lokasi Kerja
+      <span>
+        <button class="pill-btn sm outline" onclick="document.getElementById('petaFileInput2').click()">Ganti Gambar</button>
+      </span>
+    </div>
+    <input type="file" accept="image/*" id="petaFileInput2" style="display:none;" onchange="handlePetaUpload(event)">
+    <div class="card" style="padding:0;overflow:hidden;position:relative;">
+      <div id="petaImgWrap" style="position:relative;" onclick="handlePetaTap(event)">
+        <img src="${PETA_IMAGE}" style="width:100%;display:block;" id="petaImgEl">
+        ${PETA_PINS.map(p=>`<div onclick="event.stopPropagation();showPetaPin('${p.id}')" style="position:absolute;left:${p.xPct}%;top:${p.yPct}%;transform:translate(-50%,-100%);font-size:26px;cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));">&#128205;</div>`).join('')}
+      </div>
+    </div>
+    <div class="field-sub" style="margin:8px 0 16px;text-align:center;">Tap di peta untuk tambah pin lokasi baru.</div>
+    <div class="section-eyebrow">Daftar Pin (${PETA_PINS.length})</div>
+    <div class="card">
+      ${PETA_PINS.length===0 ? '<div class="empty-note">Belum ada pin.</div>' :
+        PETA_PINS.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(p=>`<div class="list-row"><span>&#128205; ${escapeHtml(p.label)}<br><span class="field-sub">${fmtLabel(p.date)}</span></span><button class="icon-btn" onclick="deletePetaPin('${p.id}')">&#128465;</button></div>`).join('')}
+    </div>
+  `;
+}
+function handlePetaUpload(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      // Resize down to keep localStorage usage reasonable
+      const maxDim = 1600;
+      let w = img.width, h = img.height;
+      if(w > maxDim || h > maxDim){
+        const scale = maxDim / Math.max(w,h);
+        w = Math.round(w*scale); h = Math.round(h*scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      PETA_IMAGE = canvas.toDataURL('image/jpeg', 0.82);
+      savePetaImage();
+      toast('Gambar peta disimpan');
+      renderPeta();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function handlePetaTap(evt){
+  const wrap = document.getElementById('petaImgWrap');
+  const rect = wrap.getBoundingClientRect();
+  const xPct = ((evt.clientX - rect.left) / rect.width * 100).toFixed(2);
+  const yPct = ((evt.clientY - rect.top) / rect.height * 100).toFixed(2);
+  const label = prompt('Nama lokasi ini?');
+  if(!label) return;
+  PETA_PINS.push({id:uid(), xPct, yPct, label, date: todayIso()});
+  savePetaPins();
+  renderPeta();
+  toast('Pin ditambahkan');
+}
+function showPetaPin(id){
+  const p = PETA_PINS.find(x=>x.id===id);
+  if(!p) return;
+  alert(p.label+'\\nDitambahkan: '+fmtLabel(p.date));
+}
+function deletePetaPin(id){
+  if(!confirm('Hapus pin ini?')) return;
+  PETA_PINS = PETA_PINS.filter(p=>p.id!==id);
+  savePetaPins();
+  renderPeta();
+  toast('Pin dihapus');
 }
 function openExportSheet(){
   openModal(`
