@@ -31,7 +31,7 @@
 html,body{margin:0;padding:0;background:var(--surface);font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--on-surface);}
 button,input,select,textarea{font-family:inherit;}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
-#topbar{background:var(--navy);color:#fff;padding:14px 16px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+#topbar{background:var(--navy);color:#fff;padding:calc(14px + env(safe-area-inset-top, 24px)) 16px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
 #topbar .hbtn{background:none;border:none;color:#fff;font-size:22px;padding:6px;cursor:pointer;line-height:1;}
 #topbar .titles{flex:1;min-width:0;}
 #topbar .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#D8CBE8;font-weight:700;}
@@ -40,7 +40,7 @@ button,input,select,textarea{font-family:inherit;}
 #screens{flex:1;overflow-y:auto;padding:16px 16px 100px;}
 .screen{display:none;}
 .screen.active{display:block;}
-#bottomnav{position:fixed;bottom:0;left:0;right:0;background:var(--navy);display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:40;}
+#bottomnav{position:fixed;bottom:0;left:0;right:0;background:var(--navy);display:flex;justify-content:space-around;padding:8px 4px calc(10px + env(safe-area-inset-bottom, 20px));z-index:40;}
 #bottomnav button{background:none;border:none;color:#9AA0B4;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;padding:6px 10px;border-radius:16px;cursor:pointer;}
 #bottomnav button svg{width:22px;height:22px;}
 #bottomnav button.active{color:var(--primary-container);background:rgba(255,255,255,.08);}
@@ -116,9 +116,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div id="screens">
     <div class="screen active" id="screen-beranda"></div>
     <div class="screen" id="screen-hari"></div>
-    <div class="screen" id="screen-program"></div>
     <div class="screen" id="screen-peta"></div>
-    <div class="screen" id="screen-servis"></div>
     <div class="screen" id="screen-rekap"></div>
   </div>
 
@@ -130,10 +128,6 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
     <button data-tab="hari" onclick="showScreen('hari')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
       <span>Hari Ini</span>
-    </button>
-    <button data-tab="program" onclick="showScreen('program')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-      <span>Program</span>
     </button>
     <button data-tab="peta" onclick="showScreen('peta')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>
@@ -157,6 +151,9 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="dgroup">Master Data</div>
   <div class="ditem" onclick="openKelolaUnit()"><span class="ic">&#128666;</span> No Unit</div>
   <div class="ditem" onclick="openKelolaBlok()"><span class="ic">&#128506;</span> No Blok</div>
+  <div class="dgroup">Servis</div>
+  <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
+  <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
@@ -184,18 +181,23 @@ let USER = LS.get('v2_user', {name:'', mainBt:''});
 let UNITS = LS.get('v2_units', []);       // [{id, kode}]
 let BLOKS = LS.get('v2_bloks', []);       // [{id, kode}]
 let ENTRIES = LS.get('v2_entries', []);   // daily log entries
+let SERVIS = LS.get('v2_servis', []);     // [{id, btId, date, hm, note}]
+let HM_RESETS = LS.get('v2_hmresets', []); // [{id, btId, date, note}]
+let SETTINGS = LS.get('v2_settings', {serviceInterval:240});
 function saveUser(){ LS.set('v2_user', USER); }
 function saveUnits(){ LS.set('v2_units', UNITS); }
 function saveBloks(){ LS.set('v2_bloks', BLOKS); }
 function saveEntries(){ LS.set('v2_entries', ENTRIES); }
+function saveServis(){ LS.set('v2_servis', SERVIS); }
+function saveHmResets(){ LS.set('v2_hmresets', HM_RESETS); }
+function saveSettings(){ LS.set('v2_settings', SETTINGS); }
 
 /* ================= NAVIGATION ================= */
 const TITLES = {
   beranda:['BERANDA', 'Ringkasan'],
   hari:['HARI INI', ()=>fmtLabel(todayIso())],
-  program:['PROGRAM', 'Jadwal & Riwayat Kerja'],
   peta:['PETA', 'Lokasi Kerja'],
-  rekap:['REKAP', 'Laporan Bulanan']
+  rekap:['REKAP', 'Riwayat & Laporan']
 };
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -207,7 +209,6 @@ function showScreen(name){
   document.getElementById('tb-badge').textContent = USER.mainBt ? btLabel(USER.mainBt) : '-';
   if(name==='beranda') renderBeranda();
   if(name==='hari') renderHari();
-  if(name==='program') renderProgram();
   if(name==='rekap') renderRekap();
   if(name==='peta') renderPeta();
 }
@@ -390,12 +391,77 @@ function quickSave(key, val){
 function renderBeranda(){
   document.getElementById('screen-beranda').innerHTML = `<div class="card"><div class="empty-note">Beranda akan dibangun di Tahap 3.</div></div>`;
 }
-function renderProgram(){
-  const host = document.getElementById('screen-program');
+function toggleEditRow(id){
+  const el = document.getElementById('editrow-'+id);
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+function saveEditRow(id){
+  const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
+  const rawA = document.getElementById('ed-hmA-'+id).value;
+  const rawB = document.getElementById('ed-hmB-'+id).value;
+  ENTRIES[idx].btId = document.getElementById('ed-bt-'+id).value;
+  ENTRIES[idx].date = document.getElementById('ed-date-'+id).value;
+  ENTRIES[idx].hmAwal = rawA===''?'':parseFloat(rawA).toFixed(1);
+  ENTRIES[idx].hmAkhir = rawB===''?'':parseFloat(rawB).toFixed(1);
+  ENTRIES[idx].bbmLiter = stripDots(document.getElementById('ed-bbm-'+id).value);
+  ENTRIES[idx].lembur = document.getElementById('ed-lembur-'+id).value;
+  ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
+  saveEntries();
+  toast('Perubahan disimpan');
+  renderRekap();
+}
+function deleteRow(id){
+  if(!confirm('Hapus entri ini?')) return;
+  ENTRIES = ENTRIES.filter(x=>x.id!==id);
+  saveEntries();
+  toast('Entri dihapus');
+  renderRekap();
+}
+function missingDays(){
+  const today = todayIso();
+  const dates = new Set(ENTRIES.map(e=>e.date));
+  const days = [];
+  for(let i=1;i<=14;i++){
+    const d = new Date(today+'T00:00:00'); d.setDate(d.getDate()-i);
+    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!dates.has(iso)) days.push(iso);
+  }
+  return days;
+}
+function findDuplicateDates(){
+  const count = {};
+  ENTRIES.forEach(e=>{ const k=e.date+'|'+e.btId; count[k]=(count[k]||0)+1; });
+  return new Set(Object.keys(count).filter(k=>count[k]>1));
+}
+function openBackfill(dateIso){
+  if(!USER.mainBt || UNITS.length===0){ toast('Isi Pengaturan Akun & Kelola No Unit dulu'); return; }
+  const e = {id:uid(), date:dateIso, btId:USER.mainBt, hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:''};
+  ENTRIES.push(e);
+  saveEntries();
+  toast('Baris baru ditambahkan, silakan diisi');
+  showScreen('rekap');
+  setTimeout(()=>{ const el=document.getElementById('editrow-'+e.id); if(el) el.style.display='block'; }, 50);
+}
+function renderRekap(){
+  const host = document.getElementById('screen-rekap');
+  const monthKey = todayIso().slice(0,7);
+  const monthEntries = ENTRIES.filter(e=>e.date.startsWith(monthKey));
+  const totalHm = monthEntries.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
+  const totalBbm = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
+  const totalLembur = monthEntries.reduce((s,e)=>s+(parseFloat(e.lembur)||0),0);
   const missing = missingDays();
-  const sorted = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date));
   const dupDates = findDuplicateDates();
+  const sorted = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date));
   host.innerHTML = `
+    <div class="section-eyebrow">Bulan Ini</div>
+    <div class="grid2">
+      <div class="card"><div class="field-sub">Total HM</div><div style="font-size:22px;font-weight:800;">${totalHm.toFixed(1)}</div></div>
+      <div class="card"><div class="field-sub">Total BBM</div><div style="font-size:22px;font-weight:800;">${fmtThousandsLive(String(Math.round(totalBbm)))} L</div></div>
+      <div class="card"><div class="field-sub">Total Lembur</div><div style="font-size:22px;font-weight:800;">${totalLembur.toFixed(1)} j</div></div>
+      <div class="card"><div class="field-sub">Rasio L/HM</div><div style="font-size:22px;font-weight:800;">${totalHm>0?(totalBbm/totalHm).toFixed(2):'-'}</div></div>
+    </div>
+    <button class="btn-block" style="margin-top:4px;" onclick="openExportSheet()">&#8595; Export Laporan</button>
+
     ${missing.length>0 ? `
     <div class="section-eyebrow">Belum Diisi (14 Hari Terakhir)</div>
     <div class="card" style="border-color:var(--primary);">
@@ -404,7 +470,8 @@ function renderProgram(){
         ${missing.map(d=>`<button class="chip" onclick="openBackfill('${d}')">${fmtLabel(d).split(', ')[1]}</button>`).join('')}
       </div>
     </div>` : ''}
-    <div class="section-eyebrow section-eyebrow-row">Riwayat<button class="pill-btn sm" onclick="openBackfill(todayIso())">+ Tambah</button></div>
+
+    <div class="section-eyebrow section-eyebrow-row">Riwayat Lengkap<button class="pill-btn sm" onclick="openBackfill(todayIso())">+ Tambah</button></div>
     ${sorted.length===0 ? '<div class="card"><div class="empty-note">Belum ada riwayat.</div></div>' :
       sorted.map(e=>{
         const isDup = dupDates.has(e.date+'|'+e.btId);
@@ -439,77 +506,8 @@ function renderProgram(){
       }).join('')}
   `;
 }
-function toggleEditRow(id){
-  const el = document.getElementById('editrow-'+id);
-  el.style.display = el.style.display==='none' ? 'block' : 'none';
-}
-function saveEditRow(id){
-  const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
-  const rawA = document.getElementById('ed-hmA-'+id).value;
-  const rawB = document.getElementById('ed-hmB-'+id).value;
-  ENTRIES[idx].btId = document.getElementById('ed-bt-'+id).value;
-  ENTRIES[idx].date = document.getElementById('ed-date-'+id).value;
-  ENTRIES[idx].hmAwal = rawA===''?'':parseFloat(rawA).toFixed(1);
-  ENTRIES[idx].hmAkhir = rawB===''?'':parseFloat(rawB).toFixed(1);
-  ENTRIES[idx].bbmLiter = stripDots(document.getElementById('ed-bbm-'+id).value);
-  ENTRIES[idx].lembur = document.getElementById('ed-lembur-'+id).value;
-  ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
-  saveEntries();
-  toast('Perubahan disimpan');
-  renderProgram();
-}
-function deleteRow(id){
-  if(!confirm('Hapus entri ini?')) return;
-  ENTRIES = ENTRIES.filter(x=>x.id!==id);
-  saveEntries();
-  toast('Entri dihapus');
-  renderProgram();
-}
-function missingDays(){
-  const today = todayIso();
-  const dates = new Set(ENTRIES.map(e=>e.date));
-  const days = [];
-  for(let i=1;i<=14;i++){
-    const d = new Date(today+'T00:00:00'); d.setDate(d.getDate()-i);
-    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    if(!dates.has(iso)) days.push(iso);
-  }
-  return days;
-}
-function findDuplicateDates(){
-  const count = {};
-  ENTRIES.forEach(e=>{ const k=e.date+'|'+e.btId; count[k]=(count[k]||0)+1; });
-  return new Set(Object.keys(count).filter(k=>count[k]>1));
-}
-function openBackfill(dateIso){
-  if(!USER.mainBt || UNITS.length===0){ toast('Isi Pengaturan Akun & Kelola No Unit dulu'); return; }
-  const e = {id:uid(), date:dateIso, btId:USER.mainBt, hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:''};
-  ENTRIES.push(e);
-  saveEntries();
-  toast('Baris baru ditambahkan, silakan diisi');
-  showScreen('program');
-  setTimeout(()=>{ const el=document.getElementById('editrow-'+e.id); if(el) el.style.display='block'; }, 50);
-}
 function renderPeta(){
   document.getElementById('screen-peta').innerHTML = `<div class="card"><div class="empty-note">Peta akan dibangun di Tahap 4.</div></div>`;
-}
-function renderRekap(){
-  const host = document.getElementById('screen-rekap');
-  const monthKey = todayIso().slice(0,7);
-  const monthEntries = ENTRIES.filter(e=>e.date.startsWith(monthKey));
-  const totalHm = monthEntries.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
-  const totalBbm = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
-  const totalLembur = monthEntries.reduce((s,e)=>s+(parseFloat(e.lembur)||0),0);
-  host.innerHTML = `
-    <div class="section-eyebrow">Bulan Ini</div>
-    <div class="grid2">
-      <div class="card"><div class="field-sub">Total HM</div><div style="font-size:22px;font-weight:800;">${totalHm.toFixed(1)}</div></div>
-      <div class="card"><div class="field-sub">Total BBM</div><div style="font-size:22px;font-weight:800;">${fmtThousandsLive(String(Math.round(totalBbm)))} L</div></div>
-      <div class="card"><div class="field-sub">Total Lembur</div><div style="font-size:22px;font-weight:800;">${totalLembur.toFixed(1)} j</div></div>
-      <div class="card"><div class="field-sub">Rasio L/HM</div><div style="font-size:22px;font-weight:800;">${totalHm>0?(totalBbm/totalHm).toFixed(2):'-'}</div></div>
-    </div>
-    <button class="btn-block" style="margin-top:8px;" onclick="openExportSheet()">&#8595; Export Laporan</button>
-  `;
 }
 function openExportSheet(){
   openModal(`
