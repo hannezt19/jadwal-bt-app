@@ -382,14 +382,213 @@ function checkHmWarning(ctx){
 }
 function quickSave(key, val){
   const e = getTodayEntry();
+  if(key==='hmAkhir' && val!==''){
+    maybeDetectHmReset(e.btId, val, e.date);
+  }
   e[key] = val;
   saveEntries();
   toast('Tersimpan');
 }
 
-/* ================= PLACEHOLDER SCREENS (tahap berikutnya) ================= */
+/* ================= HM & SERVIS ================= */
+function lastServisForBt(btId){
+  const list = SERVIS.filter(s=>s.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
+  return list[0] || null;
+}
+function lastHmResetForBt(btId){
+  const list = HM_RESETS.filter(r=>r.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
+  return list[0] || null;
+}
+function currentHmForBt(btId){
+  const reset = lastHmResetForBt(btId);
+  const vals = ENTRIES.filter(e=>e.btId===btId && e.hmAkhir!=='' && e.hmAkhir!=null && (!reset || e.date>=reset.date)).map(e=>parseFloat(e.hmAkhir)).filter(v=>!isNaN(v));
+  return vals.length ? Math.max(...vals) : null;
+}
+function hmServiceStatus(btId){
+  const last = lastServisForBt(btId);
+  const current = currentHmForBt(btId);
+  const baseHm = last ? (parseFloat(last.hm)||0) : null;
+  const sisa = (baseHm!==null && current!==null) ? Math.max(0, current-baseHm) : null;
+  return {last, current, baseHm, sisa};
+}
+function maybeDetectHmReset(btId, newHmAkhirVal, entryDate){
+  if(newHmAkhirVal===''||newHmAkhirVal==null||!btId) return;
+  const newVal = parseFloat(newHmAkhirVal);
+  if(isNaN(newVal)) return;
+  const prevMax = currentHmForBt(btId);
+  if(prevMax!==null && prevMax>50 && newVal < prevMax*0.7 && (prevMax-newVal)>100){
+    const ok = confirm('HM Akhir ('+newVal.toFixed(1)+') turun drastis dari catatan sebelumnya ('+prevMax.toFixed(1)+') untuk '+btLabel(btId)+'.\\n\\nApakah HM meter unit ini diganti/direset (misalnya karena rusak)?');
+    if(ok){
+      HM_RESETS.push({id:uid(), btId, date: entryDate||todayIso(), note:'Reset otomatis: HM turun dari '+prevMax.toFixed(1)+' ke '+newVal.toFixed(1)});
+      saveHmResets();
+      toast('Dicatat: HM '+btLabel(btId)+' di-reset mulai '+fmtLabel(entryDate||todayIso()));
+    }
+  }
+}
+function openServisModal(){
+  closeDrawer();
+  renderServisModal();
+}
+function renderServisModal(){
+  const bt = USER.mainBt;
+  const svc = bt ? hmServiceStatus(bt) : null;
+  const list = SERVIS.filter(s=>s.btId===bt).sort((a,b)=>b.date.localeCompare(a.date));
+  openModal(`
+    <div class="mhead"><h2>Servis</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    ${!bt ? '<div class="empty-note">Set unit default dulu di Pengaturan Akun.</div>' : `
+    <div class="card card-flat">
+      <label class="flabel">Ambang Batas Servis (jam)</label>
+      <input type="number" id="svcInterval" value="${SETTINGS.serviceInterval}" onchange="SETTINGS.serviceInterval=parseFloat(this.value)||240;saveSettings();renderServisModal();">
+      ${svc.sisa===null ? `<div class="field-sub">${svc.baseHm===null?'Belum ada catatan servis.':'Belum ada data HM saat ini.'}</div>` : `
+        <div class="field-sub">Terpakai sejak servis terakhir: <b>${svc.sisa.toFixed(1)} jam</b> dari ${SETTINGS.serviceInterval} jam</div>
+        <div style="background:var(--outline-variant);border-radius:100px;height:10px;margin-top:6px;overflow:hidden;">
+          <div style="height:100%;width:${Math.min(100, svc.sisa/SETTINGS.serviceInterval*100)}%;background:${svc.sisa>=SETTINGS.serviceInterval?'var(--danger)':(svc.sisa>=SETTINGS.serviceInterval*0.85?'#E08900':'var(--success)')};"></div>
+        </div>
+      `}
+    </div>
+    <div class="section-eyebrow">Catat Servis Baru</div>
+    <div class="card card-flat">
+      <label class="flabel">Tanggal</label><input type="date" id="newSvcDate" value="${todayIso()}">
+      <label class="flabel">HM Saat Servis</label><input type="text" id="newSvcHm" inputmode="decimal" placeholder="mis. 4200">
+      <label class="flabel">Catatan</label><input type="text" id="newSvcNote" placeholder="mis. Ganti oli & filter">
+      <button class="btn-block" onclick="addServis()">Simpan Servis</button>
+    </div>
+    <div class="section-eyebrow">Riwayat Servis ${escapeHtml(btLabel(bt))}</div>
+    <div class="card card-flat">
+      ${list.length===0 ? '<div class="empty-note">Belum ada riwayat servis.</div>' :
+        list.map(s=>`<div class="list-row"><span>${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm)}<br><span class="field-sub">${escapeHtml(s.note||'')}</span></span><button class="icon-btn" onclick="deleteServis('${s.id}')">&#128465;</button></div>`).join('')}
+    </div>
+    `}
+  `);
+}
+function addServis(){
+  const date = document.getElementById('newSvcDate').value;
+  const hm = document.getElementById('newSvcHm').value;
+  const note = document.getElementById('newSvcNote').value;
+  if(!hm || isNaN(parseFloat(hm))){ toast('Isi HM saat servis dengan angka'); return; }
+  SERVIS.push({id:uid(), btId:USER.mainBt, date, hm:parseFloat(hm).toFixed(1), note});
+  saveServis();
+  toast('Servis dicatat');
+  renderServisModal();
+}
+function deleteServis(id){
+  if(!confirm('Hapus catatan servis ini?')) return;
+  SERVIS = SERVIS.filter(s=>s.id!==id);
+  saveServis();
+  renderServisModal();
+}
+function openGantiHmModal(){
+  closeDrawer();
+  renderGantiHmModal();
+}
+function renderGantiHmModal(){
+  const bt = USER.mainBt;
+  const current = bt ? currentHmForBt(bt) : null;
+  const history = HM_RESETS.filter(r=>r.btId===bt).sort((a,b)=>b.date.localeCompare(a.date));
+  openModal(`
+    <div class="mhead"><h2>Ganti HM Manual</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    ${!bt ? '<div class="empty-note">Set unit default dulu di Pengaturan Akun.</div>' : `
+    <div class="field-sub" style="margin-bottom:10px;">HM saat ini menurut catatan: <b>${current!==null?current.toFixed(1):'-'}</b></div>
+    <label class="flabel">Tanggal Ganti</label><input type="date" id="gantiHmDate" value="${todayIso()}">
+    <label class="flabel">HM Baru (setelah ganti meter)</label><input type="text" id="gantiHmVal" inputmode="decimal" placeholder="mis. 0">
+    <label class="flabel">Catatan</label><input type="text" id="gantiHmNote" placeholder="mis. Meter rusak, ganti unit baru">
+    <button class="btn-block" onclick="saveGantiHm()">Simpan Perubahan HM</button>
+    <div class="section-eyebrow">Riwayat Perubahan HM</div>
+    <div class="card card-flat">
+      ${history.length===0 ? '<div class="empty-note">Belum pernah ada perubahan HM.</div>' :
+        history.map(r=>`<div class="list-row"><span>${fmtLabel(r.date)}<br><span class="field-sub">${escapeHtml(r.note||'')}</span></span></div>`).join('')}
+    </div>
+    `}
+  `);
+}
+function saveGantiHm(){
+  const date = document.getElementById('gantiHmDate').value;
+  const note = document.getElementById('gantiHmNote').value;
+  HM_RESETS.push({id:uid(), btId:USER.mainBt, date, note: note || 'Ganti HM manual'});
+  saveHmResets();
+  toast('Perubahan HM dicatat');
+  renderGantiHmModal();
+}
+
+/* ================= BERANDA ================= */
 function renderBeranda(){
-  document.getElementById('screen-beranda').innerHTML = `<div class="card"><div class="empty-note">Beranda akan dibangun di Tahap 3.</div></div>`;
+  const host = document.getElementById('screen-beranda');
+  if(!USER.mainBt || UNITS.length===0){
+    host.innerHTML = `<div class="card"><div class="empty-note">Selamat datang! Buka menu &#9776; &rarr; Pengaturan Akun &amp; Kelola No Unit dulu untuk mulai.</div></div>`;
+    return;
+  }
+  const bt = USER.mainBt;
+  const svc = hmServiceStatus(bt);
+  const monthKey = todayIso().slice(0,7);
+  const monthEntries = ENTRIES.filter(e=>e.date.startsWith(monthKey));
+  const totalHmBulan = monthEntries.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
+  const totalLemburBulan = monthEntries.reduce((s,e)=>s+(parseFloat(e.lembur)||0),0);
+  const allValid = ENTRIES.filter(e=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return !isNaN(a)&&!isNaN(b)&&b>=a; });
+  const lifetimeHm = allValid.reduce((s,e)=>s+(parseFloat(e.hmAkhir)-parseFloat(e.hmAwal)),0);
+  const lifetimeBbm = ENTRIES.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
+  const lifetimeRasio = lifetimeHm>0 ? (lifetimeBbm/lifetimeHm) : null;
+  const bbmBulan = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
+
+  // 7 hari terakhir
+  const days7 = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(todayIso()+'T00:00:00'); d.setDate(d.getDate()-i);
+    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const e = ENTRIES.find(x=>x.date===iso);
+    const a=e?parseFloat(e.hmAwal):NaN, b=e?parseFloat(e.hmAkhir):NaN;
+    days7.push({iso, hm: (!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0});
+  }
+  const maxHm7 = Math.max(1, ...days7.map(d=>d.hm));
+
+  const recent = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+
+  let statusColor = 'var(--success)', statusText = 'Kondisi normal';
+  if(svc.sisa!==null){
+    if(svc.sisa >= SETTINGS.serviceInterval){ statusColor='var(--danger)'; statusText='Segera servis!'; }
+    else if(svc.sisa >= SETTINGS.serviceInterval*0.85){ statusColor='#E08900'; statusText='Mendekati servis'; }
+  }
+
+  host.innerHTML = `
+    <div class="card" style="background:var(--navy);color:#fff;border:none;">
+      <div class="field-sub" style="color:#B9C0D6;">${fmtLabel(todayIso())}</div>
+      <div style="font-size:18px;font-weight:800;margin-top:2px;">${escapeHtml(USER.name||'Halo!')} &middot; ${escapeHtml(btLabel(bt))}</div>
+    </div>
+
+    <div class="section-eyebrow">Progres Servis</div>
+    <div class="card">
+      ${svc.sisa===null ? `<div class="empty-note">${svc.baseHm===null?'Belum ada catatan servis.':'Belum ada data HM saat ini.'}</div>` : `
+        <div style="font-weight:700;color:${statusColor};">${statusText}</div>
+        <div class="field-sub" style="margin:4px 0 8px;">${svc.sisa.toFixed(1)} / ${SETTINGS.serviceInterval} jam terpakai</div>
+        <div style="background:var(--outline-variant);border-radius:100px;height:10px;overflow:hidden;">
+          <div style="height:100%;width:${Math.min(100, svc.sisa/SETTINGS.serviceInterval*100)}%;background:${statusColor};"></div>
+        </div>
+      `}
+    </div>
+
+    <div class="section-eyebrow">Ringkasan</div>
+    <div class="grid2">
+      <div class="card"><div class="field-sub">Total HM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${totalHmBulan.toFixed(1)}</div></div>
+      <div class="card"><div class="field-sub">Overtime Bulan Ini</div><div style="font-size:20px;font-weight:800;">${totalLemburBulan.toFixed(1)} j</div></div>
+      <div class="card"><div class="field-sub">HM/Liter Selamanya</div><div style="font-size:20px;font-weight:800;">${lifetimeRasio!==null?lifetimeRasio.toFixed(2):'-'}</div></div>
+      <div class="card"><div class="field-sub">Total BBM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${fmtThousandsLive(String(Math.round(bbmBulan)))} L</div></div>
+    </div>
+
+    <div class="section-eyebrow">HM 7 Hari Terakhir</div>
+    <div class="card">
+      <div style="display:flex;align-items:flex-end;gap:6px;height:90px;">
+        ${days7.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="width:100%;background:var(--primary);border-radius:6px 6px 0 0;height:${Math.max(4, d.hm/maxHm7*70)}px;"></div>
+          <div class="field-sub" style="font-size:10px;">${d.iso.slice(8,10)}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="section-eyebrow">Log Terakhir</div>
+    <div class="card">
+      ${recent.length===0 ? '<div class="empty-note">Belum ada catatan.</div>' :
+        recent.map(e=>`<div class="list-row"><span>${fmtLabel(e.date).split(', ')[1]} &middot; ${escapeHtml(btLabel(e.btId))}</span><span class="field-sub">HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')}</span></div>`).join('')}
+    </div>
+  `;
 }
 function toggleEditRow(id){
   const el = document.getElementById('editrow-'+id);
@@ -399,6 +598,9 @@ function saveEditRow(id){
   const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
   const rawA = document.getElementById('ed-hmA-'+id).value;
   const rawB = document.getElementById('ed-hmB-'+id).value;
+  if(rawB!=='' && parseFloat(rawB).toFixed(1)!==ENTRIES[idx].hmAkhir){
+    maybeDetectHmReset(document.getElementById('ed-bt-'+id).value, rawB, document.getElementById('ed-date-'+id).value);
+  }
   ENTRIES[idx].btId = document.getElementById('ed-bt-'+id).value;
   ENTRIES[idx].date = document.getElementById('ed-date-'+id).value;
   ENTRIES[idx].hmAwal = rawA===''?'':parseFloat(rawA).toFixed(1);
