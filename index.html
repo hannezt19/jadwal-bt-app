@@ -535,7 +535,7 @@ function quickSave(key, val){
 
 /* ================= HM & SERVIS ================= */
 function lastServisForBt(btId){
-  const list = SERVIS.filter(s=>s.btId===btId).sort((a,b)=>b.date.localeCompare(a.date));
+  const list = SERVIS.filter(s=>s.btId===btId && s.type==='berkala').sort((a,b)=>b.date.localeCompare(a.date));
   return list[0] || null;
 }
 function lastHmResetForBt(btId){
@@ -572,6 +572,7 @@ function maybeDetectHmReset(btId, newHmAkhirVal, entryDate){
 }
 function openServisModal(){
   closeDrawer();
+  window._svcType = 'berkala';
   renderServisModal();
 }
 function renderServisModal(){
@@ -593,27 +594,38 @@ function renderServisModal(){
     </div>
     <div class="section-eyebrow">Catat Servis Baru</div>
     <div class="card card-flat">
+      <label class="flabel">Jenis</label>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="chip ${window._svcType!=='lainnya'?'active':''}" id="svcTypeBerkala" onclick="setSvcType('berkala')">&#128295; Servis Berkala (Ganti Oli)</button>
+        <button class="chip ${window._svcType==='lainnya'?'active':''}" id="svcTypeLainnya" onclick="setSvcType('lainnya')">&#128296; Lainnya (Perbaikan)</button>
+      </div>
+      <div class="field-sub" style="margin:-6px 0 12px;">${window._svcType==='lainnya' ? 'Tidak mereset hitungan pengingat servis.' : 'Akan mereset hitungan pengingat servis (ambang batas jam).'}</div>
       <label class="flabel">Tanggal</label><input type="date" id="newSvcDate" value="${todayIso()}">
       <label class="flabel">HM Saat Servis</label><input type="text" id="newSvcHm" inputmode="decimal" placeholder="mis. 4200">
-      <label class="flabel">Catatan</label><input type="text" id="newSvcNote" placeholder="mis. Ganti oli & filter">
+      <label class="flabel">Catatan</label><input type="text" id="newSvcNote" placeholder="${window._svcType==='lainnya'?'mis. Ganti ban, perbaikan rem':'mis. Ganti oli & filter'}">
       <button class="btn-block" onclick="addServis()">Simpan Servis</button>
     </div>
     <div class="section-eyebrow">Riwayat Servis ${escapeHtml(btLabel(bt))}</div>
     <div class="card card-flat">
       ${list.length===0 ? '<div class="empty-note">Belum ada riwayat servis.</div>' :
-        list.map(s=>`<div class="list-row"><span>${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm)}<br><span class="field-sub">${escapeHtml(s.note||'')}</span></span><button class="icon-btn" onclick="deleteServis('${s.id}')">&#128465;</button></div>`).join('')}
+        list.map(s=>`<div class="list-row"><span>${s.type==='lainnya'?'&#128296;':'&#128295;'} ${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm)} <span class="field-sub">(${s.type==='lainnya'?'Lainnya':'Berkala'})</span><br><span class="field-sub">${escapeHtml(s.note||'')}</span></span><button class="icon-btn" onclick="deleteServis('${s.id}')">&#128465;</button></div>`).join('')}
     </div>
     `}
   `);
+}
+function setSvcType(t){
+  window._svcType = t;
+  renderServisModal();
 }
 function addServis(){
   const date = document.getElementById('newSvcDate').value;
   const hm = document.getElementById('newSvcHm').value;
   const note = document.getElementById('newSvcNote').value;
   if(!hm || isNaN(parseFloat(hm))){ toast('Isi HM saat servis dengan angka'); return; }
-  SERVIS.push({id:uid(), btId:USER.mainBt, date, hm:parseFloat(hm).toFixed(1), note});
+  SERVIS.push({id:uid(), btId:USER.mainBt, date, hm:parseFloat(hm).toFixed(1), note, type: window._svcType==='lainnya'?'lainnya':'berkala'});
   saveServis();
   toast('Servis dicatat');
+  window._svcType = 'berkala';
   renderServisModal();
 }
 function deleteServis(id){
