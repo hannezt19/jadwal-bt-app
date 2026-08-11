@@ -709,12 +709,53 @@ function renderRekap(){
   `;
 }
 /* ================= PETA ================= */
-let PETA_IMAGE = LS.get('v2_peta_image', null); // base64 dataURL
+/* Gambar peta disimpan di IndexedDB (jatah jauh lebih besar dari localStorage, cocok untuk gambar beresolusi tinggi) */
+const PETA_DB_NAME = 'jadwalbt_peta_db';
+const PETA_STORE = 'images';
+function petaDbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(PETA_DB_NAME, 1);
+    req.onupgradeneeded = ()=>{ req.result.createObjectStore(PETA_STORE); };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function petaDbGet(key){
+  const db = await petaDbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(PETA_STORE, 'readonly');
+    const req = tx.objectStore(PETA_STORE).get(key);
+    req.onsuccess = ()=>resolve(req.result || null);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function petaDbSet(key, val){
+  const db = await petaDbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(PETA_STORE, 'readwrite');
+    tx.objectStore(PETA_STORE).put(val, key);
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+let PETA_IMAGE = null;
+let petaImageLoaded = false;
+async function loadPetaImage(){
+  try{ PETA_IMAGE = await petaDbGet('main'); }
+  catch(e){ PETA_IMAGE = null; }
+  petaImageLoaded = true;
+  const activeBtn = document.querySelector('#bottomnav button.active');
+  if(activeBtn && activeBtn.dataset.tab==='peta') renderPeta();
+}
+loadPetaImage();
 let PETA_PINS = LS.get('v2_peta_pins', []);      // [{id, xPct, yPct, label, date}]
-function savePetaImage(){ LS.set('v2_peta_image', PETA_IMAGE); }
 function savePetaPins(){ LS.set('v2_peta_pins', PETA_PINS); }
 function renderPeta(){
   const host = document.getElementById('screen-peta');
+  if(!petaImageLoaded){
+    host.innerHTML = `<div class="card"><div class="empty-note">Memuat gambar peta...</div></div>`;
+    return;
+  }
   if(!PETA_IMAGE){
     host.innerHTML = `
       <div class="card">
@@ -726,34 +767,40 @@ function renderPeta(){
   }
   host.innerHTML = `
     <div class="section-eyebrow section-eyebrow-row">Peta Lokasi Kerja
-      <span>
+      <span style="display:flex;gap:6px;">
+        <button class="pill-btn sm outline" onclick="resetPetaZoom()">Reset Zoom</button>
         <button class="pill-btn sm outline" onclick="document.getElementById('petaFileInput2').click()">Ganti Gambar</button>
       </span>
     </div>
     <input type="file" accept="image/*" id="petaFileInput2" style="display:none;" onchange="handlePetaUpload(event)">
     <div class="card" style="padding:0;overflow:hidden;position:relative;">
-      <div id="petaImgWrap" style="position:relative;" onclick="handlePetaTap(event)">
-        <img src="${PETA_IMAGE}" style="width:100%;display:block;" id="petaImgEl">
-        ${PETA_PINS.map(p=>`<div onclick="event.stopPropagation();showPetaPin('${p.id}')" style="position:absolute;left:${p.xPct}%;top:${p.yPct}%;transform:translate(-50%,-100%);font-size:26px;cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));">&#128205;</div>`).join('')}
+      <div id="petaImgWrap" style="position:relative;overflow:hidden;touch-action:none;" onclick="handlePetaTap(event)" ontouchstart="petaTouchStart(event)" ontouchmove="petaTouchMove(event)" ontouchend="petaTouchEnd(event)">
+        <div id="petaImgInner" style="transform-origin:0 0;">
+          <img src="${PETA_IMAGE}" style="width:100%;display:block;pointer-events:none;" id="petaImgEl">
+          ${PETA_PINS.map(p=>`<div onclick="event.stopPropagation();showPetaPin('${p.id}')" style="position:absolute;left:${p.xPct}%;top:${p.yPct}%;transform:translate(-50%,-100%);font-size:26px;cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));">&#128205;</div>`).join('')}
+        </div>
       </div>
     </div>
-    <div class="field-sub" style="margin:8px 0 16px;text-align:center;">Tap di peta untuk tambah pin lokasi baru.</div>
+    <div class="field-sub" style="margin:8px 0 16px;text-align:center;">Cubit untuk zoom, geser untuk pindah, tap untuk tambah pin.</div>
     <div class="section-eyebrow">Daftar Pin (${PETA_PINS.length})</div>
     <div class="card">
       ${PETA_PINS.length===0 ? '<div class="empty-note">Belum ada pin.</div>' :
         PETA_PINS.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(p=>`<div class="list-row"><span>&#128205; ${escapeHtml(p.label)}<br><span class="field-sub">${fmtLabel(p.date)}</span></span><button class="icon-btn" onclick="deletePetaPin('${p.id}')">&#128465;</button></div>`).join('')}
     </div>
   `;
+  petaZoom = {scale:1, panX:0, panY:0};
+  applyPetaTransform();
 }
 function handlePetaUpload(evt){
   const file = evt.target.files[0];
   if(!file) return;
+  toast('Memproses gambar...');
   const reader = new FileReader();
   reader.onload = function(e){
     const img = new Image();
-    img.onload = function(){
-      // Resize down to keep localStorage usage reasonable
-      const maxDim = 1600;
+    img.onload = async function(){
+      // Resize ke maksimal 3600px sisi terpanjang -- cukup detail untuk zoom 8x pada peta blok yang rapat
+      const maxDim = 3600;
       let w = img.width, h = img.height;
       if(w > maxDim || h > maxDim){
         const scale = maxDim / Math.max(w,h);
@@ -762,20 +809,85 @@ function handlePetaUpload(evt){
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      PETA_IMAGE = canvas.toDataURL('image/jpeg', 0.82);
-      savePetaImage();
-      toast('Gambar peta disimpan');
+      PETA_IMAGE = canvas.toDataURL('image/jpeg', 0.85);
+      try{
+        await petaDbSet('main', PETA_IMAGE);
+        toast('Gambar peta disimpan');
+      }catch(err){
+        toast('Gagal simpan gambar: '+(err&&err.message?err.message:'penyimpanan penuh'));
+      }
       renderPeta();
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
+let petaZoom = {scale:1, panX:0, panY:0};
+let petaTouchState = null;
+let petaJustDragged = false;
+function applyPetaTransform(){
+  const inner = document.getElementById('petaImgInner');
+  if(inner) inner.style.transform = `translate(${petaZoom.panX}px, ${petaZoom.panY}px) scale(${petaZoom.scale})`;
+}
+function resetPetaZoom(){
+  petaZoom = {scale:1, panX:0, panY:0};
+  applyPetaTransform();
+}
+function clampPan(){
+  const wrap = document.getElementById('petaImgWrap');
+  if(!wrap) return;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  const maxX = w*(petaZoom.scale-1), maxY = h*(petaZoom.scale-1);
+  petaZoom.panX = Math.min(0, Math.max(-maxX, petaZoom.panX));
+  petaZoom.panY = Math.min(0, Math.max(-maxY, petaZoom.panY));
+}
+function petaTouchStart(e){
+  const wrap = document.getElementById('petaImgWrap');
+  if(e.touches.length===2){
+    const [t1,t2] = e.touches;
+    const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    petaTouchState = {mode:'pinch', startDist:dist, startScale:petaZoom.scale};
+  } else if(e.touches.length===1){
+    petaTouchState = {mode:'pan', startX:e.touches[0].clientX, startY:e.touches[0].clientY, startPanX:petaZoom.panX, startPanY:petaZoom.panY, moved:false};
+  }
+}
+function petaTouchMove(e){
+  if(!petaTouchState) return;
+  if(petaTouchState.mode==='pinch' && e.touches.length===2){
+    e.preventDefault();
+    const [t1,t2] = e.touches;
+    const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    petaZoom.scale = Math.min(8, Math.max(1, petaTouchState.startScale * (dist/petaTouchState.startDist)));
+    clampPan();
+    applyPetaTransform();
+  } else if(petaTouchState.mode==='pan' && e.touches.length===1){
+    const dx = e.touches[0].clientX - petaTouchState.startX;
+    const dy = e.touches[0].clientY - petaTouchState.startY;
+    if(Math.abs(dx)>5 || Math.abs(dy)>5) petaTouchState.moved = true;
+    if(petaZoom.scale>1){
+      e.preventDefault();
+      petaZoom.panX = petaTouchState.startPanX + dx;
+      petaZoom.panY = petaTouchState.startPanY + dy;
+      clampPan();
+      applyPetaTransform();
+    }
+  }
+}
+function petaTouchEnd(e){
+  if(petaTouchState && (petaTouchState.mode==='pinch' || (petaTouchState.mode==='pan' && petaTouchState.moved))){
+    petaJustDragged = true;
+    setTimeout(()=>{ petaJustDragged = false; }, 200);
+  }
+  petaTouchState = null;
+}
 function handlePetaTap(evt){
+  if(petaJustDragged) return;
   const wrap = document.getElementById('petaImgWrap');
   const rect = wrap.getBoundingClientRect();
-  const xPct = ((evt.clientX - rect.left) / rect.width * 100).toFixed(2);
-  const yPct = ((evt.clientY - rect.top) / rect.height * 100).toFixed(2);
+  const localX = (evt.clientX - rect.left - petaZoom.panX) / petaZoom.scale;
+  const localY = (evt.clientY - rect.top - petaZoom.panY) / petaZoom.scale;
+  const xPct = (localX / rect.width * 100).toFixed(2);
+  const yPct = (localY / rect.height * 100).toFixed(2);
   const label = prompt('Nama lokasi ini?');
   if(!label) return;
   PETA_PINS.push({id:uid(), xPct, yPct, label, date: todayIso()});
