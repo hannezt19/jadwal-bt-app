@@ -184,6 +184,12 @@ let ENTRIES = LS.get('v2_entries', []);   // daily log entries
 let SERVIS = LS.get('v2_servis', []);     // [{id, btId, date, hm, note}]
 let HM_RESETS = LS.get('v2_hmresets', []); // [{id, btId, date, note}]
 let SETTINGS = LS.get('v2_settings', {serviceInterval:240});
+let JENIS_LAYANAN_LIST = LS.get('v2_jenis', ['Antar/Jemput Tenaga','Muat Tebu','Drone','Operator']);
+let TIPE_ANTAR_LIST = LS.get('v2_tipeantar', ['Pekerja Kebun','Tebang','Tanam']);
+let KEGIATAN_LIST = LS.get('v2_kegiatan', ['Pel. Umum','Pemupukan','Penyemprotan']);
+let MUAT_TIPE_LIST = LS.get('v2_muattipe', ['Bibit','Produksi']);
+let DRONE_JENIS_LIST = LS.get('v2_dronejenis', ['Penyemprotan','Pemetaan']);
+let SHIFT_LIST = LS.get('v2_shift', ['Pagi','Siang','Malam']);
 function saveUser(){ LS.set('v2_user', USER); }
 function saveUnits(){ LS.set('v2_units', UNITS); }
 function saveBloks(){ LS.set('v2_bloks', BLOKS); }
@@ -191,6 +197,12 @@ function saveEntries(){ LS.set('v2_entries', ENTRIES); }
 function saveServis(){ LS.set('v2_servis', SERVIS); }
 function saveHmResets(){ LS.set('v2_hmresets', HM_RESETS); }
 function saveSettings(){ LS.set('v2_settings', SETTINGS); }
+function saveJenisList(){ LS.set('v2_jenis', JENIS_LAYANAN_LIST); }
+function saveTipeAntarList(){ LS.set('v2_tipeantar', TIPE_ANTAR_LIST); }
+function saveKegiatanList(){ LS.set('v2_kegiatan', KEGIATAN_LIST); }
+function saveMuatTipeList(){ LS.set('v2_muattipe', MUAT_TIPE_LIST); }
+function saveDroneJenisList(){ LS.set('v2_dronejenis', DRONE_JENIS_LIST); }
+function saveShiftList(){ LS.set('v2_shift', SHIFT_LIST); }
 
 /* ================= NAVIGATION ================= */
 const TITLES = {
@@ -331,11 +343,37 @@ function deleteBlok(id){
 function getTodayEntry(){
   let e = ENTRIES.find(x=>x.date===todayIso());
   if(!e){
-    e = {id:uid(), date:todayIso(), btId:USER.mainBt||'', hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:''};
+    e = {id:uid(), date:todayIso(), btId:USER.mainBt||'', hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:'',
+      jenisLayanan:'', tipeAntar:'', kegiatan:'', muatTipe:'', tonaseKg:'', lokasi:'', lokasiMuat:'', lokasiBongkar:'',
+      droneJenis:'', shift:'', absenBerangkat:'', absenPulang:'', istirahat:true};
     ENTRIES.push(e);
     saveEntries();
   }
   return e;
+}
+function selectWithCustom(id, list, currentVal, extraOnchange){
+  const oc = `handleSelectCustom('${id}', this.value)${extraOnchange?(';'+extraOnchange):''}`;
+  return `<select id="qf-${id}" onchange="${oc}">
+    <option value="">- Pilih -</option>
+    ${list.map(v=>`<option value="${escapeHtml(v)}" ${currentVal===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}
+    <option value="__custom__">+ Lainnya (tulis sendiri)...</option>
+  </select>`;
+}
+function handleSelectCustom(fieldKey, val){
+  if(val==='__custom__'){
+    const typed = prompt('Ketik nilai baru:');
+    if(!typed){ renderHari(); return; }
+    if(fieldKey==='jenisLayanan'){ if(!JENIS_LAYANAN_LIST.includes(typed)){ JENIS_LAYANAN_LIST.push(typed); saveJenisList(); } }
+    else if(fieldKey==='tipeAntar'){ if(!TIPE_ANTAR_LIST.includes(typed)){ TIPE_ANTAR_LIST.push(typed); saveTipeAntarList(); } }
+    else if(fieldKey==='kegiatan'){ if(!KEGIATAN_LIST.includes(typed)){ KEGIATAN_LIST.push(typed); saveKegiatanList(); } }
+    else if(fieldKey==='muatTipe'){ if(!MUAT_TIPE_LIST.includes(typed)){ MUAT_TIPE_LIST.push(typed); saveMuatTipeList(); } }
+    else if(fieldKey==='droneJenis'){ if(!DRONE_JENIS_LIST.includes(typed)){ DRONE_JENIS_LIST.push(typed); saveDroneJenisList(); } }
+    else if(fieldKey==='shift'){ if(!SHIFT_LIST.includes(typed)){ SHIFT_LIST.push(typed); saveShiftList(); } }
+    quickSave(fieldKey, typed);
+  } else {
+    quickSave(fieldKey, val);
+  }
+  renderHari();
 }
 function renderHari(){
   const host = document.getElementById('screen-hari');
@@ -344,6 +382,7 @@ function renderHari(){
     return;
   }
   const e = getTodayEntry();
+  const jenis = e.jenisLayanan;
   host.innerHTML = `
     <div class="section-eyebrow">Truck &amp; Unit</div>
     <div class="card">
@@ -352,6 +391,56 @@ function renderHari(){
         ${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}
       </select>
     </div>
+
+    <div class="section-eyebrow">Jenis Layanan</div>
+    <div class="card">
+      <label class="flabel">Jenis Layanan</label>
+      ${selectWithCustom('jenisLayanan', JENIS_LAYANAN_LIST, jenis)}
+
+      ${jenis==='Antar/Jemput Tenaga' ? `
+        <div class="grid2" style="margin-top:10px;">
+          <div><label class="flabel">Tipe</label>${selectWithCustom('tipeAntar', TIPE_ANTAR_LIST, e.tipeAntar)}</div>
+          <div><label class="flabel">Kegiatan</label>${selectWithCustom('kegiatan', KEGIATAN_LIST, e.kegiatan)}</div>
+        </div>
+        <label class="flabel">Lokasi</label>
+        <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)" placeholder="mis. Blok 14 BU 31">
+      ` : ''}
+
+      ${jenis==='Muat Tebu' ? `
+        <div style="margin-top:10px;"><label class="flabel">Tipe</label>${selectWithCustom('muatTipe', MUAT_TIPE_LIST, e.muatTipe)}</div>
+        ${e.muatTipe==='Produksi' ? `<label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSave('tonaseKg', stripDots(this.value))">` : ''}
+        <div class="grid2">
+          <div><label class="flabel">Lokasi Muat</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiMuat)}" onchange="quickSave('lokasiMuat', this.value)"></div>
+          <div><label class="flabel">Lokasi Bongkar</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiBongkar)}" onchange="quickSave('lokasiBongkar', this.value)"></div>
+        </div>
+      ` : ''}
+
+      ${jenis==='Drone' ? `
+        <div style="margin-top:10px;"><label class="flabel">Jenis Drone</label>${selectWithCustom('droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
+        <label class="flabel">Lokasi</label>
+        <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
+      ` : ''}
+
+      ${jenis==='Operator' ? `
+        <div style="margin-top:10px;"><label class="flabel">Shift</label>${selectWithCustom('shift', SHIFT_LIST, e.shift)}</div>
+        <label class="flabel">Lokasi</label>
+        <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
+      ` : ''}
+      <datalist id="lokasiSuggest">${lokasiSuggestions().map(l=>`<option value="${escapeHtml(l)}">`).join('')}</datalist>
+    </div>
+
+    <div class="section-eyebrow">Absen &amp; Istirahat</div>
+    <div class="card">
+      <div class="grid2">
+        <div><label class="flabel">Absen Berangkat</label><input type="time" value="${escapeHtml(e.absenBerangkat)}" onchange="quickSave('absenBerangkat', this.value)"></div>
+        <div><label class="flabel">Absen Pulang</label><input type="time" value="${escapeHtml(e.absenPulang)}" onchange="quickSave('absenPulang', this.value)"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="chip ${e.istirahat?'active':''}" onclick="quickSave('istirahat', true);renderHari();">&#9749; Istirahat</button>
+        <button class="chip ${!e.istirahat?'active':''}" onclick="quickSave('istirahat', false);renderHari();">&#9203; Lembur, tidak istirahat</button>
+      </div>
+    </div>
+
     <div class="section-eyebrow">Hour Meter &amp; BBM</div>
     <div class="card">
       <div class="grid2">
@@ -365,6 +454,11 @@ function renderHari(){
       <textarea rows="2" onchange="quickSave('catatan', this.value)">${escapeHtml(e.catatan)}</textarea>
     </div>
   `;
+}
+function lokasiSuggestions(){
+  const set = new Set();
+  ENTRIES.forEach(e=>{ [e.lokasi,e.lokasiMuat,e.lokasiBongkar].forEach(l=>{ if(l) set.add(l); }); });
+  return Array.from(set);
 }
 function stripDots(v){ return v==null?'':String(v).replace(/\./g,''); }
 function fmtThousandsLive(v){ const c=String(v||'').replace(/[^\d]/g,''); return c===''?'':c.replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
@@ -682,7 +776,7 @@ function renderRekap(){
           <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleEditRow('${e.id}')">
             <div>
               <div style="font-weight:800;">${fmtLabel(e.date)}</div>
-              <div class="field-sub">${escapeHtml(btLabel(e.btId))} &middot; HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')} &middot; ${escapeHtml(e.bbmLiter||'0')} L</div>
+              <div class="field-sub">${escapeHtml(btLabel(e.btId))}${e.jenisLayanan?' &middot; '+escapeHtml(e.jenisLayanan):''} &middot; HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')} &middot; ${escapeHtml(e.bbmLiter||'0')} L</div>
               ${isDup?'<div class="field-sub" style="color:var(--danger);font-weight:700;">&#9888;&#65039; Ada entri lain di tanggal &amp; unit yang sama</div>':''}
             </div>
             <span>&#9662;</span>
@@ -777,7 +871,7 @@ function renderPeta(){
       <div id="petaImgWrap" style="position:relative;overflow:hidden;touch-action:none;" onclick="handlePetaTap(event)" ontouchstart="petaTouchStart(event)" ontouchmove="petaTouchMove(event)" ontouchend="petaTouchEnd(event)">
         <div id="petaImgInner" style="transform-origin:0 0;">
           <img src="${PETA_IMAGE}" style="width:100%;display:block;pointer-events:none;" id="petaImgEl">
-          ${PETA_PINS.map(p=>`<div onclick="event.stopPropagation();showPetaPin('${p.id}')" style="position:absolute;left:${p.xPct}%;top:${p.yPct}%;transform:translate(-50%,-100%);font-size:26px;cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));">&#128205;</div>`).join('')}
+          ${PETA_PINS.map(p=>`<div class="peta-pin" onclick="event.stopPropagation();showPetaPin('${p.id}')" style="position:absolute;left:${p.xPct}%;top:${p.yPct}%;transform-origin:50% 100%;transform:translate(-50%,-100%);font-size:26px;cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));">&#128205;</div>`).join('')}
         </div>
       </div>
     </div>
@@ -828,6 +922,7 @@ let petaJustDragged = false;
 function applyPetaTransform(){
   const inner = document.getElementById('petaImgInner');
   if(inner) inner.style.transform = `translate(${petaZoom.panX}px, ${petaZoom.panY}px) scale(${petaZoom.scale})`;
+  document.querySelectorAll('.peta-pin').forEach(p=>{ p.style.transform = `translate(-50%,-100%) scale(${1/petaZoom.scale})`; });
 }
 function resetPetaZoom(){
   petaZoom = {scale:1, panX:0, panY:0};
@@ -941,11 +1036,20 @@ function getExportRows(){
     rows = ENTRIES.filter(e=>e.date.startsWith(mk));
   }
   rows.sort((a,b)=>a.date.localeCompare(b.date));
-  const headers = ['Tanggal','No Unit','HM Awal','HM Akhir','BBM (L)','Lembur (j)','Catatan'];
-  const data = rows.map(e=>({
-    'Tanggal': fmtLabel(e.date), 'No Unit': btLabel(e.btId), 'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-',
-    'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
-  }));
+  const headers = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','BBM (L)','Lembur (j)','Catatan'];
+  const data = rows.map(e=>{
+    let detail = '';
+    if(e.jenisLayanan==='Antar/Jemput Tenaga') detail = [e.tipeAntar, e.kegiatan].filter(Boolean).join(' / ');
+    else if(e.jenisLayanan==='Muat Tebu') detail = [e.muatTipe, e.tonaseKg?e.tonaseKg+' kg':''].filter(Boolean).join(' / ');
+    else if(e.jenisLayanan==='Drone') detail = e.droneJenis||'';
+    else if(e.jenisLayanan==='Operator') detail = e.shift||'';
+    const lokasi = e.jenisLayanan==='Muat Tebu' ? [e.lokasiMuat,e.lokasiBongkar].filter(Boolean).join(' -> ') : (e.lokasi||'');
+    return {
+      'Tanggal': fmtLabel(e.date), 'No Unit': btLabel(e.btId), 'Jenis Layanan': e.jenisLayanan||'-', 'Detail': detail||'-', 'Lokasi': lokasi||'-',
+      'Absen Berangkat': e.absenBerangkat||'-', 'Absen Pulang': e.absenPulang||'-', 'Istirahat': e.istirahat?'Ya':'Tidak (lembur)',
+      'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
+    };
+  });
   return {headers, rows:data};
 }
 function exportFileLabel(){
