@@ -544,8 +544,10 @@ function lastHmResetForBt(btId){
 }
 function currentHmForBt(btId){
   const reset = lastHmResetForBt(btId);
-  const vals = ENTRIES.filter(e=>e.btId===btId && e.hmAkhir!=='' && e.hmAkhir!=null && (!reset || e.date>=reset.date)).map(e=>parseFloat(e.hmAkhir)).filter(v=>!isNaN(v));
-  return vals.length ? Math.max(...vals) : null;
+  const valid = ENTRIES.filter(e=>e.btId===btId && e.hmAkhir!=='' && e.hmAkhir!=null && !isNaN(parseFloat(e.hmAkhir)) && (!reset || e.date>=reset.date));
+  if(valid.length===0) return null;
+  valid.sort((a,b)=>a.date.localeCompare(b.date) || (a.id>b.id?1:-1));
+  return parseFloat(valid[valid.length-1].hmAkhir);
 }
 function hmServiceStatus(btId){
   const last = lastServisForBt(btId);
@@ -789,23 +791,11 @@ function openBackfill(dateIso){
 }
 function renderRekap(){
   const host = document.getElementById('screen-rekap');
-  const monthKey = todayIso().slice(0,7);
-  const monthEntries = ENTRIES.filter(e=>e.date.startsWith(monthKey));
-  const totalHm = monthEntries.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
-  const totalBbm = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
-  const totalLembur = monthEntries.reduce((s,e)=>s+(parseFloat(e.lembur)||0),0);
   const missing = missingDays();
   const dupDates = findDuplicateDates();
   const sorted = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date));
   host.innerHTML = `
-    <div class="section-eyebrow">Bulan Ini</div>
-    <div class="grid2">
-      <div class="card"><div class="field-sub">Total HM</div><div style="font-size:22px;font-weight:800;">${totalHm.toFixed(1)}</div></div>
-      <div class="card"><div class="field-sub">Total BBM</div><div style="font-size:22px;font-weight:800;">${fmtThousandsLive(String(Math.round(totalBbm)))} L</div></div>
-      <div class="card"><div class="field-sub">Total Lembur</div><div style="font-size:22px;font-weight:800;">${totalLembur.toFixed(1)} j</div></div>
-      <div class="card"><div class="field-sub">Rasio L/HM</div><div style="font-size:22px;font-weight:800;">${totalHm>0?(totalBbm/totalHm).toFixed(2):'-'}</div></div>
-    </div>
-    <button class="btn-block" style="margin-top:4px;" onclick="openExportSheet()">&#8595; Export Laporan</button>
+    <button class="btn-block" onclick="openExportSheet()">&#8595; Export Laporan</button>
 
     ${missing.length>0 ? `
     <div class="section-eyebrow">Belum Diisi (14 Hari Terakhir)</div>
