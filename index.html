@@ -822,7 +822,13 @@ function renderBeranda(){
     <div class="section-eyebrow">Log Terakhir</div>
     <div class="card">
       ${recent.length===0 ? '<div class="empty-note">Belum ada catatan.</div>' :
-        recent.map(e=>`<div class="list-row"><span>${fmtLabel(e.date).split(', ')[1]} &middot; ${escapeHtml(btLabel(e.btId))}</span><span class="field-sub">HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')}</span></div>`).join('')}
+        recent.map(e=>{
+          const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir);
+          const hmUsed = (!isNaN(a)&&!isNaN(b)&&b>=a) ? (b-a).toFixed(1) : '-';
+          const d = new Date(e.date+'T00:00:00');
+          const shortDate = d.getDate()+'-'+(d.getMonth()+1)+'-'+String(d.getFullYear()).slice(2);
+          return `<div class="list-row"><span class="field-sub">${shortDate} &middot; ${escapeHtml(btLabel(e.btId))} &middot; ${hmUsed} j &middot; ${escapeHtml(e.jenisLayanan||'-')} &middot; ${escapeHtml(e.lembur||'0')} j OT</span></div>`;
+        }).join('')}
     </div>
   `;
 }
@@ -1313,7 +1319,9 @@ function getExportRows(){
       'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
     };
   });
-  return {headers, rows:data};
+  const totalHm = rows.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
+  const totalLembur = rows.reduce((s,e)=>s+(parseFloat(e.lembur)||0),0);
+  return {headers, rows:data, totalHm, totalLembur};
 }
 function exportFileLabel(){
   const mode = document.querySelector('input[name="exp-mode"]:checked').value;
@@ -1326,12 +1334,18 @@ function exportFileLabel(){
   return todayIso().slice(0,7);
 }
 async function doExport(fmt){
-  const {headers, rows} = getExportRows();
+  const {headers, rows, totalHm, totalLembur} = getExportRows();
   if(headers.length===0){ toast('Pilih minimal satu kolom dulu'); return; }
   if(rows.length===0){ toast('Tidak ada data pada periode ini'); return; }
+  const totalRow = headers.map((h,i)=>{
+    if(i===0) return 'TOTAL';
+    if(h==='HM Akhir') return totalHm.toFixed(1)+' (terpakai)';
+    if(h==='Lembur (j)') return totalLembur.toFixed(1);
+    return '';
+  });
   if(fmt==='xlsx'){
     if(!window.XLSX){ toast('Library Excel belum siap'); return; }
-    const sheetData = [headers, ...rows.map(r=>headers.map(h=>r[h]))];
+    const sheetData = [headers, ...rows.map(r=>headers.map(h=>r[h])), totalRow];
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
     ws['!cols'] = headers.map(h=>({wch: Math.max(h.length,12)}));
     const wb = XLSX.utils.book_new();
@@ -1351,7 +1365,9 @@ async function doExport(fmt){
   if(typeof doc.autoTable === 'function'){
     doc.autoTable({
       head: [headers], body: rows.map(r=>headers.map(h=>String(r[h]))),
-      startY: 20, styles:{fontSize:8, cellPadding:2}, headStyles:{fillColor:[138,90,0]}, theme:'grid'
+      foot: [totalRow],
+      startY: 20, styles:{fontSize:8, cellPadding:2}, headStyles:{fillColor:[138,90,0]},
+      footStyles:{fillColor:[240,230,210], textColor:[30,20,0], fontStyle:'bold'}, theme:'grid'
     });
   }
   const pdfBlob = doc.output('blob');
