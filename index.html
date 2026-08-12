@@ -820,14 +820,16 @@ function renderBeranda(){
     </div>
 
     <div class="section-eyebrow">Log Terakhir</div>
-    <div class="card">
+    <div class="card" style="padding:12px 8px;">
       ${recent.length===0 ? '<div class="empty-note">Belum ada catatan.</div>' :
         recent.map(e=>{
           const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir);
           const hmUsed = (!isNaN(a)&&!isNaN(b)&&b>=a) ? (b-a).toFixed(1) : '-';
           const d = new Date(e.date+'T00:00:00');
           const shortDate = d.getDate()+'-'+(d.getMonth()+1)+'-'+String(d.getFullYear()).slice(2);
-          return `<div class="list-row"><span class="field-sub">${shortDate} &middot; ${escapeHtml(btLabel(e.btId))} &middot; ${hmUsed} j &middot; ${escapeHtml(e.jenisLayanan||'-')} &middot; ${escapeHtml(e.lembur||'0')} j OT</span></div>`;
+          return `<div class="field-sub" style="display:grid;grid-template-columns:1.1fr 0.9fr 0.9fr 0.9fr 1.3fr;gap:4px;padding:8px 4px;border-bottom:1px solid var(--outline-variant);">
+            <span>${shortDate}</span><span>${escapeHtml(btLabel(e.btId))}</span><span>${hmUsed}j</span><span>${escapeHtml(e.lembur||'0')}j OT</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(e.jenisLayanan||'-')}</span>
+          </div>`;
         }).join('')}
     </div>
   `;
@@ -1252,7 +1254,7 @@ function deletePetaPin(id){
   renderPeta();
   toast('Pin dihapus');
 }
-const ALL_EXPORT_HEADERS = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','BBM (L)','Lembur (j)','Catatan'];
+const ALL_EXPORT_HEADERS = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','HM Terpakai','BBM (L)','Lembur (j)','Catatan'];
 function slugCol(h){ return h.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
 function openExportSheet(){
   openModal(`
@@ -1313,10 +1315,12 @@ function getExportRows(){
     else if(e.jenisLayanan==='Drone') detail = e.droneJenis||'';
     else if(e.jenisLayanan==='Operator') detail = e.shift||'';
     const lokasi = e.jenisLayanan==='Muat Tebu' ? [e.lokasiMuat,e.lokasiBongkar].filter(Boolean).join(' -> ') : (e.lokasi||'');
+    const ha=parseFloat(e.hmAwal), hb=parseFloat(e.hmAkhir);
+    const hmTerpakai = (!isNaN(ha)&&!isNaN(hb)&&hb>=ha) ? (hb-ha).toFixed(1) : '-';
     return {
       'Tanggal': fmtLabel(e.date), 'No Unit': btLabel(e.btId), 'Jenis Layanan': e.jenisLayanan||'-', 'Detail': detail||'-', 'Lokasi': lokasi||'-',
       'Absen Berangkat': e.absenBerangkat||'-', 'Absen Pulang': e.absenPulang||'-', 'Istirahat': e.istirahat?'Ya':'Tidak (lembur)',
-      'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
+      'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'HM Terpakai': hmTerpakai, 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
     };
   });
   const totalHm = rows.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
@@ -1339,7 +1343,7 @@ async function doExport(fmt){
   if(rows.length===0){ toast('Tidak ada data pada periode ini'); return; }
   const totalRow = headers.map((h,i)=>{
     if(i===0) return 'TOTAL';
-    if(h==='HM Akhir') return totalHm.toFixed(1)+' (terpakai)';
+    if(h==='HM Terpakai') return totalHm.toFixed(1);
     if(h==='Lembur (j)') return totalLembur.toFixed(1);
     return '';
   });
