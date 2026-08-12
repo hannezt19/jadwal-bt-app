@@ -27,7 +27,7 @@ jobs:
         run: npm init -y
 
       - name: Pasang Capacitor
-        run: npm install @capacitor/core@latest-7 @capacitor/cli@latest-7 @capacitor/android@latest-7 @capacitor/filesystem@latest-7 @capacitor/share@latest-7
+        run: npm install @capacitor/core@latest-7 @capacitor/cli@latest-7 @capacitor/android@latest-7 @capacitor/filesystem@latest-7 @capacitor/share@latest-7 @capacitor/app@latest-7
 
       - name: Siapkan library Excel (SheetJS)
         run: |
