@@ -88,7 +88,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
 /* Modal sheet */
 #modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:70;display:none;align-items:flex-end;}
 #modalOverlay.show{display:flex;}
-#modalSheet{background:var(--surface);width:100%;max-height:90vh;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px;}
+#modalSheet{background:var(--surface);width:100%;max-height:90vh;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom, 20px));}
 #modalSheet .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
 #modalSheet .mhead h2{font-size:18px;margin:0;font-weight:800;}
 #modalSheet .mclose{background:var(--surface-container);border:none;border-radius:100px;width:36px;height:36px;font-size:18px;cursor:pointer;}
@@ -180,6 +180,7 @@ function fmtLabel(iso){
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(window._toastT); window._toastT=setTimeout(()=>t.classList.remove('show'),2200); }
 
+let expandedRowId = null;
 let USER = LS.get('v2_user', {name:'', mainBt:''});
 let UNITS = LS.get('v2_units', []);       // [{id, kode}]
 let BLOKS = LS.get('v2_bloks', []);       // [{id, kode}]
@@ -826,25 +827,43 @@ function renderBeranda(){
   `;
 }
 function toggleEditRow(id){
-  const el = document.getElementById('editrow-'+id);
-  el.style.display = el.style.display==='none' ? 'block' : 'none';
+  expandedRowId = (expandedRowId===id) ? null : id;
+  renderRekap();
 }
-function saveEditRow(id){
-  const idx = ENTRIES.findIndex(x=>x.id===id); if(idx<0) return;
-  const rawA = document.getElementById('ed-hmA-'+id).value;
-  const rawB = document.getElementById('ed-hmB-'+id).value;
-  if(rawB!=='' && parseFloat(rawB).toFixed(1)!==ENTRIES[idx].hmAkhir){
-    maybeDetectHmReset(document.getElementById('ed-bt-'+id).value, rawB, document.getElementById('ed-date-'+id).value);
+function selectWithCustomEdit(entryId, fieldKey, list, currentVal){
+  return `<select onchange="handleEditSelectCustom('${entryId}','${fieldKey}', this.value)">
+    <option value="">- Pilih -</option>
+    ${list.map(v=>`<option value="${escapeHtml(v)}" ${currentVal===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}
+    <option value="__custom__">+ Lainnya (tulis sendiri)...</option>
+  </select>`;
+}
+function handleEditSelectCustom(entryId, fieldKey, val){
+  if(val==='__custom__'){
+    const typed = prompt('Ketik nilai baru:');
+    if(!typed){ expandedRowId=entryId; renderRekap(); return; }
+    if(fieldKey==='jenisLayanan'){ if(!JENIS_LAYANAN_LIST.includes(typed)){ JENIS_LAYANAN_LIST.push(typed); saveJenisList(); } }
+    else if(fieldKey==='tipeAntar'){ if(!TIPE_ANTAR_LIST.includes(typed)){ TIPE_ANTAR_LIST.push(typed); saveTipeAntarList(); } }
+    else if(fieldKey==='kegiatan'){ if(!KEGIATAN_LIST.includes(typed)){ KEGIATAN_LIST.push(typed); saveKegiatanList(); } }
+    else if(fieldKey==='muatTipe'){ if(!MUAT_TIPE_LIST.includes(typed)){ MUAT_TIPE_LIST.push(typed); saveMuatTipeList(); } }
+    else if(fieldKey==='droneJenis'){ if(!DRONE_JENIS_LIST.includes(typed)){ DRONE_JENIS_LIST.push(typed); saveDroneJenisList(); } }
+    else if(fieldKey==='shift'){ if(!SHIFT_LIST.includes(typed)){ SHIFT_LIST.push(typed); saveShiftList(); } }
+    editEntryField(entryId, fieldKey, typed);
+  } else {
+    editEntryField(entryId, fieldKey, val);
   }
-  ENTRIES[idx].btId = document.getElementById('ed-bt-'+id).value;
-  ENTRIES[idx].date = document.getElementById('ed-date-'+id).value;
-  ENTRIES[idx].hmAwal = rawA===''?'':parseFloat(rawA).toFixed(1);
-  ENTRIES[idx].hmAkhir = rawB===''?'':parseFloat(rawB).toFixed(1);
-  ENTRIES[idx].bbmLiter = stripDots(document.getElementById('ed-bbm-'+id).value);
-  ENTRIES[idx].lembur = document.getElementById('ed-lembur-'+id).value;
-  ENTRIES[idx].catatan = document.getElementById('ed-cat-'+id).value;
+}
+function editEntryField(entryId, key, val){
+  const idx = ENTRIES.findIndex(x=>x.id===entryId); if(idx<0) return;
+  if(key==='hmAwal' || key==='hmAkhir'){
+    val = val===''?'':parseFloat(val).toFixed(1);
+  }
+  if(key==='hmAkhir' && val!==''){
+    maybeDetectHmReset(ENTRIES[idx].btId, val, ENTRIES[idx].date);
+  }
+  ENTRIES[idx][key] = val;
   saveEntries();
-  toast('Perubahan disimpan');
+  toast('Tersimpan');
+  expandedRowId = entryId;
   renderRekap();
 }
 function deleteRow(id){
@@ -872,12 +891,14 @@ function findDuplicateDates(){
 }
 function openBackfill(dateIso){
   if(!USER.mainBt || UNITS.length===0){ toast('Isi Pengaturan Akun & Kelola No Unit dulu'); return; }
-  const e = {id:uid(), date:dateIso, btId:USER.mainBt, hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:''};
+  const e = {id:uid(), date:dateIso, btId:USER.mainBt, hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:'',
+    jenisLayanan:'', tipeAntar:'', kegiatan:'', muatTipe:'', tonaseKg:'', lokasi:'', lokasiMuat:'', lokasiBongkar:'',
+    droneJenis:'', shift:'', absenBerangkat:'', absenPulang:'', istirahat:true, istMulai:'11.00', istSelesai:'13.30'};
   ENTRIES.push(e);
   saveEntries();
   toast('Baris baru ditambahkan, silakan diisi');
+  expandedRowId = e.id;
   showScreen('rekap');
-  setTimeout(()=>{ const el=document.getElementById('editrow-'+e.id); if(el) el.style.display='block'; }, 50);
 }
 function renderRekap(){
   const host = document.getElementById('screen-rekap');
@@ -910,20 +931,82 @@ function renderRekap(){
             </div>
             <span>&#9662;</span>
           </div>
-          <div id="editrow-${e.id}" style="display:none;margin-top:12px;">
+          <div id="editrow-${e.id}" style="display:${expandedRowId===e.id?'block':'none'};margin-top:12px;">
             <div class="grid2">
-              <div><label class="flabel">No Unit</label><select id="ed-bt-${e.id}">${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}</select></div>
-              <div><label class="flabel">Tanggal</label><input type="date" id="ed-date-${e.id}" value="${e.date}"></div>
-              <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="checkHmWarning('${e.id}')"></div>
-              <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" id="ed-hmB-${e.id}" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="checkHmWarning('${e.id}')"></div>
+              <div><label class="flabel">No Unit</label><select onchange="editEntryField('${e.id}','btId',this.value)">${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}</select></div>
+              <div><label class="flabel">Tanggal</label><input type="date" value="${e.date}" onchange="editEntryField('${e.id}','date',this.value)"></div>
+            </div>
+
+            <div class="section-eyebrow" style="margin-top:10px;">Jenis Layanan</div>
+            <label class="flabel">Jenis Layanan</label>
+            ${selectWithCustomEdit(e.id,'jenisLayanan', JENIS_LAYANAN_LIST, e.jenisLayanan)}
+
+            ${e.jenisLayanan==='Antar/Jemput Tenaga' ? `
+              <div class="grid2" style="margin-top:10px;">
+                <div><label class="flabel">Tipe</label>${selectWithCustomEdit(e.id,'tipeAntar', TIPE_ANTAR_LIST, e.tipeAntar)}</div>
+                <div><label class="flabel">Kegiatan</label>${selectWithCustomEdit(e.id,'kegiatan', KEGIATAN_LIST, e.kegiatan)}</div>
+              </div>
+              <label class="flabel">Lokasi</label>
+              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+            ` : ''}
+
+            ${e.jenisLayanan==='Muat Tebu' ? `
+              <div style="margin-top:10px;"><label class="flabel">Tipe</label>${selectWithCustomEdit(e.id,'muatTipe', MUAT_TIPE_LIST, e.muatTipe)}</div>
+              ${e.muatTipe==='Produksi' ? `
+                <label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="editEntryField('${e.id}','tonaseKg',stripDots(this.value))">
+                <label class="flabel">Lokasi</label>
+                <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+              ` : ''}
+              ${e.muatTipe==='Bibit' ? `
+              <div class="grid2">
+                <div><label class="flabel">Lokasi Muat</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiMuat)}" onchange="editEntryField('${e.id}','lokasiMuat',this.value)"></div>
+                <div><label class="flabel">Lokasi Bongkar</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiBongkar)}" onchange="editEntryField('${e.id}','lokasiBongkar',this.value)"></div>
+              </div>` : ''}
+            ` : ''}
+
+            ${e.jenisLayanan==='Drone' ? `
+              <div style="margin-top:10px;"><label class="flabel">Jenis Drone</label>${selectWithCustomEdit(e.id,'droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
+              <label class="flabel">Lokasi</label>
+              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+            ` : ''}
+
+            ${e.jenisLayanan==='Operator' ? `
+              <div style="margin-top:10px;"><label class="flabel">Shift</label>${selectWithCustomEdit(e.id,'shift', SHIFT_LIST, e.shift)}</div>
+              <label class="flabel">Lokasi</label>
+              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+            ` : ''}
+            ${e.jenisLayanan && !['Antar/Jemput Tenaga','Muat Tebu','Drone','Operator'].includes(e.jenisLayanan) ? `
+              <label class="flabel">Lokasi</label>
+              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+            ` : ''}
+
+            <div class="section-eyebrow" style="margin-top:10px;">Absen &amp; Istirahat</div>
+            <div class="grid2">
+              <div><label class="flabel">Absen Berangkat</label><input type="time" value="${escapeHtml(e.absenBerangkat)}" onchange="editEntryField('${e.id}','absenBerangkat',this.value)"></div>
+              <div><label class="flabel">Absen Pulang</label><input type="time" value="${escapeHtml(e.absenPulang)}" onchange="editEntryField('${e.id}','absenPulang',this.value)"></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button class="chip ${e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',true)">&#9749; Istirahat</button>
+              <button class="chip ${!e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',false)">&#9203; Lembur, tidak istirahat</button>
+            </div>
+            ${e.istirahat ? `
+            <div class="grid2" style="margin-top:10px;">
+              <div><label class="flabel">Istirahat Mulai</label><input type="text" value="${escapeHtml(e.istMulai)}" placeholder="11.00" onchange="editEntryField('${e.id}','istMulai',this.value)"></div>
+              <div><label class="flabel">Istirahat Selesai</label><input type="text" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" onchange="editEntryField('${e.id}','istSelesai',this.value)"></div>
+            </div>` : ''}
+
+            <div class="section-eyebrow" style="margin-top:10px;">Hour Meter &amp; BBM</div>
+            <div class="grid2">
+              <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="editEntryField('${e.id}','hmAwal',this.value);checkHmWarning('${e.id}')"></div>
+              <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" id="ed-hmB-${e.id}" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="editEntryField('${e.id}','hmAkhir',this.value);checkHmWarning('${e.id}')"></div>
               <div class="full" id="ed-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
-              <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
-              <div><label class="flabel">Jam Lembur</label><input type="text" id="ed-lembur-${e.id}" value="${escapeHtml(e.lembur)}"></div>
+              <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="editEntryField('${e.id}','bbmLiter',stripDots(this.value))"></div>
+              <div><label class="flabel">Jam Lembur</label><input type="text" value="${escapeHtml(e.lembur)}" onchange="editEntryField('${e.id}','lembur',this.value)"></div>
             </div>
             <label class="flabel">Catatan</label>
-            <textarea id="ed-cat-${e.id}" rows="2">${escapeHtml(e.catatan)}</textarea>
+            <textarea rows="2" onchange="editEntryField('${e.id}','catatan',this.value)">${escapeHtml(e.catatan)}</textarea>
             <div style="display:flex;gap:8px;margin-top:8px;">
-              <button class="btn-block" style="flex:1;" onclick="saveEditRow('${e.id}')">Simpan</button>
+              <button class="btn-block" style="flex:1;" onclick="toggleEditRow('${e.id}')">Selesai</button>
               <button class="pill-btn outline" onclick="deleteRow('${e.id}')">Hapus</button>
             </div>
           </div>
@@ -1163,6 +1246,8 @@ function deletePetaPin(id){
   renderPeta();
   toast('Pin dihapus');
 }
+const ALL_EXPORT_HEADERS = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','BBM (L)','Lembur (j)','Catatan'];
+function slugCol(h){ return h.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
 function openExportSheet(){
   openModal(`
     <div class="mhead"><h2>Export / Cetak Laporan</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
@@ -1174,11 +1259,28 @@ function openExportSheet(){
       <label class="flabel">Dari tanggal</label><input type="date" id="exp-dateFrom">
       <label class="flabel">Sampai tanggal</label><input type="date" id="exp-dateTo">
     </div>
+    <div class="section-eyebrow section-eyebrow-row" style="margin-top:14px;">Kolom yang Dicetak
+      <button class="pill-btn sm" type="button" onclick="toggleAllExportCols()">Pilih/Batal Semua</button>
+    </div>
+    <div class="card card-flat">
+      ${ALL_EXPORT_HEADERS.map(h=>`<div class="chk-row"><input type="checkbox" class="exp-col-chk" id="exp-col-${slugCol(h)}" value="${escapeHtml(h)}" checked><label for="exp-col-${slugCol(h)}" style="margin-left:6px;">${escapeHtml(h)}</label></div>`).join('')}
+    </div>
     <div style="display:flex;gap:10px;margin-top:14px;">
       <button class="btn-block" style="flex:1;" onclick="doExport('pdf')">&#128196; PDF</button>
       <button class="btn-block outline" style="flex:1;" onclick="doExport('xlsx')">&#128202; Excel</button>
     </div>
   `);
+}
+function toggleAllExportCols(){
+  const boxes = document.querySelectorAll('.exp-col-chk');
+  const anyUnchecked = Array.from(boxes).some(b=>!b.checked);
+  boxes.forEach(b=>b.checked = anyUnchecked);
+}
+function getSelectedColumns(){
+  return ALL_EXPORT_HEADERS.filter(h=>{
+    const el = document.getElementById('exp-col-'+slugCol(h));
+    return el ? el.checked : true;
+  });
 }
 function updateExpModeUI(){
   const mode = document.querySelector('input[name="exp-mode"]:checked').value;
@@ -1197,7 +1299,7 @@ function getExportRows(){
     rows = ENTRIES.filter(e=>e.date.startsWith(mk));
   }
   rows.sort((a,b)=>a.date.localeCompare(b.date));
-  const headers = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','BBM (L)','Lembur (j)','Catatan'];
+  const headers = getSelectedColumns();
   const data = rows.map(e=>{
     let detail = '';
     if(e.jenisLayanan==='Antar/Jemput Tenaga') detail = [e.tipeAntar, e.kegiatan].filter(Boolean).join(' / ');
@@ -1225,6 +1327,7 @@ function exportFileLabel(){
 }
 async function doExport(fmt){
   const {headers, rows} = getExportRows();
+  if(headers.length===0){ toast('Pilih minimal satu kolom dulu'); return; }
   if(rows.length===0){ toast('Tidak ada data pada periode ini'); return; }
   if(fmt==='xlsx'){
     if(!window.XLSX){ toast('Library Excel belum siap'); return; }
@@ -1294,6 +1397,30 @@ async function saveOrShareBlob(blob, filename){
     return 'opened';
   }
 }
+
+/* ================= TOMBOL BACK SISTEM (ANDROID) ================= */
+function anyOverlayOpen(){
+  return document.getElementById('modalOverlay').classList.contains('show') || document.getElementById('drawerOverlay').classList.contains('show');
+}
+function closeAnyOverlay(){
+  if(document.getElementById('modalOverlay').classList.contains('show')){ closeModal(); return true; }
+  if(document.getElementById('drawerOverlay').classList.contains('show')){ closeDrawer(); return true; }
+  return false;
+}
+function setupBackButton(){
+  if(!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App)) return;
+  const { App } = window.Capacitor.Plugins;
+  App.addListener('backButton', () => {
+    if(closeAnyOverlay()) return;
+    const activeTab = document.querySelector('#bottomnav button.active');
+    if(activeTab && activeTab.dataset.tab !== 'beranda'){
+      showScreen('beranda');
+      return;
+    }
+    App.exitApp();
+  });
+}
+setupBackButton();
 
 /* ================= INIT ================= */
 showScreen('beranda');
