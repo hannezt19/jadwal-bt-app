@@ -152,6 +152,8 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="openKelolaUnit()"><span class="ic">&#128666;</span> No Unit</div>
   <div class="ditem" onclick="openKelolaBlok()"><span class="ic">&#128506;</span> No Blok</div>
   <div class="ditem" onclick="openKelolaJenis()"><span class="ic">&#128203;</span> Jenis Layanan</div>
+  <div class="ditem" onclick="openKelolaTipeAntar()"><span class="ic">&#128101;</span> Tipe (Antar/Jemput)</div>
+  <div class="ditem" onclick="openKelolaKegiatan()"><span class="ic">&#128221;</span> Kegiatan</div>
   <div class="dgroup">Servis</div>
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
@@ -373,6 +375,76 @@ function deleteJenis(val){
   toast('Jenis layanan dihapus');
 }
 
+/* ================= KELOLA TIPE ANTAR ================= */
+function openKelolaTipeAntar(){
+  closeDrawer();
+  renderKelolaTipeAntarModal();
+}
+function renderKelolaTipeAntarModal(){
+  openModal(`
+    <div class="mhead"><h2>Kelola Tipe (Antar/Jemput)</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="text" id="newTipeAntarKode" placeholder="mis. Tebang" style="margin-bottom:0;">
+      <button class="pill-btn" onclick="addTipeAntar()">+ Tambah</button>
+    </div>
+    <div class="card card-flat">
+      ${TIPE_ANTAR_LIST.length===0 ? '<div class="empty-note">Belum ada tipe. Tambahkan di atas.</div>' :
+        TIPE_ANTAR_LIST.map(t=>`<div class="list-row"><span>${escapeHtml(t)}</span><button class="icon-btn" onclick="deleteTipeAntar('${escapeHtml(t)}')">&#128465;</button></div>`).join('')}
+    </div>
+  `);
+}
+function addTipeAntar(){
+  const val = document.getElementById('newTipeAntarKode').value.trim();
+  if(!val){ toast('Isi nama tipe dulu'); return; }
+  if(TIPE_ANTAR_LIST.some(t=>t.toLowerCase()===val.toLowerCase())){ toast('Tipe ini sudah ada'); return; }
+  TIPE_ANTAR_LIST.push(val);
+  saveTipeAntarList();
+  renderKelolaTipeAntarModal();
+  toast('Tipe ditambahkan');
+}
+function deleteTipeAntar(val){
+  if(!confirm('Hapus tipe ini?')) return;
+  TIPE_ANTAR_LIST = TIPE_ANTAR_LIST.filter(t=>t!==val);
+  saveTipeAntarList();
+  renderKelolaTipeAntarModal();
+  toast('Tipe dihapus');
+}
+
+/* ================= KELOLA KEGIATAN ================= */
+function openKelolaKegiatan(){
+  closeDrawer();
+  renderKelolaKegiatanModal();
+}
+function renderKelolaKegiatanModal(){
+  openModal(`
+    <div class="mhead"><h2>Kelola Kegiatan</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="text" id="newKegiatanKode" placeholder="mis. Pemupukan" style="margin-bottom:0;">
+      <button class="pill-btn" onclick="addKegiatan()">+ Tambah</button>
+    </div>
+    <div class="card card-flat">
+      ${KEGIATAN_LIST.length===0 ? '<div class="empty-note">Belum ada kegiatan. Tambahkan di atas.</div>' :
+        KEGIATAN_LIST.map(k=>`<div class="list-row"><span>${escapeHtml(k)}</span><button class="icon-btn" onclick="deleteKegiatan('${escapeHtml(k)}')">&#128465;</button></div>`).join('')}
+    </div>
+  `);
+}
+function addKegiatan(){
+  const val = document.getElementById('newKegiatanKode').value.trim();
+  if(!val){ toast('Isi nama kegiatan dulu'); return; }
+  if(KEGIATAN_LIST.some(k=>k.toLowerCase()===val.toLowerCase())){ toast('Kegiatan ini sudah ada'); return; }
+  KEGIATAN_LIST.push(val);
+  saveKegiatanList();
+  renderKelolaKegiatanModal();
+  toast('Kegiatan ditambahkan');
+}
+function deleteKegiatan(val){
+  if(!confirm('Hapus kegiatan ini?')) return;
+  KEGIATAN_LIST = KEGIATAN_LIST.filter(k=>k!==val);
+  saveKegiatanList();
+  renderKelolaKegiatanModal();
+  toast('Kegiatan dihapus');
+}
+
 /* ================= HARI INI ================= */
 function getTodayEntry(){
   let e = ENTRIES.find(x=>x.date===todayIso());
@@ -492,8 +564,8 @@ function renderHari(){
     <div class="section-eyebrow">Hour Meter &amp; BBM</div>
     <div class="card">
       <div class="grid2">
-        <div><label class="flabel">HM Awal</label><input type="text" inputmode="decimal" value="${escapeHtml(e.hmAwal)}" onchange="this.value=fmtHm1(this.value);quickSave('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
-        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="decimal" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" onchange="this.value=fmtHm1(this.value);quickSave('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
+        <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSave('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
+        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSave('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
         <div class="full" id="qf-hmWarning">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
         <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSave('bbmLiter', stripDots(this.value))"></div>
         <div><label class="flabel">Jam Lembur</label><input type="text" inputmode="decimal" value="${escapeHtml(e.lembur)}" onchange="quickSave('lembur', this.value)"></div>
@@ -512,6 +584,12 @@ function lokasiSuggestions(){
 function stripDots(v){ return v==null?'':String(v).replace(/\./g,''); }
 function fmtThousandsLive(v){ const c=String(v||'').replace(/[^\d]/g,''); return c===''?'':c.replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
 function fmtHm1(v){ if(v===''||v==null) return ''; const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?'':n.toFixed(1); }
+function fmtHmLive(v){
+  const digits = String(v||'').replace(/\D/g,'').slice(0,5);
+  if(digits==='') return '';
+  if(digits.length===1) return digits;
+  return digits.slice(0,-1)+'.'+digits.slice(-1);
+}
 function hmBad(e){ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return !isNaN(a)&&!isNaN(b)&&b<a; }
 function checkHmWarning(ctx){
   const hmA = document.getElementById((ctx==='qf'?'qf-hmA':'ed-hmA-'+ctx));
@@ -601,7 +679,7 @@ function renderServisModal(){
       </div>
       <div class="field-sub" style="margin:-6px 0 12px;">${window._svcType==='lainnya' ? 'Tidak mereset hitungan pengingat servis.' : 'Akan mereset hitungan pengingat servis (ambang batas jam).'}</div>
       <label class="flabel">Tanggal</label><input type="date" id="newSvcDate" value="${todayIso()}">
-      <label class="flabel">HM Saat Servis</label><input type="text" id="newSvcHm" inputmode="decimal" placeholder="mis. 4200">
+      <label class="flabel">HM Saat Servis</label><input type="text" id="newSvcHm" inputmode="numeric" placeholder="mis. 4200.0" oninput="this.value=fmtHmLive(this.value)">
       <label class="flabel">Catatan</label><input type="text" id="newSvcNote" placeholder="${window._svcType==='lainnya'?'mis. Ganti ban, perbaikan rem':'mis. Ganti oli & filter'}">
       <button class="btn-block" onclick="addServis()">Simpan Servis</button>
     </div>
@@ -647,7 +725,7 @@ function renderGantiHmModal(){
     ${!bt ? '<div class="empty-note">Set unit default dulu di Pengaturan Akun.</div>' : `
     <div class="field-sub" style="margin-bottom:10px;">HM saat ini menurut catatan: <b>${current!==null?current.toFixed(1):'-'}</b></div>
     <label class="flabel">Tanggal Ganti</label><input type="date" id="gantiHmDate" value="${todayIso()}">
-    <label class="flabel">HM Baru (setelah ganti meter)</label><input type="text" id="gantiHmVal" inputmode="decimal" placeholder="mis. 0">
+    <label class="flabel">HM Baru (setelah ganti meter)</label><input type="text" id="gantiHmVal" inputmode="numeric" placeholder="mis. 0" oninput="this.value=fmtHmLive(this.value)">
     <label class="flabel">Catatan</label><input type="text" id="gantiHmNote" placeholder="mis. Meter rusak, ganti unit baru">
     <button class="btn-block" onclick="saveGantiHm()">Simpan Perubahan HM</button>
     <div class="section-eyebrow">Riwayat Perubahan HM</div>
@@ -836,8 +914,8 @@ function renderRekap(){
             <div class="grid2">
               <div><label class="flabel">No Unit</label><select id="ed-bt-${e.id}">${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}</select></div>
               <div><label class="flabel">Tanggal</label><input type="date" id="ed-date-${e.id}" value="${e.date}"></div>
-              <div><label class="flabel">HM Awal</label><input type="text" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal)}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
-              <div><label class="flabel">HM Akhir</label><input type="text" id="ed-hmB-${e.id}" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" onchange="this.value=fmtHm1(this.value);checkHmWarning('${e.id}')"></div>
+              <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="checkHmWarning('${e.id}')"></div>
+              <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" id="ed-hmB-${e.id}" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="checkHmWarning('${e.id}')"></div>
               <div class="full" id="ed-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
               <div><label class="flabel">BBM (liter)</label><input type="text" id="ed-bbm-${e.id}" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)"></div>
               <div><label class="flabel">Jam Lembur</label><input type="text" id="ed-lembur-${e.id}" value="${escapeHtml(e.lembur)}"></div>
