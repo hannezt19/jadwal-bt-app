@@ -452,7 +452,7 @@ function getTodayEntry(){
   if(!e){
     e = {id:uid(), date:todayIso(), btId:USER.mainBt||'', hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:'',
       jenisLayanan:'', tipeAntar:'', kegiatan:'', muatTipe:'', tonaseKg:'', lokasi:'', lokasiMuat:'', lokasiBongkar:'',
-      droneJenis:'', shift:'', absenBerangkat:'', absenPulang:'', istirahat:true, istMulai:'11.00', istSelesai:'13.30'};
+      droneJenis:'', shift:'', absenBerangkat:'', absenPulang:'', istirahat:true, istMulai:'11.00', istSelesai:'13.30', liburMerah:false};
     ENTRIES.push(e);
     saveEntries();
   }
@@ -552,14 +552,16 @@ function renderHari(){
         <div><label class="flabel">Absen Pulang</label><input type="time" value="${escapeHtml(e.absenPulang)}" onchange="quickSave('absenPulang', this.value)"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:4px;">
-        <button class="chip ${e.istirahat?'active':''}" onclick="quickSave('istirahat', true);renderHari();">&#9749; Istirahat</button>
-        <button class="chip ${!e.istirahat?'active':''}" onclick="quickSave('istirahat', false);renderHari();">&#9203; Lembur, tidak istirahat</button>
+        <button class="chip ${e.istirahat?'active':''}" onclick="quickSave('istirahat', true);">&#9749; Istirahat</button>
+        <button class="chip ${!e.istirahat?'active':''}" onclick="quickSave('istirahat', false);">&#9203; Lembur</button>
       </div>
       ${e.istirahat ? `
       <div class="grid2" style="margin-top:10px;">
         <div><label class="flabel">Istirahat Mulai</label><input type="text" value="${escapeHtml(e.istMulai)}" placeholder="11.00" onchange="quickSave('istMulai', this.value)"></div>
         <div><label class="flabel">Istirahat Selesai</label><input type="text" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" onchange="quickSave('istSelesai', this.value)"></div>
       </div>` : ''}
+      <div class="chk-row" style="margin-top:10px;"><input type="checkbox" id="qf-liburMerah" ${e.liburMerah?'checked':''} onchange="quickSave('liburMerah', this.checked)"><label for="qf-liburMerah" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
+      <div class="field-sub" style="margin-top:4px;">Jam lembur dihitung otomatis dari Absen &amp; Istirahat di atas, tapi tetap bisa diedit manual di bawah.</div>
     </div>
 
     <div class="section-eyebrow">Hour Meter &amp; BBM</div>
@@ -602,14 +604,67 @@ function checkHmWarning(ctx){
   hmB.classList.toggle('field-error', bad);
   if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>' : '';
 }
+function parseHHMM(s){
+  if(!s) return null;
+  const parts = String(s).split(':');
+  if(parts.length<2) return null;
+  const h = parseInt(parts[0],10), m = parseInt(parts[1],10);
+  if(isNaN(h)||isNaN(m)) return null;
+  return h + m/60;
+}
+function parseJamTitik(s){
+  if(!s) return null;
+  const norm = String(s).trim().replace(',', '.').replace('.', ':');
+  const parts = norm.split(':');
+  if(parts.length<2) return null;
+  const h = parseInt(parts[0],10), m = parseInt(parts[1],10);
+  if(isNaN(h)||isNaN(m)) return null;
+  return h + m/60;
+}
+function normalJamKerja(dateIso, liburMerah){
+  if(liburMerah) return 0;
+  const dow = new Date(dateIso+'T00:00:00').getDay();
+  if(dow===0) return 0;      // Minggu
+  if(dow===6) return 5.5;    // Sabtu
+  if(dow===5) return 6.5;    // Jumat
+  return 7;                  // Senin-Kamis
+}
+function computeLembur(e){
+  const start = parseHHMM(e.absenBerangkat);
+  const end = parseHHMM(e.absenPulang);
+  if(start===null || end===null) return null;
+  let worked = end - start;
+  if(worked < 0) worked += 24;
+  if(e.istirahat){
+    const im = parseJamTitik(e.istMulai);
+    const is = parseJamTitik(e.istSelesai);
+    if(im!==null && is!==null){
+      let istDur = is - im;
+      if(istDur < 0) istDur += 24;
+      worked -= istDur;
+    }
+  }
+  const normal = normalJamKerja(e.date, e.liburMerah);
+  let lembur = worked - normal;
+  if(lembur < 0) lembur = 0;
+  return lembur;
+}
+const LEMBUR_TRIGGER_KEYS = ['absenBerangkat','absenPulang','istirahat','istMulai','istSelesai','liburMerah','date'];
+function recomputeLemburIfNeeded(entry, changedKey){
+  if(!LEMBUR_TRIGGER_KEYS.includes(changedKey)) return;
+  const val = computeLembur(entry);
+  if(val!==null) entry.lembur = val.toFixed(1);
+}
 function quickSave(key, val){
   const e = getTodayEntry();
   if(key==='hmAkhir' && val!==''){
     maybeDetectHmReset(e.btId, val, e.date);
   }
   e[key] = val;
+  recomputeLemburIfNeeded(e, key);
   saveEntries();
   toast('Tersimpan');
+  if(LEMBUR_TRIGGER_KEYS.includes(key)) renderHari();
 }
 
 /* ================= HM & SERVIS ================= */
@@ -869,6 +924,7 @@ function editEntryField(entryId, key, val){
     maybeDetectHmReset(ENTRIES[idx].btId, val, ENTRIES[idx].date);
   }
   ENTRIES[idx][key] = val;
+  recomputeLemburIfNeeded(ENTRIES[idx], key);
   saveEntries();
   toast('Tersimpan');
   expandedRowId = entryId;
@@ -901,7 +957,7 @@ function openBackfill(dateIso){
   if(!USER.mainBt || UNITS.length===0){ toast('Isi Pengaturan Akun & Kelola No Unit dulu'); return; }
   const e = {id:uid(), date:dateIso, btId:USER.mainBt, hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:'',
     jenisLayanan:'', tipeAntar:'', kegiatan:'', muatTipe:'', tonaseKg:'', lokasi:'', lokasiMuat:'', lokasiBongkar:'',
-    droneJenis:'', shift:'', absenBerangkat:'', absenPulang:'', istirahat:true, istMulai:'11.00', istSelesai:'13.30'};
+    droneJenis:'', shift:'', absenBerangkat:'', absenPulang:'', istirahat:true, istMulai:'11.00', istSelesai:'13.30', liburMerah:false};
   ENTRIES.push(e);
   saveEntries();
   toast('Baris baru ditambahkan, silakan diisi');
@@ -995,13 +1051,14 @@ function renderRekap(){
             </div>
             <div style="display:flex;gap:8px;margin-top:4px;">
               <button class="chip ${e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',true)">&#9749; Istirahat</button>
-              <button class="chip ${!e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',false)">&#9203; Lembur, tidak istirahat</button>
+              <button class="chip ${!e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',false)">&#9203; Lembur</button>
             </div>
             ${e.istirahat ? `
             <div class="grid2" style="margin-top:10px;">
               <div><label class="flabel">Istirahat Mulai</label><input type="text" value="${escapeHtml(e.istMulai)}" placeholder="11.00" onchange="editEntryField('${e.id}','istMulai',this.value)"></div>
               <div><label class="flabel">Istirahat Selesai</label><input type="text" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" onchange="editEntryField('${e.id}','istSelesai',this.value)"></div>
             </div>` : ''}
+            <div class="chk-row" style="margin-top:10px;"><input type="checkbox" id="ed-liburMerah-${e.id}" ${e.liburMerah?'checked':''} onchange="editEntryField('${e.id}','liburMerah',this.checked)"><label for="ed-liburMerah-${e.id}" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
 
             <div class="section-eyebrow" style="margin-top:10px;">Hour Meter &amp; BBM</div>
             <div class="grid2">
@@ -1194,7 +1251,7 @@ function petaTouchMove(e){
     e.preventDefault();
     const [t1,t2] = e.touches;
     const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-    const newScale = Math.min(8, Math.max(1, petaTouchState.startScale * (dist/petaTouchState.startDist)));
+    const newScale = Math.min(12, Math.max(1, petaTouchState.startScale * (dist/petaTouchState.startDist)));
     const contentX = (petaTouchState.midX - petaTouchState.startPanX) / petaTouchState.startScale;
     const contentY = (petaTouchState.midY - petaTouchState.startPanY) / petaTouchState.startScale;
     petaZoom.scale = newScale;
