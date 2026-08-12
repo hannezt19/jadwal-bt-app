@@ -579,7 +579,7 @@ function renderHari(){
 function lokasiSuggestions(){
   const set = new Set();
   ENTRIES.forEach(e=>{ [e.lokasi,e.lokasiMuat,e.lokasiBongkar].forEach(l=>{ if(l) set.add(l); }); });
-  PETA_PINS.forEach(p=>{ if(p.label) set.add(p.label); });
+  PETA_BLOCKS.forEach(b=>{ if(b.label) set.add(b.label); });
   return Array.from(set);
 }
 function stripDots(v){ return v==null?'':String(v).replace(/\./g,''); }
@@ -1062,8 +1062,10 @@ async function loadPetaImage(){
   if(activeBtn && activeBtn.dataset.tab==='peta') renderPeta();
 }
 loadPetaImage();
-let PETA_PINS = LS.get('v2_peta_pins', []);      // [{id, xPct, yPct, label, date}]
-function savePetaPins(){ LS.set('v2_peta_pins', PETA_PINS); }
+let PETA_BLOCKS = LS.get('v2_peta_blocks', []);  // [{id, label, points:[{x,y},...], date}]
+function savePetaBlocks(){ LS.set('v2_peta_blocks', PETA_BLOCKS); }
+let petaDrawing = false;
+let petaDrawPoints = [];
 function renderPeta(){
   const host = document.getElementById('screen-peta');
   if(!petaImageLoaded){
@@ -1073,12 +1075,13 @@ function renderPeta(){
   if(!PETA_IMAGE){
     host.innerHTML = `
       <div class="card">
-        <div class="empty-note">Belum ada gambar peta. Upload gambar peta kebun (dari galeri HP) untuk mulai menandai lokasi kerja.</div>
+        <div class="empty-note">Belum ada gambar peta. Upload gambar peta kebun (dari galeri HP) untuk mulai menandai blok kerja.</div>
         <input type="file" accept="image/*" id="petaFileInput" style="display:none;" onchange="handlePetaUpload(event)">
         <button class="btn-block" onclick="document.getElementById('petaFileInput').click()">&#128247; Upload Gambar Peta</button>
       </div>`;
     return;
   }
+  const svgPoints = petaDrawPoints.map(p=>p.x+','+p.y).join(' ');
   host.innerHTML = `
     <div class="section-eyebrow section-eyebrow-row">Peta Lokasi Kerja
       <span style="display:flex;gap:6px;">
@@ -1089,17 +1092,32 @@ function renderPeta(){
     <input type="file" accept="image/*" id="petaFileInput2" style="display:none;" onchange="handlePetaUpload(event)">
     <div class="card" style="padding:0;overflow:hidden;position:relative;">
       <div id="petaImgWrap" style="position:relative;overflow:hidden;touch-action:none;" onclick="handlePetaTap(event)" ontouchstart="petaTouchStart(event)" ontouchmove="petaTouchMove(event)" ontouchend="petaTouchEnd(event)">
-        <div id="petaImgInner" style="transform-origin:0 0;">
+        <div id="petaImgInner" style="transform-origin:0 0;position:relative;">
           <img src="${PETA_IMAGE}" style="width:100%;display:block;pointer-events:none;" id="petaImgEl">
-          ${PETA_PINS.map(p=>`<div class="peta-pin" onclick="event.stopPropagation();showPetaPin('${p.id}')" style="position:absolute;left:${p.xPct}%;top:${p.yPct}%;transform-origin:50% 50%;transform:translate(-50%,-50%);font-size:22px;line-height:1;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));">${p.type==='bongkar'?'&#128308;':'&#128994;'}</div>`).join('')}
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+            ${PETA_BLOCKS.map(b=>`<polygon points="${b.points.map(p=>p.x+','+p.y).join(' ')}" fill="rgba(46,125,50,0.28)" stroke="#2E7D32" stroke-width="0.15" vector-effect="non-scaling-stroke"></polygon>`).join('')}
+            ${petaDrawing && petaDrawPoints.length>0 ? `<polyline points="${svgPoints}" fill="none" stroke="#B3261E" stroke-width="0.2" vector-effect="non-scaling-stroke"></polyline>
+              ${petaDrawPoints.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="0.5" fill="#B3261E"></circle>`).join('')}` : ''}
+          </svg>
         </div>
       </div>
     </div>
-    <div class="field-sub" style="margin:8px 0 16px;text-align:center;">Cubit untuk zoom, geser untuk pindah, tap untuk tambah pin.</div>
-    <div class="section-eyebrow">Daftar Pin (${PETA_PINS.length})</div>
+    ${petaDrawing ? `
+    <div class="card card-flat" style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+      <div class="field-sub" style="flex:1;">Menggambar blok: ${petaDrawPoints.length} titik. Tap tiap sudut, lalu Selesai.</div>
+      <button class="pill-btn sm" onclick="finishPetaDraw()">Selesai</button>
+      <button class="pill-btn sm outline" onclick="cancelPetaDraw()">Batal</button>
+    </div>
+    ` : `
+    <div style="margin-top:10px;">
+      <button class="btn-block" onclick="startPetaDraw()">&#9998; Gambar Blok Baru</button>
+    </div>
+    `}
+    <div class="field-sub" style="margin:8px 0 16px;text-align:center;">Cubit untuk zoom, geser untuk pindah. Tap blok yang sudah ada untuk lihat opsi.</div>
+    <div class="section-eyebrow">Daftar Blok (${PETA_BLOCKS.length})</div>
     <div class="card">
-      ${PETA_PINS.length===0 ? '<div class="empty-note">Belum ada pin.</div>' :
-        PETA_PINS.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(p=>`<div class="list-row"><span>${p.type==='bongkar'?'&#128308;':'&#128994;'} ${escapeHtml(p.label)} <span class="field-sub">(${p.type==='bongkar'?'Bongkar':'Muat'})</span><br><span class="field-sub">${fmtLabel(p.date)}</span></span><button class="icon-btn" onclick="deletePetaPin('${p.id}')">&#128465;</button></div>`).join('')}
+      ${PETA_BLOCKS.length===0 ? '<div class="empty-note">Belum ada blok ditandai.</div>' :
+        PETA_BLOCKS.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(b=>`<div class="list-row"><span>&#128506; ${escapeHtml(b.label)}<br><span class="field-sub">${fmtLabel(b.date)}</span></span><button class="icon-btn" onclick="deletePetaBlock('${b.id}')">&#128465;</button></div>`).join('')}
     </div>
   `;
   petaZoom = {scale:1, panX:0, panY:0};
@@ -1142,7 +1160,6 @@ let petaJustDragged = false;
 function applyPetaTransform(){
   const inner = document.getElementById('petaImgInner');
   if(inner) inner.style.transform = `translate(${petaZoom.panX}px, ${petaZoom.panY}px) scale(${petaZoom.scale})`;
-  document.querySelectorAll('.peta-pin').forEach(p=>{ p.style.transform = `translate(-50%,-50%) scale(${1/petaZoom.scale})`; });
 }
 function resetPetaZoom(){
   petaZoom = {scale:1, panX:0, panY:0};
@@ -1203,56 +1220,90 @@ function petaTouchEnd(e){
   }
   petaTouchState = null;
 }
-let _petaPendingTap = null;
-function handlePetaTap(evt){
-  if(petaJustDragged) return;
+function petaTapCoords(evt){
   const wrap = document.getElementById('petaImgWrap');
   const rect = wrap.getBoundingClientRect();
   const localX = (evt.clientX - rect.left - petaZoom.panX) / petaZoom.scale;
   const localY = (evt.clientY - rect.top - petaZoom.panY) / petaZoom.scale;
-  _petaPendingTap = {
-    xPct: (localX / rect.width * 100).toFixed(2),
-    yPct: (localY / rect.height * 100).toFixed(2)
+  return {
+    x: +(localX / rect.width * 100).toFixed(2),
+    y: +(localY / rect.height * 100).toFixed(2)
   };
-  window._pinType = 'muat';
+}
+function startPetaDraw(){
+  petaDrawing = true;
+  petaDrawPoints = [];
+  renderPeta();
+}
+function cancelPetaDraw(){
+  petaDrawing = false;
+  petaDrawPoints = [];
+  renderPeta();
+}
+function finishPetaDraw(){
+  if(petaDrawPoints.length < 3){ toast('Minimal 3 titik untuk membentuk area'); return; }
+  const label = prompt('Nama blok ini?');
+  if(!label){ return; }
+  PETA_BLOCKS.push({id:uid(), label, points: petaDrawPoints.slice(), date: todayIso()});
+  savePetaBlocks();
+  petaDrawing = false;
+  petaDrawPoints = [];
+  renderPeta();
+  toast('Blok ditambahkan');
+}
+function pointInPolygon(pt, points){
+  let inside = false;
+  for(let i=0,j=points.length-1; i<points.length; j=i++){
+    const xi=points[i].x, yi=points[i].y, xj=points[j].x, yj=points[j].y;
+    const intersect = ((yi>pt.y)!==(yj>pt.y)) && (pt.x < (xj-xi)*(pt.y-yi)/(yj-yi)+xi);
+    if(intersect) inside = !inside;
+  }
+  return inside;
+}
+function handlePetaTap(evt){
+  if(petaJustDragged) return;
+  const pt = petaTapCoords(evt);
+  if(petaDrawing){
+    petaDrawPoints.push(pt);
+    renderPeta();
+    return;
+  }
+  const hit = PETA_BLOCKS.find(b=>pointInPolygon(pt, b.points));
+  if(hit){
+    showPetaBlock(hit.id);
+  }
+}
+let _petaActiveBlockId = null;
+function showPetaBlock(id){
+  const b = PETA_BLOCKS.find(x=>x.id===id);
+  if(!b) return;
+  _petaActiveBlockId = id;
   openModal(`
-    <div class="mhead"><h2>Tambah Pin Lokasi</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
-    <label class="flabel">Nama Lokasi</label>
-    <input type="text" id="newPinLabel" placeholder="mis. Blok 14 BU 31">
-    <label class="flabel">Jenis</label>
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button class="chip active" id="pinTypeMuat" onclick="setPinType('muat')">&#128994; Lokasi Muat</button>
-      <button class="chip" id="pinTypeBongkar" onclick="setPinType('bongkar')">&#128308; Lokasi Bongkar</button>
-    </div>
-    <div class="field-sub" style="margin-bottom:12px;">Kalau cuma satu lokasi (tidak ada muat/bongkar terpisah), pilih hijau saja.</div>
-    <button class="btn-block" onclick="savePetaPin()">Simpan Pin</button>
+    <div class="mhead"><h2>&#128506; ${escapeHtml(b.label)}</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div class="field-sub" style="margin-bottom:16px;">Ditandai: ${fmtLabel(b.date)}</div>
+    <button class="btn-block" onclick="usePetaBlockAsLokasi('${b.id}')">Jadikan Lokasi Hari Ini</button>
+    <button class="pill-btn outline" style="margin-top:10px;width:100%;justify-content:center;" onclick="deletePetaBlock('${b.id}');closeModal();">Hapus Blok</button>
   `);
 }
-function setPinType(t){
-  window._pinType = t;
-  document.getElementById('pinTypeMuat').classList.toggle('active', t==='muat');
-  document.getElementById('pinTypeBongkar').classList.toggle('active', t==='bongkar');
-}
-function savePetaPin(){
-  const label = document.getElementById('newPinLabel').value.trim();
-  if(!label){ toast('Isi nama lokasi dulu'); return; }
-  PETA_PINS.push({id:uid(), xPct:_petaPendingTap.xPct, yPct:_petaPendingTap.yPct, label, type: window._pinType||'muat', date: todayIso()});
-  savePetaPins();
+function usePetaBlockAsLokasi(id){
+  const b = PETA_BLOCKS.find(x=>x.id===id);
+  if(!b) return;
+  const e = getTodayEntry();
+  if(e.jenisLayanan==='Muat Tebu' && e.muatTipe==='Bibit'){
+    if(!e.lokasiMuat){ quickSave('lokasiMuat', b.label); toast('Lokasi Muat diisi: '+b.label); }
+    else { quickSave('lokasiBongkar', b.label); toast('Lokasi Bongkar diisi: '+b.label); }
+  } else {
+    quickSave('lokasi', b.label);
+    toast('Lokasi diisi: '+b.label);
+  }
   closeModal();
-  renderPeta();
-  toast('Pin ditambahkan');
 }
-function showPetaPin(id){
-  const p = PETA_PINS.find(x=>x.id===id);
-  if(!p) return;
-  alert((p.type==='bongkar'?'\uD83D\uDD34 Lokasi Bongkar':'\uD83D\uDFE2 Lokasi Muat')+'\n'+p.label+'\nDitambahkan: '+fmtLabel(p.date));
-}
-function deletePetaPin(id){
-  if(!confirm('Hapus pin ini?')) return;
-  PETA_PINS = PETA_PINS.filter(p=>p.id!==id);
-  savePetaPins();
+function deletePetaBlock(id){
+  if(!confirm('Hapus blok ini?')) return;
+  PETA_BLOCKS = PETA_BLOCKS.filter(b=>b.id!==id);
+  savePetaBlocks();
   renderPeta();
-  toast('Pin dihapus');
+  toast('Blok dihapus');
 }
 const ALL_EXPORT_HEADERS = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','HM Terpakai','BBM (L)','Lembur (j)','Catatan'];
 function slugCol(h){ return h.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
