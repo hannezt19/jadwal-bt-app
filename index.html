@@ -59,6 +59,7 @@ input.field-error{border-color:var(--danger)!important;background:var(--danger-c
 textarea{resize:vertical;min-height:48px;}
 label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface-variant);margin-bottom:4px;}
 .field-sub{font-size:12px;color:var(--on-surface-variant);}
+.drawer-version{padding:6px 18px 20px;font-size:12px;color:var(--on-surface-variant);}
 .grid2{display:grid;grid-template-columns:1fr;gap:8px 12px;}
 .grid2 .full{grid-column:1/-1;}
 @media (min-width:400px){ .grid2{grid-template-columns:1fr 1fr;} }
@@ -157,9 +158,12 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="dgroup">Servis</div>
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
+  <div class="dgroup">Tentang</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.3 &middot; 14 Agu 2026</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
+<datalist id="lokasiSuggest"></datalist>
 <div id="toast"></div>
 
 <script>
@@ -317,7 +321,7 @@ function renderKelolaBlokModal(){
   openModal(`
     <div class="mhead"><h2>Kelola No Blok</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
     <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <input type="text" id="newBlokKode" placeholder="mis. BU 30" style="margin-bottom:0;">
+      <input type="text" id="newBlokKode" placeholder="mis. 11 TS 22" oninput="this.value=fmtBlokKode(this.value)" style="margin-bottom:0;">
       <button class="pill-btn" onclick="addBlok()">+ Tambah</button>
     </div>
     <div class="card card-flat">
@@ -510,7 +514,7 @@ function renderHari(){
           <div><label class="flabel">Kegiatan</label>${selectWithCustom('kegiatan', KEGIATAN_LIST, e.kegiatan)}</div>
         </div>
         <label class="flabel">Lokasi</label>
-        <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)" placeholder="mis. Blok 14 BU 31">
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)" placeholder="mis. Blok 14 BU 31">
       ` : ''}
 
       ${jenis==='Muat Tebu' ? `
@@ -518,31 +522,31 @@ function renderHari(){
         ${e.muatTipe==='Produksi' ? `
           <label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSave('tonaseKg', stripDots(this.value))">
           <label class="flabel">Lokasi</label>
-          <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
+          <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
         ` : ''}
         ${e.muatTipe==='Bibit' ? `
         <div class="grid2">
-          <div><label class="flabel">Lokasi Muat</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiMuat)}" onchange="quickSave('lokasiMuat', this.value)"></div>
-          <div><label class="flabel">Lokasi Bongkar</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiBongkar)}" onchange="quickSave('lokasiBongkar', this.value)"></div>
+          <div><label class="flabel">Lokasi Muat</label><input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasiMuat)}" onchange="quickSave('lokasiMuat', this.value)"></div>
+          <div><label class="flabel">Lokasi Bongkar</label><input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasiBongkar)}" onchange="quickSave('lokasiBongkar', this.value)"></div>
         </div>` : ''}
       ` : ''}
 
       ${jenis==='Drone' ? `
         <div style="margin-top:10px;"><label class="flabel">Jenis Drone</label>${selectWithCustom('droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
         <label class="flabel">Lokasi</label>
-        <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
       ` : ''}
 
       ${jenis==='Operator' ? `
         <div style="margin-top:10px;"><label class="flabel">Shift</label>${selectWithCustom('shift', SHIFT_LIST, e.shift)}</div>
         <label class="flabel">Lokasi</label>
-        <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
       ` : ''}
       ${jenis && !['Antar/Jemput Tenaga','Muat Tebu','Drone','Operator'].includes(jenis) ? `
         <label class="flabel">Lokasi</label>
-        <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
       ` : ''}
-      <datalist id="lokasiSuggest">${lokasiSuggestions().map(l=>`<option value="${escapeHtml(l)}">`).join('')}</datalist>
+      
     </div>
 
     <div class="section-eyebrow">Absen &amp; Istirahat</div>
@@ -582,7 +586,38 @@ function lokasiSuggestions(){
   const set = new Set();
   ENTRIES.forEach(e=>{ [e.lokasi,e.lokasiMuat,e.lokasiBongkar].forEach(l=>{ if(l) set.add(l); }); });
   PETA_BLOCKS.forEach(b=>{ if(b.label) set.add(b.label); });
+  BLOKS.forEach(b=>{ if(b.kode) set.add(b.kode); });
   return Array.from(set);
+}
+function refreshLokasiDatalist(filterText){
+  const all = lokasiSuggestions();
+  const q = String(filterText||'').toLowerCase().trim();
+  let matches = q ? all.filter(l=>l.toLowerCase().includes(q)) : all.slice();
+  matches.reverse();
+  matches = matches.slice(0,7);
+  const dl = document.getElementById('lokasiSuggest');
+  if(dl) dl.innerHTML = matches.map(l=>`<option value="${escapeHtml(l)}">`).join('');
+}
+function fmtBlokKode(v){
+  const raw = String(v||'');
+  const stripped = raw.replace(/\s+/g,'');
+  if(stripped.length<2 || !/^\d{2}/.test(stripped)) return raw;
+  let out = '';
+  for(let i=0;i<stripped.length;i++){
+    let ch = stripped[i];
+    if(i>=2 && i<4) ch = ch.toUpperCase();
+    out += ch;
+    if(i===1 || i===3) out += ' ';
+  }
+  return out;
+}
+function onLokasiInput(el){
+  el.value = fmtBlokKode(el.value);
+  refreshLokasiDatalist(el.value);
+}
+function onLokasiFocus(el){
+  refreshLokasiDatalist(el.value);
+  setTimeout(()=>{ el.scrollIntoView({behavior:'smooth', block:'center'}); }, 250);
 }
 function stripDots(v){ return v==null?'':String(v).replace(/\./g,''); }
 function fmtThousandsLive(v){ const c=String(v||'').replace(/[^\d]/g,''); return c===''?'':c.replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
@@ -976,8 +1011,8 @@ function renderRekap(){
     <div class="section-eyebrow">Belum Diisi (14 Hari Terakhir)</div>
     <div class="card" style="border-color:var(--primary);">
       <div class="field-sub" style="margin-bottom:8px;">Tap tanggal untuk isi cepat.</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${missing.map(d=>`<button class="chip" onclick="openBackfill('${d}')">${fmtLabel(d).split(', ')[1]}</button>`).join('')}
+      <div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding-bottom:2px;">
+        ${missing.map(d=>`<button class="chip" style="flex:0 0 auto;" onclick="openBackfill('${d}')">${fmtLabel(d).split(', ')[1]}</button>`).join('')}
       </div>
     </div>` : ''}
 
@@ -1011,7 +1046,7 @@ function renderRekap(){
                 <div><label class="flabel">Kegiatan</label>${selectWithCustomEdit(e.id,'kegiatan', KEGIATAN_LIST, e.kegiatan)}</div>
               </div>
               <label class="flabel">Lokasi</label>
-              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+              <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
 
             ${e.jenisLayanan==='Muat Tebu' ? `
@@ -1019,29 +1054,29 @@ function renderRekap(){
               ${e.muatTipe==='Produksi' ? `
                 <label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="editEntryField('${e.id}','tonaseKg',stripDots(this.value))">
                 <label class="flabel">Lokasi</label>
-                <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+                <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
               ` : ''}
               ${e.muatTipe==='Bibit' ? `
               <div class="grid2">
-                <div><label class="flabel">Lokasi Muat</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiMuat)}" onchange="editEntryField('${e.id}','lokasiMuat',this.value)"></div>
-                <div><label class="flabel">Lokasi Bongkar</label><input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasiBongkar)}" onchange="editEntryField('${e.id}','lokasiBongkar',this.value)"></div>
+                <div><label class="flabel">Lokasi Muat</label><input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasiMuat)}" onchange="editEntryField('${e.id}','lokasiMuat',this.value)"></div>
+                <div><label class="flabel">Lokasi Bongkar</label><input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasiBongkar)}" onchange="editEntryField('${e.id}','lokasiBongkar',this.value)"></div>
               </div>` : ''}
             ` : ''}
 
             ${e.jenisLayanan==='Drone' ? `
               <div style="margin-top:10px;"><label class="flabel">Jenis Drone</label>${selectWithCustomEdit(e.id,'droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
               <label class="flabel">Lokasi</label>
-              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+              <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
 
             ${e.jenisLayanan==='Operator' ? `
               <div style="margin-top:10px;"><label class="flabel">Shift</label>${selectWithCustomEdit(e.id,'shift', SHIFT_LIST, e.shift)}</div>
               <label class="flabel">Lokasi</label>
-              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+              <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
             ${e.jenisLayanan && !['Antar/Jemput Tenaga','Muat Tebu','Drone','Operator'].includes(e.jenisLayanan) ? `
               <label class="flabel">Lokasi</label>
-              <input type="text" list="lokasiSuggest" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
+              <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
 
             <div class="section-eyebrow" style="margin-top:10px;">Absen &amp; Istirahat</div>
@@ -1429,7 +1464,7 @@ function getExportRows(){
     const hmTerpakai = (!isNaN(ha)&&!isNaN(hb)&&hb>=ha) ? (hb-ha).toFixed(1) : '-';
     return {
       'Tanggal': fmtLabel(e.date), 'No Unit': btLabel(e.btId), 'Jenis Layanan': e.jenisLayanan||'-', 'Detail': detail||'-', 'Lokasi': lokasi||'-',
-      'Absen Berangkat': e.absenBerangkat||'-', 'Absen Pulang': e.absenPulang||'-', 'Istirahat': e.istirahat?'Ya':'Tidak (lembur)',
+      'Absen Berangkat': e.absenBerangkat||'-', 'Absen Pulang': e.absenPulang||'-', 'Istirahat': e.istirahat?'':'Lembur',
       'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'HM Terpakai': hmTerpakai, 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
     };
   });
