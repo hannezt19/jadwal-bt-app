@@ -52,15 +52,15 @@ button,input,select,textarea{font-family:inherit;}
 .card-flat{background:var(--surface-container);border:none;}
 
 input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
-  width:100%;border:1.5px solid var(--outline);border-radius:14px;padding:12px;font-size:16px;min-height:48px;
-  background:var(--surface-container-low);color:var(--on-surface);margin-bottom:12px;
+  width:100%;border:1.5px solid var(--outline);border-radius:14px;padding:10px 12px;font-size:16px;min-height:44px;
+  background:var(--surface-container-low);color:var(--on-surface);margin-bottom:8px;
 }
 input.field-error{border-color:var(--danger)!important;background:var(--danger-container);}
-textarea{resize:vertical;min-height:48px;}
-label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface-variant);margin-bottom:4px;}
+textarea{resize:vertical;min-height:44px;}
+label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface-variant);margin-bottom:3px;}
 .field-sub{font-size:12px;color:var(--on-surface-variant);}
 .drawer-version{padding:6px 18px 20px;font-size:12px;color:var(--on-surface-variant);}
-.grid2{display:grid;grid-template-columns:1fr;gap:8px 12px;}
+.grid2{display:grid;grid-template-columns:1fr;gap:4px 12px;}
 .grid2 .full{grid-column:1/-1;}
 @media (min-width:400px){ .grid2{grid-template-columns:1fr 1fr;} }
 
@@ -159,7 +159,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.5 &middot; 14 Agu 2026</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.6 &middot; 14 Agu 2026</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
@@ -509,7 +509,7 @@ function renderHari(){
       ${selectWithCustom('jenisLayanan', JENIS_LAYANAN_LIST, jenis)}
 
       ${jenis==='Antar/Jemput Tenaga' ? `
-        <div class="grid2" style="margin-top:10px;">
+        <div class="grid2" style="margin-top:8px;">
           <div><label class="flabel">Tipe</label>${selectWithCustom('tipeAntar', TIPE_ANTAR_LIST, e.tipeAntar)}</div>
           <div><label class="flabel">Kegiatan</label>${selectWithCustom('kegiatan', KEGIATAN_LIST, e.kegiatan)}</div>
         </div>
@@ -518,7 +518,7 @@ function renderHari(){
       ` : ''}
 
       ${jenis==='Muat Tebu' ? `
-        <div style="margin-top:10px;"><label class="flabel">Tipe</label>${selectWithCustom('muatTipe', MUAT_TIPE_LIST, e.muatTipe)}</div>
+        <div style="margin-top:8px;"><label class="flabel">Tipe</label>${selectWithCustom('muatTipe', MUAT_TIPE_LIST, e.muatTipe)}</div>
         ${e.muatTipe==='Produksi' ? `
           <label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSave('tonaseKg', stripDots(this.value))">
           <label class="flabel">Lokasi</label>
@@ -532,13 +532,13 @@ function renderHari(){
       ` : ''}
 
       ${jenis==='Drone' ? `
-        <div style="margin-top:10px;"><label class="flabel">Jenis Drone</label>${selectWithCustom('droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
+        <div style="margin-top:8px;"><label class="flabel">Jenis Drone</label>${selectWithCustom('droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
         <label class="flabel">Lokasi</label>
         <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
       ` : ''}
 
       ${jenis==='Operator' ? `
-        <div style="margin-top:10px;"><label class="flabel">Shift</label>${selectWithCustom('shift', SHIFT_LIST, e.shift)}</div>
+        <div style="margin-top:8px;"><label class="flabel">Shift</label>${selectWithCustom('shift', SHIFT_LIST, e.shift)}</div>
         <label class="flabel">Lokasi</label>
         <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSave('lokasi', this.value)">
       ` : ''}
@@ -560,11 +560,11 @@ function renderHari(){
         <button class="chip ${!e.istirahat?'active':''}" onclick="quickSave('istirahat', false);">&#9203; Lembur</button>
       </div>
       ${e.istirahat ? `
-      <div class="grid2" style="margin-top:10px;">
+      <div class="grid2" style="margin-top:8px;">
         <div><label class="flabel">Istirahat Mulai</label><input type="text" value="${escapeHtml(e.istMulai)}" placeholder="11.00" onchange="quickSave('istMulai', this.value)"></div>
         <div><label class="flabel">Istirahat Selesai</label><input type="text" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" onchange="quickSave('istSelesai', this.value)"></div>
       </div>` : ''}
-      <div class="chk-row" style="margin-top:10px;"><input type="checkbox" id="qf-liburMerah" ${e.liburMerah?'checked':''} onchange="quickSave('liburMerah', this.checked)"><label for="qf-liburMerah" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
+      <div class="chk-row" style="margin-top:8px;"><input type="checkbox" id="qf-liburMerah" ${e.liburMerah?'checked':''} onchange="quickSave('liburMerah', this.checked)"><label for="qf-liburMerah" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
       <div class="field-sub" style="margin-top:4px;">Jam lembur dihitung otomatis dari Absen &amp; Istirahat di atas, tapi tetap bisa diedit manual di bawah.</div>
     </div>
 
@@ -581,6 +581,14 @@ function renderHari(){
       <textarea rows="2" onchange="quickSave('catatan', this.value)">${escapeHtml(e.catatan)}</textarea>
     </div>
   `;
+}
+function entryTipeLabel(e){
+  if(!e.jenisLayanan) return '-';
+  if(e.jenisLayanan==='Antar/Jemput Tenaga') return e.tipeAntar || e.jenisLayanan;
+  if(e.jenisLayanan==='Muat Tebu') return e.muatTipe || e.jenisLayanan;
+  if(e.jenisLayanan==='Drone') return e.droneJenis || e.jenisLayanan;
+  if(e.jenisLayanan==='Operator') return e.shift || e.jenisLayanan;
+  return e.jenisLayanan;
 }
 function lokasiSuggestions(){
   const set = new Set();
@@ -902,7 +910,7 @@ function renderBeranda(){
     </div>
 
     <div class="section-eyebrow section-eyebrow-row">HM &amp; Lembur 15 Hari Terakhir
-      <span style="display:flex;align-items:center;gap:10px;font-size:11px;font-weight:600;color:var(--on-surface-variant);">
+      <span style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;color:var(--on-surface-variant);">
         <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#D9A65C;display:inline-block;"></span>HM</span>
         <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#8EC5E8;display:inline-block;"></span>Lembur</span>
       </span>
@@ -917,7 +925,7 @@ function renderBeranda(){
             <div style="width:100%;background:#D9A65C;border-radius:${d.lembur>0?'0':'4px 4px'} 0 0;height:${hmH}px;"></div>
             ${d.lembur>0?`<div style="width:100%;background:#8EC5E8;border-radius:4px 4px 0 0;height:${lemburH}px;"></div>`:''}
           </div>
-          <div class="field-sub" style="font-size:9px;">${d.iso.slice(8,10)}</div>
+          <div class="field-sub" style="font-size:10.5px;">${d.iso.slice(8,10)}</div>
         </div>`;}).join('')}
       </div>
     </div>
@@ -930,8 +938,8 @@ function renderBeranda(){
           const hmUsed = (!isNaN(a)&&!isNaN(b)&&b>=a) ? (b-a).toFixed(1) : '-';
           const d = new Date(e.date+'T00:00:00');
           const shortDate = d.getDate()+'-'+(d.getMonth()+1)+'-'+String(d.getFullYear()).slice(2);
-          return `<div class="field-sub" style="display:grid;grid-template-columns:1.1fr 0.9fr 0.9fr 0.9fr 1.3fr;gap:4px;padding:8px 4px;border-bottom:1px solid var(--outline-variant);">
-            <span>${shortDate}</span><span>${escapeHtml(btLabel(e.btId))}</span><span>${hmUsed}j</span><span>${escapeHtml(e.lembur||'0')}j OT</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(e.jenisLayanan||'-')}</span>
+          return `<div class="field-sub" style="font-size:12.5px;display:grid;grid-template-columns:1.1fr 0.9fr 0.9fr 0.9fr 1.3fr;gap:4px;padding:9px 4px;border-bottom:1px solid var(--outline-variant);">
+            <span>${shortDate}</span><span>${escapeHtml(btLabel(e.btId))}</span><span>${hmUsed}j</span><span>${escapeHtml(e.lembur||'0')}j OT</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(entryTipeLabel(e))}</span>
           </div>`;
         }).join('')}
     </div>
@@ -1044,7 +1052,7 @@ function renderRekap(){
             </button>
             <div style="flex:1;min-width:0;">
               <div style="font-weight:800;">${fmtLabel(e.date)}</div>
-              <div class="field-sub">${escapeHtml(btLabel(e.btId))}${e.jenisLayanan?' &middot; '+escapeHtml(e.jenisLayanan):''} &middot; HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')} &middot; ${escapeHtml(e.bbmLiter||'0')} L</div>
+              <div class="field-sub">${escapeHtml(btLabel(e.btId))}${e.jenisLayanan?' &middot; '+escapeHtml(entryTipeLabel(e)):''} &middot; HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')} &middot; ${escapeHtml(e.bbmLiter||'0')} L</div>
               ${isDup?'<div class="field-sub" style="color:var(--danger);font-weight:700;">&#9888;&#65039; Ada entri lain di tanggal &amp; unit yang sama</div>':''}
             </div>
           </div>
@@ -1054,12 +1062,12 @@ function renderRekap(){
               <div><label class="flabel">Tanggal</label><input type="date" value="${e.date}" onchange="editEntryField('${e.id}','date',this.value)"></div>
             </div>
 
-            <div class="section-eyebrow" style="margin-top:10px;">Jenis Layanan</div>
+            <div class="section-eyebrow" style="margin-top:8px;">Jenis Layanan</div>
             <label class="flabel">Jenis Layanan</label>
             ${selectWithCustomEdit(e.id,'jenisLayanan', JENIS_LAYANAN_LIST, e.jenisLayanan)}
 
             ${e.jenisLayanan==='Antar/Jemput Tenaga' ? `
-              <div class="grid2" style="margin-top:10px;">
+              <div class="grid2" style="margin-top:8px;">
                 <div><label class="flabel">Tipe</label>${selectWithCustomEdit(e.id,'tipeAntar', TIPE_ANTAR_LIST, e.tipeAntar)}</div>
                 <div><label class="flabel">Kegiatan</label>${selectWithCustomEdit(e.id,'kegiatan', KEGIATAN_LIST, e.kegiatan)}</div>
               </div>
@@ -1068,7 +1076,7 @@ function renderRekap(){
             ` : ''}
 
             ${e.jenisLayanan==='Muat Tebu' ? `
-              <div style="margin-top:10px;"><label class="flabel">Tipe</label>${selectWithCustomEdit(e.id,'muatTipe', MUAT_TIPE_LIST, e.muatTipe)}</div>
+              <div style="margin-top:8px;"><label class="flabel">Tipe</label>${selectWithCustomEdit(e.id,'muatTipe', MUAT_TIPE_LIST, e.muatTipe)}</div>
               ${e.muatTipe==='Produksi' ? `
                 <label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="editEntryField('${e.id}','tonaseKg',stripDots(this.value))">
                 <label class="flabel">Lokasi</label>
@@ -1082,13 +1090,13 @@ function renderRekap(){
             ` : ''}
 
             ${e.jenisLayanan==='Drone' ? `
-              <div style="margin-top:10px;"><label class="flabel">Jenis Drone</label>${selectWithCustomEdit(e.id,'droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
+              <div style="margin-top:8px;"><label class="flabel">Jenis Drone</label>${selectWithCustomEdit(e.id,'droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
               <label class="flabel">Lokasi</label>
               <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
 
             ${e.jenisLayanan==='Operator' ? `
-              <div style="margin-top:10px;"><label class="flabel">Shift</label>${selectWithCustomEdit(e.id,'shift', SHIFT_LIST, e.shift)}</div>
+              <div style="margin-top:8px;"><label class="flabel">Shift</label>${selectWithCustomEdit(e.id,'shift', SHIFT_LIST, e.shift)}</div>
               <label class="flabel">Lokasi</label>
               <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
@@ -1097,7 +1105,7 @@ function renderRekap(){
               <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
 
-            <div class="section-eyebrow" style="margin-top:10px;">Absen &amp; Istirahat</div>
+            <div class="section-eyebrow" style="margin-top:8px;">Absen &amp; Istirahat</div>
             <div class="grid2">
               <div><label class="flabel">Absen Berangkat</label><input type="time" value="${escapeHtml(e.absenBerangkat)}" onchange="editEntryField('${e.id}','absenBerangkat',this.value)"></div>
               <div><label class="flabel">Absen Pulang</label><input type="time" value="${escapeHtml(e.absenPulang)}" onchange="editEntryField('${e.id}','absenPulang',this.value)"></div>
@@ -1107,13 +1115,13 @@ function renderRekap(){
               <button class="chip ${!e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',false)">&#9203; Lembur</button>
             </div>
             ${e.istirahat ? `
-            <div class="grid2" style="margin-top:10px;">
+            <div class="grid2" style="margin-top:8px;">
               <div><label class="flabel">Istirahat Mulai</label><input type="text" value="${escapeHtml(e.istMulai)}" placeholder="11.00" onchange="editEntryField('${e.id}','istMulai',this.value)"></div>
               <div><label class="flabel">Istirahat Selesai</label><input type="text" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" onchange="editEntryField('${e.id}','istSelesai',this.value)"></div>
             </div>` : ''}
-            <div class="chk-row" style="margin-top:10px;"><input type="checkbox" id="ed-liburMerah-${e.id}" ${e.liburMerah?'checked':''} onchange="editEntryField('${e.id}','liburMerah',this.checked)"><label for="ed-liburMerah-${e.id}" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
+            <div class="chk-row" style="margin-top:8px;"><input type="checkbox" id="ed-liburMerah-${e.id}" ${e.liburMerah?'checked':''} onchange="editEntryField('${e.id}','liburMerah',this.checked)"><label for="ed-liburMerah-${e.id}" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
 
-            <div class="section-eyebrow" style="margin-top:10px;">Hour Meter &amp; BBM</div>
+            <div class="section-eyebrow" style="margin-top:8px;">Hour Meter &amp; BBM</div>
             <div class="grid2">
               <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="editEntryField('${e.id}','hmAwal',this.value);checkHmWarning('${e.id}')"></div>
               <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" id="ed-hmB-${e.id}" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="editEntryField('${e.id}','hmAkhir',this.value);checkHmWarning('${e.id}')"></div>
@@ -1213,14 +1221,14 @@ function renderPeta(){
       </div>
     </div>
     ${petaDrawing ? `
-    <div class="card card-flat" style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+    <div class="card card-flat" style="margin-top:8px;display:flex;gap:8px;align-items:center;">
       <div class="field-sub" style="flex:1;">Menggambar blok: ${petaDrawPoints.length} titik. Tap tiap sudut, lalu Selesai.</div>
       <button class="pill-btn sm outline" onclick="undoPetaPoint()">&#8630; Undo</button>
       <button class="pill-btn sm" onclick="finishPetaDraw()">Selesai</button>
       <button class="pill-btn sm outline" onclick="cancelPetaDraw()">Batal</button>
     </div>
     ` : `
-    <div style="margin-top:10px;">
+    <div style="margin-top:8px;">
       <button class="btn-block" onclick="startPetaDraw()">&#9998; Gambar Blok Baru</button>
     </div>
     `}
@@ -1397,7 +1405,7 @@ function showPetaBlock(id){
     <div class="mhead"><h2>&#128506; ${escapeHtml(b.label)}</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
     <div class="field-sub" style="margin-bottom:16px;">Ditandai: ${fmtLabel(b.date)}</div>
     <button class="btn-block" onclick="usePetaBlockAsLokasi('${b.id}')">Jadikan Lokasi Hari Ini</button>
-    <button class="pill-btn outline" style="margin-top:10px;width:100%;justify-content:center;" onclick="deletePetaBlock('${b.id}');closeModal();">Hapus Blok</button>
+    <button class="pill-btn outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="deletePetaBlock('${b.id}');closeModal();">Hapus Blok</button>
   `);
 }
 function usePetaBlockAsLokasi(id){
