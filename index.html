@@ -159,7 +159,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.3 &middot; 14 Agu 2026</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.4 &middot; 14 Agu 2026</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
@@ -607,7 +607,7 @@ function fmtBlokKode(v){
     let ch = stripped[i];
     if(i>=2 && i<4) ch = ch.toUpperCase();
     out += ch;
-    if(i===1 || i===3) out += ' ';
+    if((i===1 || i===3) && i+1<stripped.length) out += ' ';
   }
   return out;
 }
@@ -852,7 +852,7 @@ function renderBeranda(){
   const allValid = ENTRIES.filter(e=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return !isNaN(a)&&!isNaN(b)&&b>=a; });
   const lifetimeHm = allValid.reduce((s,e)=>s+(parseFloat(e.hmAkhir)-parseFloat(e.hmAwal)),0);
   const lifetimeBbm = ENTRIES.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
-  const lifetimeRasio = lifetimeHm>0 ? (lifetimeBbm/lifetimeHm) : null;
+  const lifetimeRasio = lifetimeBbm>0 ? (lifetimeHm/lifetimeBbm) : null;
   const bbmBulan = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
 
   // 7 hari terakhir
@@ -1189,7 +1189,7 @@ function renderPeta(){
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
             ${PETA_BLOCKS.map(b=>`<polygon points="${b.points.map(p=>p.x+','+p.y).join(' ')}" fill="rgba(46,125,50,0.28)" stroke="#2E7D32" stroke-width="0.15" vector-effect="non-scaling-stroke"></polygon>`).join('')}
             ${petaDrawing && petaDrawPoints.length>0 ? `<polyline points="${svgPoints}" fill="none" stroke="#B3261E" stroke-width="0.15" vector-effect="non-scaling-stroke"></polyline>
-              ${petaDrawPoints.map(p=>`<circle class="peta-drawdot" cx="${p.x}" cy="${p.y}" r="0.15" fill="#B3261E"></circle>`).join('')}` : ''}
+              ${petaDrawPoints.map(p=>`<circle class="peta-drawdot" cx="${p.x}" cy="${p.y}" r="0.8" fill="none" stroke="#B3261E" stroke-width="0.3" vector-effect="non-scaling-stroke"></circle>`).join('')}` : ''}
           </svg>
         </div>
       </div>
@@ -1197,6 +1197,7 @@ function renderPeta(){
     ${petaDrawing ? `
     <div class="card card-flat" style="margin-top:10px;display:flex;gap:8px;align-items:center;">
       <div class="field-sub" style="flex:1;">Menggambar blok: ${petaDrawPoints.length} titik. Tap tiap sudut, lalu Selesai.</div>
+      <button class="pill-btn sm outline" onclick="undoPetaPoint()">&#8630; Undo</button>
       <button class="pill-btn sm" onclick="finishPetaDraw()">Selesai</button>
       <button class="pill-btn sm outline" onclick="cancelPetaDraw()">Batal</button>
     </div>
@@ -1206,11 +1207,6 @@ function renderPeta(){
     </div>
     `}
     <div class="field-sub" style="margin:8px 0 16px;text-align:center;">Cubit untuk zoom, geser untuk pindah. Tap blok yang sudah ada untuk lihat opsi.</div>
-    <div class="section-eyebrow">Daftar Blok (${PETA_BLOCKS.length})</div>
-    <div class="card">
-      ${PETA_BLOCKS.length===0 ? '<div class="empty-note">Belum ada blok ditandai.</div>' :
-        PETA_BLOCKS.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(b=>`<div class="list-row"><span>&#128506; ${escapeHtml(b.label)}<br><span class="field-sub">${fmtLabel(b.date)}</span></span><button class="icon-btn" onclick="deletePetaBlock('${b.id}')">&#128465;</button></div>`).join('')}
-    </div>
   `;
   applyPetaTransform();
 }
@@ -1334,12 +1330,19 @@ function cancelPetaDraw(){
   petaDrawPoints = [];
   renderPeta();
 }
+function undoPetaPoint(){
+  if(petaDrawPoints.length>0){ petaDrawPoints.pop(); renderPeta(); }
+}
 function finishPetaDraw(){
   if(petaDrawPoints.length < 3){ toast('Minimal 3 titik untuk membentuk area'); return; }
   const label = prompt('Nama blok ini?');
   if(!label){ return; }
   PETA_BLOCKS.push({id:uid(), label, points: petaDrawPoints.slice(), date: todayIso()});
   savePetaBlocks();
+  if(!BLOKS.some(b=>b.kode.toLowerCase()===label.toLowerCase())){
+    BLOKS.push({id:uid(), kode:label});
+    saveBloks();
+  }
   petaDrawing = false;
   petaDrawPoints = [];
   renderPeta();
@@ -1415,7 +1418,7 @@ function openExportSheet(){
     <div class="section-eyebrow section-eyebrow-row" style="margin-top:14px;">Kolom yang Dicetak
       <button class="pill-btn sm" type="button" onclick="toggleAllExportCols()">Pilih/Batal Semua</button>
     </div>
-    <div class="card card-flat">
+    <div class="card card-flat" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;">
       ${ALL_EXPORT_HEADERS.map(h=>`<div class="chk-row"><input type="checkbox" class="exp-col-chk" id="exp-col-${slugCol(h)}" value="${escapeHtml(h)}" checked><label for="exp-col-${slugCol(h)}" style="margin-left:6px;">${escapeHtml(h)}</label></div>`).join('')}
     </div>
     <div style="display:flex;gap:10px;margin-top:14px;">
