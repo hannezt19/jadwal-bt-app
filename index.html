@@ -989,7 +989,7 @@ function missingDays(){
   const today = todayIso();
   const dates = new Set(ENTRIES.map(e=>e.date));
   const days = [];
-  for(let i=1;i<=14;i++){
+  for(let i=1;i<=30;i++){
     const d = new Date(today+'T00:00:00'); d.setDate(d.getDate()-i);
     const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     if(!dates.has(iso)) days.push(iso);
@@ -1018,16 +1018,19 @@ function renderRekap(){
   const dupDates = findDuplicateDates();
   const sorted = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date));
   host.innerHTML = `
-    <button class="btn-block" onclick="openExportSheet()">&#8595; Export Laporan</button>
+    <div style="position:sticky;top:0;z-index:5;background:var(--surface);padding-top:1px;margin:0 -16px;padding-left:16px;padding-right:16px;">
+      <button class="btn-block" onclick="openExportSheet()">&#8595; Export Laporan</button>
 
-    ${missing.length>0 ? `
-    <div class="section-eyebrow">Belum Diisi (14 Hari Terakhir)</div>
-    <div class="card" style="border-color:var(--primary);">
-      <div class="field-sub" style="margin-bottom:8px;">Tap tanggal untuk isi cepat.</div>
-      <div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding-bottom:2px;">
-        ${missing.map(d=>`<button class="chip" style="flex:0 0 auto;" onclick="openBackfill('${d}')">${fmtLabel(d).split(', ')[1]}</button>`).join('')}
-      </div>
-    </div>` : ''}
+      ${missing.length>0 ? `
+      <div class="section-eyebrow">Belum Diisi (30 Hari Terakhir)</div>
+      <div class="card" style="border-color:var(--primary);">
+        <div class="field-sub" style="margin-bottom:8px;">Tap tanggal untuk isi cepat.</div>
+        <div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding-bottom:2px;">
+          ${missing.map(d=>`<button class="chip" style="flex:0 0 auto;" onclick="openBackfill('${d}')">${fmtLabel(d).split(', ')[1]}</button>`).join('')}
+        </div>
+      </div>` : ''}
+      <div style="height:10px;"></div>
+    </div>
 
     <div class="section-eyebrow section-eyebrow-row">Riwayat Lengkap<button class="pill-btn sm" onclick="openBackfill(todayIso())">+ Tambah</button></div>
     ${sorted.length===0 ? '<div class="card"><div class="empty-note">Belum ada riwayat.</div></div>' :
@@ -1035,13 +1038,15 @@ function renderRekap(){
         const isDup = dupDates.has(e.date+'|'+e.btId);
         return `
         <div class="card" style="${isDup?'border-color:var(--danger);':''}">
-          <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleEditRow('${e.id}')">
-            <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <button class="icon-btn" style="flex-shrink:0;padding:4px;" onclick="toggleEditRow('${e.id}')" aria-label="Edit">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <div style="flex:1;min-width:0;">
               <div style="font-weight:800;">${fmtLabel(e.date)}</div>
               <div class="field-sub">${escapeHtml(btLabel(e.btId))}${e.jenisLayanan?' &middot; '+escapeHtml(e.jenisLayanan):''} &middot; HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')} &middot; ${escapeHtml(e.bbmLiter||'0')} L</div>
               ${isDup?'<div class="field-sub" style="color:var(--danger);font-weight:700;">&#9888;&#65039; Ada entri lain di tanggal &amp; unit yang sama</div>':''}
             </div>
-            <span>&#9662;</span>
           </div>
           <div id="editrow-${e.id}" style="display:${expandedRowId===e.id?'block':'none'};margin-top:12px;">
             <div class="grid2">
