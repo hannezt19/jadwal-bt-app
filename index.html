@@ -1511,9 +1511,23 @@ function exportFileLabel(){
   }
   return todayIso().slice(0,7);
 }
-function reportTitle(){
-  const d = new Date();
-  return 'LAPORAN '+(USER.name||'Pengguna')+' '+(d.getMonth()+1)+'-'+d.getFullYear();
+const BULAN_NAMA = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function reportTitleLines(){
+  const modeEl = document.querySelector('input[name="exp-mode"]:checked');
+  const mode = modeEl ? modeEl.value : 'month';
+  let periodLabel;
+  if(mode==='all'){
+    periodLabel = 'Semua Periode';
+  } else if(mode==='custom'){
+    const from = document.getElementById('exp-dateFrom').value;
+    const to = document.getElementById('exp-dateTo').value;
+    const fmtShort = (iso)=>{ if(!iso) return '-'; const d=new Date(iso+'T00:00:00'); return d.getDate()+' '+BULAN_NAMA[d.getMonth()]+' '+d.getFullYear(); };
+    periodLabel = fmtShort(from)+' s/d '+fmtShort(to);
+  } else {
+    const d = new Date();
+    periodLabel = BULAN_NAMA[d.getMonth()]+'-'+d.getFullYear();
+  }
+  return ['Laporan Operasional Bulanan', periodLabel, 'Disusun oleh: '+(USER.name||'Pengguna')];
 }
 async function doExport(fmt){
   const {headers, rows, totalHm, totalLembur} = getExportRows();
@@ -1542,13 +1556,19 @@ async function doExport(fmt){
   if(!window.jspdf){ toast('Library PDF belum siap'); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({orientation:'landscape'});
+  const titleLines = reportTitleLines();
   doc.setFontSize(14);
-  doc.text(reportTitle(), 10, 14);
+  doc.setFont(undefined, 'bold');
+  doc.text(titleLines[0], 10, 12);
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'normal');
+  doc.text(titleLines[1], 10, 19);
+  doc.text(titleLines[2], 10, 25);
   if(typeof doc.autoTable === 'function'){
     doc.autoTable({
       head: [headers], body: rows.map(r=>headers.map(h=>String(r[h]))),
       foot: [totalRow],
-      startY: 20, styles:{fontSize:8, cellPadding:2}, headStyles:{fillColor:[138,90,0]},
+      startY: 31, styles:{fontSize:8, cellPadding:2}, headStyles:{fillColor:[138,90,0]},
       footStyles:{fillColor:[240,230,210], textColor:[30,20,0], fontStyle:'bold'}, theme:'grid'
     });
   }
