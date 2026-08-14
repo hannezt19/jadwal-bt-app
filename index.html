@@ -159,7 +159,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.6 &middot; 14 Agu 2026</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.7 &middot; 14 Agu 2026</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
@@ -1511,6 +1511,10 @@ function exportFileLabel(){
   }
   return todayIso().slice(0,7);
 }
+function reportTitle(){
+  const d = new Date();
+  return 'LAPORAN '+(USER.name||'Pengguna')+' '+(d.getMonth()+1)+'-'+d.getFullYear();
+}
 async function doExport(fmt){
   const {headers, rows, totalHm, totalLembur} = getExportRows();
   if(headers.length===0){ toast('Pilih minimal satu kolom dulu'); return; }
@@ -1539,7 +1543,7 @@ async function doExport(fmt){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({orientation:'landscape'});
   doc.setFontSize(14);
-  doc.text('Laporan - '+exportFileLabel(), 10, 14);
+  doc.text(reportTitle(), 10, 14);
   if(typeof doc.autoTable === 'function'){
     doc.autoTable({
       head: [headers], body: rows.map(r=>headers.map(h=>String(r[h]))),
