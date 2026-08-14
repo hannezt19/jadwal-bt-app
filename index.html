@@ -159,7 +159,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.4 &middot; 14 Agu 2026</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.5 &middot; 14 Agu 2026</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
@@ -855,16 +855,18 @@ function renderBeranda(){
   const lifetimeRasio = lifetimeBbm>0 ? (lifetimeHm/lifetimeBbm) : null;
   const bbmBulan = monthEntries.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
 
-  // 7 hari terakhir
-  const days7 = [];
-  for(let i=6;i>=0;i--){
+  // 15 hari terakhir (HM + Lembur, stacked)
+  const days15 = [];
+  for(let i=14;i>=0;i--){
     const d = new Date(todayIso()+'T00:00:00'); d.setDate(d.getDate()-i);
     const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const e = ENTRIES.find(x=>x.date===iso);
     const a=e?parseFloat(e.hmAwal):NaN, b=e?parseFloat(e.hmAkhir):NaN;
-    days7.push({iso, hm: (!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0});
+    const hm = (!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0;
+    const lembur = e?(parseFloat(e.lembur)||0):0;
+    days15.push({iso, hm, lembur});
   }
-  const maxHm7 = Math.max(1, ...days7.map(d=>d.hm));
+  const maxTotal15 = Math.max(1, ...days15.map(d=>d.hm+d.lembur));
 
   const recent = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
 
@@ -899,13 +901,24 @@ function renderBeranda(){
       <div class="card"><div class="field-sub">Total BBM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${fmtThousandsLive(String(Math.round(bbmBulan)))} L</div></div>
     </div>
 
-    <div class="section-eyebrow">HM 7 Hari Terakhir</div>
+    <div class="section-eyebrow section-eyebrow-row">HM &amp; Lembur 15 Hari Terakhir
+      <span style="display:flex;align-items:center;gap:10px;font-size:11px;font-weight:600;color:var(--on-surface-variant);">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#D9A65C;display:inline-block;"></span>HM</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#8EC5E8;display:inline-block;"></span>Lembur</span>
+      </span>
+    </div>
     <div class="card">
-      <div style="display:flex;align-items:flex-end;gap:6px;height:90px;">
-        ${days7.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div style="width:100%;background:var(--primary);border-radius:6px 6px 0 0;height:${Math.max(4, d.hm/maxHm7*70)}px;"></div>
-          <div class="field-sub" style="font-size:10px;">${d.iso.slice(8,10)}</div>
-        </div>`).join('')}
+      <div style="display:flex;align-items:flex-end;gap:3px;height:90px;">
+        ${days15.map(d=>{
+          const hmH = Math.max(d.hm>0?4:0, d.hm/maxTotal15*70);
+          const lemburH = Math.max(d.lembur>0?4:0, d.lembur/maxTotal15*70);
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="width:100%;display:flex;flex-direction:column-reverse;">
+            <div style="width:100%;background:#D9A65C;border-radius:${d.lembur>0?'0':'4px 4px'} 0 0;height:${hmH}px;"></div>
+            ${d.lembur>0?`<div style="width:100%;background:#8EC5E8;border-radius:4px 4px 0 0;height:${lemburH}px;"></div>`:''}
+          </div>
+          <div class="field-sub" style="font-size:9px;">${d.iso.slice(8,10)}</div>
+        </div>`;}).join('')}
       </div>
     </div>
 
