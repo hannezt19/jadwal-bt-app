@@ -80,6 +80,18 @@ jobs:
       - name: Sync web assets
         run: npx cap sync android
 
+      - name: Sinkronkan nomor versi dari index.html
+        run: |
+          VERSION=$(grep -oP 'Versi \K[0-9]+\.[0-9]+\.[0-9]+' index.html | head -1)
+          if [ -z "$VERSION" ]; then
+            echo "Tidak ketemu 'Versi x.x.x' di index.html, pakai default 1.0.0"
+            VERSION="1.0.0"
+          fi
+          echo "Versi terdeteksi dari index.html: $VERSION"
+          echo "Nomor build (versionCode) dari GitHub Actions: ${{ github.run_number }}"
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION\"/" android/app/build.gradle
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          grep "versionName\|versionCode" android/app/build.gradle
       - name: Tambah izin akses internal storage
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
