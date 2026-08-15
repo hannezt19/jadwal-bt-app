@@ -452,7 +452,7 @@ function deleteKegiatan(val){
 
 /* ================= HARI INI ================= */
 function getTodayEntry(){
-  let e = ENTRIES.find(x=>x.date===todayIso());
+  let e = ENTRIES.find(x=>x.date===todayIso() && !x.isSecondary);
   if(!e){
     e = {id:uid(), date:todayIso(), btId:USER.mainBt||'', hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:'',
       jenisLayanan:'', tipeAntar:'', kegiatan:'', muatTipe:'', tonaseKg:'', lokasi:'', lokasiMuat:'', lokasiBongkar:'',
@@ -498,9 +498,12 @@ function renderHari(){
     <div class="section-eyebrow">Truck &amp; Unit</div>
     <div class="card">
       <label class="flabel">No Unit</label>
-      <select onchange="quickSave('btId', this.value)">
-        ${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}
-      </select>
+      <div style="display:flex;gap:8px;">
+        <select style="flex:4;" onchange="quickSave('btId', this.value)">
+          ${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}
+        </select>
+        <button class="pill-btn" style="flex:1;justify-content:center;padding:0;" onclick="addSecondaryUnit()" title="Tambah unit lain untuk hari ini">+</button>
+      </div>
     </div>
 
     <div class="section-eyebrow">Jenis Layanan</div>
@@ -580,7 +583,136 @@ function renderHari(){
       <label class="flabel">Catatan (opsional)</label>
       <textarea rows="2" onchange="quickSave('catatan', this.value)">${escapeHtml(e.catatan)}</textarea>
     </div>
+
+    ${getSecondaryUnitsToday().map((se,i)=>renderSecondaryUnitCard(se, i+1)).join('')}
   `;
+}
+function getSecondaryUnitsToday(){
+  return ENTRIES.filter(x=>x.date===todayIso() && x.isSecondary);
+}
+function addSecondaryUnit(){
+  const e = {id:uid(), date:todayIso(), btId:'', hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:'',
+    jenisLayanan:'', tipeAntar:'', kegiatan:'', muatTipe:'', tonaseKg:'', lokasi:'', lokasiMuat:'', lokasiBongkar:'',
+    droneJenis:'', shift:'', isSecondary:true};
+  ENTRIES.push(e);
+  saveEntries();
+  renderHari();
+  toast('Unit tambahan ditambahkan');
+}
+function deleteSecondaryUnit(id){
+  if(!confirm('Hapus unit tambahan ini?')) return;
+  ENTRIES = ENTRIES.filter(x=>x.id!==id);
+  saveEntries();
+  renderHari();
+  toast('Unit tambahan dihapus');
+}
+function quickSaveEntry(entryId, key, val){
+  const idx = ENTRIES.findIndex(x=>x.id===entryId); if(idx<0) return;
+  if(key==='hmAkhir' && val!==''){
+    maybeDetectHmReset(ENTRIES[idx].btId, val, ENTRIES[idx].date);
+  }
+  ENTRIES[idx][key] = val;
+  recomputeLemburIfNeeded(ENTRIES[idx], key);
+  saveEntries();
+  toast('Tersimpan');
+  renderHari();
+}
+function selectWithCustomHari(entryId, fieldKey, list, currentVal){
+  return `<select onchange="handleSelectCustomHari('${entryId}','${fieldKey}', this.value)">
+    <option value="">- Pilih -</option>
+    ${list.map(v=>`<option value="${escapeHtml(v)}" ${currentVal===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}
+    <option value="__custom__">+ Lainnya (tulis sendiri)...</option>
+  </select>`;
+}
+function handleSelectCustomHari(entryId, fieldKey, val){
+  if(val==='__custom__'){
+    const typed = prompt('Ketik nilai baru:');
+    if(!typed){ renderHari(); return; }
+    if(fieldKey==='jenisLayanan'){ if(!JENIS_LAYANAN_LIST.includes(typed)){ JENIS_LAYANAN_LIST.push(typed); saveJenisList(); } }
+    else if(fieldKey==='tipeAntar'){ if(!TIPE_ANTAR_LIST.includes(typed)){ TIPE_ANTAR_LIST.push(typed); saveTipeAntarList(); } }
+    else if(fieldKey==='kegiatan'){ if(!KEGIATAN_LIST.includes(typed)){ KEGIATAN_LIST.push(typed); saveKegiatanList(); } }
+    else if(fieldKey==='muatTipe'){ if(!MUAT_TIPE_LIST.includes(typed)){ MUAT_TIPE_LIST.push(typed); saveMuatTipeList(); } }
+    else if(fieldKey==='droneJenis'){ if(!DRONE_JENIS_LIST.includes(typed)){ DRONE_JENIS_LIST.push(typed); saveDroneJenisList(); } }
+    else if(fieldKey==='shift'){ if(!SHIFT_LIST.includes(typed)){ SHIFT_LIST.push(typed); saveShiftList(); } }
+    quickSaveEntry(entryId, fieldKey, typed);
+  } else {
+    quickSaveEntry(entryId, fieldKey, val);
+  }
+}
+function checkHmWarning2(entryId){
+  const hmA = document.getElementById('qf2-hmA-'+entryId);
+  const hmB = document.getElementById('qf2-hmB-'+entryId);
+  const warnEl = document.getElementById('qf2-hmWarning-'+entryId);
+  if(!hmA||!hmB) return;
+  const a=parseFloat(hmA.value), b=parseFloat(hmB.value);
+  const bad = !isNaN(a)&&!isNaN(b)&&b<a;
+  hmB.classList.toggle('field-error', bad);
+  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>' : '';
+}
+function renderSecondaryUnitCard(e, idx){
+  const jenis = e.jenisLayanan;
+  return `
+    <div class="section-eyebrow section-eyebrow-row">Unit Tambahan #${idx}<button class="icon-btn" onclick="deleteSecondaryUnit('${e.id}')">&#128465;</button></div>
+    <div class="card">
+      <label class="flabel">No Unit</label>
+      <select onchange="quickSaveEntry('${e.id}','btId', this.value)">
+        <option value="">- Pilih -</option>
+        ${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}
+      </select>
+
+      <label class="flabel" style="margin-top:8px;">Jenis Layanan</label>
+      ${selectWithCustomHari(e.id,'jenisLayanan', JENIS_LAYANAN_LIST, jenis)}
+
+      ${jenis==='Antar/Jemput Tenaga' ? `
+        <div class="grid2" style="margin-top:8px;">
+          <div><label class="flabel">Tipe</label>${selectWithCustomHari(e.id,'tipeAntar', TIPE_ANTAR_LIST, e.tipeAntar)}</div>
+          <div><label class="flabel">Kegiatan</label>${selectWithCustomHari(e.id,'kegiatan', KEGIATAN_LIST, e.kegiatan)}</div>
+        </div>
+        <label class="flabel">Lokasi</label>
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSaveEntry('${e.id}','lokasi', this.value)">
+      ` : ''}
+
+      ${jenis==='Muat Tebu' ? `
+        <div style="margin-top:8px;"><label class="flabel">Tipe</label>${selectWithCustomHari(e.id,'muatTipe', MUAT_TIPE_LIST, e.muatTipe)}</div>
+        ${e.muatTipe==='Produksi' ? `
+          <label class="flabel">Tonase (kg)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.tonaseKg))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveEntry('${e.id}','tonaseKg', stripDots(this.value))">
+          <label class="flabel">Lokasi</label>
+          <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSaveEntry('${e.id}','lokasi', this.value)">
+        ` : ''}
+        ${e.muatTipe==='Bibit' ? `
+        <div class="grid2">
+          <div><label class="flabel">Lokasi Muat</label><input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasiMuat)}" onchange="quickSaveEntry('${e.id}','lokasiMuat', this.value)"></div>
+          <div><label class="flabel">Lokasi Bongkar</label><input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasiBongkar)}" onchange="quickSaveEntry('${e.id}','lokasiBongkar', this.value)"></div>
+        </div>` : ''}
+      ` : ''}
+
+      ${jenis==='Drone' ? `
+        <div style="margin-top:8px;"><label class="flabel">Jenis Drone</label>${selectWithCustomHari(e.id,'droneJenis', DRONE_JENIS_LIST, e.droneJenis)}</div>
+        <label class="flabel">Lokasi</label>
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSaveEntry('${e.id}','lokasi', this.value)">
+      ` : ''}
+
+      ${jenis==='Operator' ? `
+        <div style="margin-top:8px;"><label class="flabel">Shift</label>${selectWithCustomHari(e.id,'shift', SHIFT_LIST, e.shift)}</div>
+        <label class="flabel">Lokasi</label>
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSaveEntry('${e.id}','lokasi', this.value)">
+      ` : ''}
+      ${jenis && !['Antar/Jemput Tenaga','Muat Tebu','Drone','Operator'].includes(jenis) ? `
+        <label class="flabel">Lokasi</label>
+        <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="quickSaveEntry('${e.id}','lokasi', this.value)">
+      ` : ''}
+
+      <div class="grid2" style="margin-top:8px;">
+        <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSaveEntry('${e.id}','hmAwal', this.value);checkHmWarning2('${e.id}')" id="qf2-hmA-${e.id}"></div>
+        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSaveEntry('${e.id}','hmAkhir', this.value);checkHmWarning2('${e.id}')" id="qf2-hmB-${e.id}"></div>
+        <div class="full" id="qf2-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
+        <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveEntry('${e.id}','bbmLiter', stripDots(this.value))"></div>
+        <div><label class="flabel">Jam Lembur (manual)</label><input type="text" inputmode="decimal" value="${escapeHtml(e.lembur)}" onchange="quickSaveEntry('${e.id}','lembur', this.value)"></div>
+      </div>
+      <div class="field-sub" style="margin:-4px 0 8px;">Tanpa absen otomatis, supaya lembur tidak terhitung dobel dengan unit utama.</div>
+      <label class="flabel">Catatan (opsional)</label>
+      <textarea rows="2" onchange="quickSaveEntry('${e.id}','catatan', this.value)">${escapeHtml(e.catatan)}</textarea>
+    </div>`;
 }
 function entryTipeLabel(e){
   if(!e.jenisLayanan) return '-';
