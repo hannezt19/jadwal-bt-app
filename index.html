@@ -38,6 +38,8 @@ button,input,select,textarea{font-family:inherit;}
 #topbar .titlemain{font-size:16px;font-weight:800;margin-top:2px;}
 #topbar .badge{background:var(--primary-container);color:var(--on-primary-container);font-size:12px;font-weight:700;padding:6px 12px;border-radius:100px;white-space:nowrap;}
 #screens{flex:1;overflow-y:auto;padding:16px 16px 100px;}
+#screens.no-pad{padding:0;overflow:hidden;}
+#screen-peta{height:100%;}
 .screen{display:none;}
 .screen.active{display:block;}
 #bottomnav{position:fixed;bottom:0;left:0;right:0;background:var(--navy);display:flex;justify-content:space-around;padding:8px 4px calc(10px + env(safe-area-inset-bottom, 20px));z-index:40;}
@@ -158,8 +160,12 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="dgroup">Servis</div>
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
+  <div class="dgroup">Peta</div>
+  <div class="ditem" onclick="closeDrawer();document.getElementById('petaFileInputDrawer').click()"><span class="ic">&#128247;</span> Ganti Gambar Peta</div>
+  <input type="file" accept="image/*" id="petaFileInputDrawer" style="display:none;" onchange="handlePetaUpload(event)">
   <div class="dgroup">Tentang</div>
   <div class="drawer-version" id="dw-version">Versi 1.0.7 &middot; 14 Agu 2026</div>
+  <div class="drawer-version" style="padding-top:0;opacity:.7;">Yohanes Div.2</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
@@ -222,6 +228,7 @@ const TITLES = {
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
+  document.getElementById('screens').classList.toggle('no-pad', name==='peta');
   document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   const t = TITLES[name];
   document.getElementById('tb-eyebrow').textContent = t[0];
@@ -1118,6 +1125,25 @@ function editEntryField(entryId, key, val){
   expandedRowId = entryId;
   renderRekap();
 }
+function toggleSecondaryFlag(entryId){
+  const idx = ENTRIES.findIndex(x=>x.id===entryId); if(idx<0) return;
+  const e = ENTRIES[idx];
+  if(e.isSecondary){
+    e.isSecondary = false;
+    if(!e.istMulai) e.istMulai = '11.00';
+    if(!e.istSelesai) e.istSelesai = '13.30';
+    if(e.istirahat===undefined) e.istirahat = true;
+    toast('Dijadikan entri utama — isi Absen supaya lembur terhitung otomatis');
+  } else {
+    e.isSecondary = true;
+    e.absenBerangkat = '';
+    e.absenPulang = '';
+    toast('Dijadikan entri tambahan — Absen dikosongkan, isi Jam Lembur manual');
+  }
+  saveEntries();
+  expandedRowId = entryId;
+  renderRekap();
+}
 function deleteRow(id){
   if(!confirm('Hapus entri ini?')) return;
   ENTRIES = ENTRIES.filter(x=>x.id!==id);
@@ -1143,12 +1169,18 @@ function findDuplicateDates(){
 }
 function openBackfill(dateIso){
   if(!USER.mainBt || UNITS.length===0){ toast('Isi Pengaturan Akun & Kelola No Unit dulu'); return; }
+  const alreadyHasEntry = ENTRIES.some(x=>x.date===dateIso);
   const e = {id:uid(), date:dateIso, btId:USER.mainBt, hmAwal:'', hmAkhir:'', bbmLiter:'', lembur:'', catatan:'',
     jenisLayanan:'', tipeAntar:'', kegiatan:'', muatTipe:'', tonaseKg:'', lokasi:'', lokasiMuat:'', lokasiBongkar:'',
-    droneJenis:'', shift:'', absenBerangkat:'', absenPulang:'', istirahat:true, istMulai:'11.00', istSelesai:'13.30', liburMerah:false};
+    droneJenis:'', shift:''};
+  if(alreadyHasEntry){
+    e.isSecondary = true;
+  } else {
+    e.absenBerangkat = ''; e.absenPulang = ''; e.istirahat = true; e.istMulai = '11.00'; e.istSelesai = '13.30'; e.liburMerah = false;
+  }
   ENTRIES.push(e);
   saveEntries();
-  toast('Baris baru ditambahkan, silakan diisi');
+  toast(alreadyHasEntry ? 'Baris baru ditambahkan (tanpa absen, karena tanggal ini sudah ada entri lain)' : 'Baris baru ditambahkan, silakan diisi');
   expandedRowId = e.id;
   showScreen('rekap');
 }
@@ -1193,6 +1225,7 @@ function renderRekap(){
               <div><label class="flabel">No Unit</label><select onchange="editEntryField('${e.id}','btId',this.value)">${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}</select></div>
               <div><label class="flabel">Tanggal</label><input type="date" value="${e.date}" onchange="editEntryField('${e.id}','date',this.value)"></div>
             </div>
+            <button class="pill-btn sm outline" style="width:100%;justify-content:center;margin-bottom:8px;" onclick="toggleSecondaryFlag('${e.id}')">${e.isSecondary ? '&#8617; Jadikan Entri Utama (pakai absen)' : '&#8618; Jadikan Entri Tambahan (tanpa absen, lembur manual)'}</button>
 
             <div class="section-eyebrow" style="margin-top:8px;">Jenis Layanan</div>
             <label class="flabel">Jenis Layanan</label>
@@ -1237,6 +1270,7 @@ function renderRekap(){
               <input type="text" list="lokasiSuggest" oninput="onLokasiInput(this)" onfocus="onLokasiFocus(this)" value="${escapeHtml(e.lokasi)}" onchange="editEntryField('${e.id}','lokasi',this.value)">
             ` : ''}
 
+            ${!e.isSecondary ? `
             <div class="section-eyebrow" style="margin-top:8px;">Absen &amp; Istirahat</div>
             <div class="grid2">
               <div><label class="flabel">Absen Berangkat</label><input type="time" value="${escapeHtml(e.absenBerangkat)}" onchange="editEntryField('${e.id}','absenBerangkat',this.value)"></div>
@@ -1252,6 +1286,9 @@ function renderRekap(){
               <div><label class="flabel">Istirahat Selesai</label><input type="text" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" onchange="editEntryField('${e.id}','istSelesai',this.value)"></div>
             </div>` : ''}
             <div class="chk-row" style="margin-top:8px;"><input type="checkbox" id="ed-liburMerah-${e.id}" ${e.liburMerah?'checked':''} onchange="editEntryField('${e.id}','liburMerah',this.checked)"><label for="ed-liburMerah-${e.id}" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
+            ` : `
+            <div class="field-sub" style="margin-top:10px;">Ini entri tambahan (tanggal ini sudah ada entri lain) — tanpa absen otomatis, Jam Lembur di bawah diisi manual.</div>
+            `}
 
             <div class="section-eyebrow" style="margin-top:8px;">Hour Meter &amp; BBM</div>
             <div class="grid2">
@@ -1319,12 +1356,12 @@ let petaDrawPoints = [];
 function renderPeta(){
   const host = document.getElementById('screen-peta');
   if(!petaImageLoaded){
-    host.innerHTML = `<div class="card"><div class="empty-note">Memuat gambar peta...</div></div>`;
+    host.innerHTML = `<div class="empty-note" style="padding-top:40px;">Memuat gambar peta...</div>`;
     return;
   }
   if(!PETA_IMAGE){
     host.innerHTML = `
-      <div class="card">
+      <div class="card" style="margin-top:8px;">
         <div class="empty-note">Belum ada gambar peta. Upload gambar peta kebun (dari galeri HP) untuk mulai menandai blok kerja.</div>
         <input type="file" accept="image/*" id="petaFileInput" style="display:none;" onchange="handlePetaUpload(event)">
         <button class="btn-block" onclick="document.getElementById('petaFileInput').click()">&#128247; Upload Gambar Peta</button>
@@ -1333,15 +1370,8 @@ function renderPeta(){
   }
   const svgPoints = petaDrawPoints.map(p=>p.x+','+p.y).join(' ');
   host.innerHTML = `
-    <div class="section-eyebrow section-eyebrow-row">Peta Lokasi Kerja
-      <span style="display:flex;gap:6px;">
-        <button class="pill-btn sm outline" onclick="resetPetaZoom()">Reset Zoom</button>
-        <button class="pill-btn sm outline" onclick="document.getElementById('petaFileInput2').click()">Ganti Gambar</button>
-      </span>
-    </div>
-    <input type="file" accept="image/*" id="petaFileInput2" style="display:none;" onchange="handlePetaUpload(event)">
-    <div class="card" style="padding:0;overflow:hidden;position:relative;">
-      <div id="petaImgWrap" style="position:relative;overflow:hidden;touch-action:none;" onclick="handlePetaTap(event)" ontouchstart="petaTouchStart(event)" ontouchmove="petaTouchMove(event)" ontouchend="petaTouchEnd(event)">
+    <div id="petaFullWrap" style="position:relative;width:100%;height:100%;overflow:hidden;">
+      <div id="petaImgWrap" style="position:relative;width:100%;height:100%;overflow:hidden;touch-action:none;" onclick="handlePetaTap(event)" ontouchstart="petaTouchStart(event)" ontouchmove="petaTouchMove(event)" ontouchend="petaTouchEnd(event)">
         <div id="petaImgInner" style="transform-origin:0 0;position:relative;">
           <img src="${PETA_IMAGE}" style="width:100%;display:block;pointer-events:none;" id="petaImgEl">
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
@@ -1351,20 +1381,22 @@ function renderPeta(){
           </svg>
         </div>
       </div>
+
+      ${!petaDrawing ? `
+      <button onclick="startPetaDraw()" title="Gambar Blok Baru" style="position:absolute;right:16px;bottom:16px;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;box-shadow:0 3px 10px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+      </button>
+      ` : `
+      <div style="position:absolute;left:12px;right:12px;bottom:16px;background:var(--surface);border-radius:16px;padding:12px 14px;box-shadow:0 3px 12px rgba(0,0,0,.3);">
+        <div class="field-sub" style="margin-bottom:8px;">Menggambar blok: ${petaDrawPoints.length} titik. Tap tiap sudut, lalu Simpan.</div>
+        <div style="display:flex;gap:8px;">
+          <button class="pill-btn sm outline" style="flex:1;justify-content:center;" onclick="undoPetaPoint()">&#8630; Undo</button>
+          <button class="pill-btn sm" style="flex:1;justify-content:center;" onclick="finishPetaDraw()">Simpan</button>
+          <button class="pill-btn sm outline" style="flex:1;justify-content:center;" onclick="cancelPetaDraw()">Batal</button>
+        </div>
+      </div>
+      `}
     </div>
-    ${petaDrawing ? `
-    <div class="card card-flat" style="margin-top:8px;display:flex;gap:8px;align-items:center;">
-      <div class="field-sub" style="flex:1;">Menggambar blok: ${petaDrawPoints.length} titik. Tap tiap sudut, lalu Selesai.</div>
-      <button class="pill-btn sm outline" onclick="undoPetaPoint()">&#8630; Undo</button>
-      <button class="pill-btn sm" onclick="finishPetaDraw()">Selesai</button>
-      <button class="pill-btn sm outline" onclick="cancelPetaDraw()">Batal</button>
-    </div>
-    ` : `
-    <div style="margin-top:8px;">
-      <button class="btn-block" onclick="startPetaDraw()">&#9998; Gambar Blok Baru</button>
-    </div>
-    `}
-    <div class="field-sub" style="margin:8px 0 16px;text-align:center;">Cubit untuk zoom, geser untuk pindah. Tap blok yang sudah ada untuk lihat opsi.</div>
   `;
   applyPetaTransform();
 }
@@ -1537,8 +1569,20 @@ function showPetaBlock(id){
     <div class="mhead"><h2>&#128506; ${escapeHtml(b.label)}</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
     <div class="field-sub" style="margin-bottom:16px;">Ditandai: ${fmtLabel(b.date)}</div>
     <button class="btn-block" onclick="usePetaBlockAsLokasi('${b.id}')">Jadikan Lokasi Hari Ini</button>
+    <button class="pill-btn outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="editPetaBlockName('${b.id}')">&#9998; Edit Nama</button>
     <button class="pill-btn outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="deletePetaBlock('${b.id}');closeModal();">Hapus Blok</button>
   `);
+}
+function editPetaBlockName(id){
+  const b = PETA_BLOCKS.find(x=>x.id===id);
+  if(!b) return;
+  const newLabel = prompt('Ganti nama blok:', b.label);
+  if(!newLabel) return;
+  b.label = newLabel;
+  savePetaBlocks();
+  toast('Nama blok diperbarui');
+  closeModal();
+  renderPeta();
 }
 function usePetaBlockAsLokasi(id){
   const b = PETA_BLOCKS.find(x=>x.id===id);
