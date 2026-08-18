@@ -1548,6 +1548,7 @@ function pointInPolygon(pt, points){
   return inside;
 }
 function handlePetaTap(evt){
+  toast('Tap terdeteksi (diagnostik)');
   if(petaJustDragged) return;
   const pt = petaTapCoords(evt);
   if(petaDrawing){
@@ -1558,6 +1559,8 @@ function handlePetaTap(evt){
   const hit = PETA_BLOCKS.find(b=>pointInPolygon(pt, b.points));
   if(hit){
     showPetaBlock(hit.id);
+  } else {
+    toast('Tap di luar blok manapun (x:'+pt.x+' y:'+pt.y+')');
   }
 }
 let _petaActiveBlockId = null;
