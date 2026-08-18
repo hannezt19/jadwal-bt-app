@@ -1438,8 +1438,6 @@ let petaJustDragged = false;
 function applyPetaTransform(){
   const inner = document.getElementById('petaImgInner');
   if(inner) inner.style.transform = `translate(${petaZoom.panX}px, ${petaZoom.panY}px) scale(${petaZoom.scale})`;
-  const r = Math.max(0.04, 0.15/petaZoom.scale).toFixed(3);
-  document.querySelectorAll('.peta-drawdot').forEach(c=>{ c.setAttribute('r', r); });
 }
 function resetPetaZoom(){
   petaZoom = {scale:1, panX:0, panY:0};
@@ -1502,12 +1500,14 @@ function petaTouchEnd(e){
 }
 function petaTapCoords(evt){
   const wrap = document.getElementById('petaImgWrap');
+  const img = document.getElementById('petaImgEl');
   const rect = wrap.getBoundingClientRect();
+  const imgRenderedHeight = (img && img.naturalWidth) ? (rect.width * img.naturalHeight / img.naturalWidth) : rect.height;
   const localX = (evt.clientX - rect.left - petaZoom.panX) / petaZoom.scale;
   const localY = (evt.clientY - rect.top - petaZoom.panY) / petaZoom.scale;
   return {
     x: +(localX / rect.width * 100).toFixed(2),
-    y: +(localY / rect.height * 100).toFixed(2)
+    y: +(localY / imgRenderedHeight * 100).toFixed(2)
   };
 }
 function startPetaDraw(){
@@ -1548,7 +1548,6 @@ function pointInPolygon(pt, points){
   return inside;
 }
 function handlePetaTap(evt){
-  toast('Tap terdeteksi (diagnostik)');
   if(petaJustDragged) return;
   const pt = petaTapCoords(evt);
   if(petaDrawing){
@@ -1559,8 +1558,6 @@ function handlePetaTap(evt){
   const hit = PETA_BLOCKS.find(b=>pointInPolygon(pt, b.points));
   if(hit){
     showPetaBlock(hit.id);
-  } else {
-    toast('Tap di luar blok manapun (x:'+pt.x+' y:'+pt.y+')');
   }
 }
 let _petaActiveBlockId = null;
