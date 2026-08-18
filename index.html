@@ -1383,11 +1383,11 @@ function renderPeta(){
       </div>
 
       ${!petaDrawing ? `
-      <button onclick="startPetaDraw()" title="Gambar Blok Baru" style="position:absolute;right:16px;bottom:16px;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;box-shadow:0 3px 10px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;">
+      <button onclick="startPetaDraw()" title="Gambar Blok Baru" style="position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom, 20px));width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;box-shadow:0 3px 10px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:45;">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
       </button>
       ` : `
-      <div style="position:absolute;left:12px;right:12px;bottom:16px;background:var(--surface);border-radius:16px;padding:12px 14px;box-shadow:0 3px 12px rgba(0,0,0,.3);">
+      <div style="position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom, 20px));background:var(--surface);border-radius:16px;padding:12px 14px;box-shadow:0 3px 12px rgba(0,0,0,.3);z-index:45;">
         <div class="field-sub" style="margin-bottom:8px;">Menggambar blok: ${petaDrawPoints.length} titik. Tap tiap sudut, lalu Simpan.</div>
         <div style="display:flex;gap:8px;">
           <button class="pill-btn sm outline" style="flex:1;justify-content:center;" onclick="undoPetaPoint()">&#8630; Undo</button>
