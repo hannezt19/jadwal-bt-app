@@ -902,6 +902,7 @@ function maybeDetectHmReset(btId, newHmAkhirVal, entryDate){
 function openServisModal(){
   closeDrawer();
   window._svcType = 'berkala';
+  window._svcStatus = 'selesai';
   renderServisModal();
 }
 function renderServisModal(){
@@ -931,19 +932,48 @@ function renderServisModal(){
       <div class="field-sub" style="margin:-6px 0 12px;">${window._svcType==='lainnya' ? 'Tidak mereset hitungan pengingat servis.' : 'Akan mereset hitungan pengingat servis (ambang batas jam).'}</div>
       <label class="flabel">Tanggal</label><input type="date" id="newSvcDate" value="${todayIso()}">
       <label class="flabel">HM Saat Servis</label><input type="text" id="newSvcHm" inputmode="numeric" placeholder="mis. 4200.0" oninput="this.value=fmtHmLive(this.value)">
-      <label class="flabel">Catatan</label><input type="text" id="newSvcNote" placeholder="${window._svcType==='lainnya'?'mis. Ganti ban, perbaikan rem':'mis. Ganti oli & filter'}">
+      ${window._svcType==='lainnya' ? `
+      <label class="flabel">Mekanik</label><input type="text" id="newSvcMekanik" placeholder="mis. Pak Budi">
+      <label class="flabel">Status</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button type="button" class="chip ${window._svcStatus!=='tunggu_sparepart'?'active':''}" id="svcStatusSelesai" onclick="setSvcStatus('selesai')">&#9989; Selesai</button>
+        <button type="button" class="chip ${window._svcStatus==='tunggu_sparepart'?'active':''}" id="svcStatusTunggu" onclick="setSvcStatus('tunggu_sparepart')">&#8987; Tunggu Sparepart</button>
+      </div>
+      <label class="flabel">Daftar Perbaikan / Catatan</label><textarea rows="3" id="newSvcNote" placeholder="mis. 1. Ganti kampas rem&#10;2. Servis AC&#10;3. Cek kelistrikan"></textarea>
+      ` : `
+      <label class="flabel">Catatan</label><input type="text" id="newSvcNote" placeholder="mis. Ganti oli & filter">
+      `}
       <button class="btn-block" onclick="addServis()">Simpan Servis</button>
     </div>
     <div class="section-eyebrow">Riwayat Servis ${escapeHtml(btLabel(bt))}</div>
     <div class="card card-flat">
       ${list.length===0 ? '<div class="empty-note">Belum ada riwayat servis.</div>' :
-        list.map(s=>`<div class="list-row"><span>${s.type==='lainnya'?'&#128296;':'&#128295;'} ${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm)} <span class="field-sub">(${s.type==='lainnya'?'Lainnya':'Berkala'})</span><br><span class="field-sub">${escapeHtml(s.note||'')}</span></span><button class="icon-btn" onclick="deleteServis('${s.id}')">&#128465;</button></div>`).join('')}
+        list.map(s=>`<div class="list-row"><span>${s.type==='lainnya'?'&#128296;':'&#128295;'} ${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm)} <span class="field-sub">(${s.type==='lainnya'?'Lainnya':'Berkala'})</span>${s.type==='lainnya'&&s.mekanik?' &middot; Mekanik: '+escapeHtml(s.mekanik):''}${s.type==='lainnya'?renderSvcStatusBadge(s):''}<br><span class="field-sub" style="white-space:pre-wrap;">${escapeHtml(s.note||'')}</span></span><button class="icon-btn" onclick="deleteServis('${s.id}')">&#128465;</button></div>`).join('')}
     </div>
     `}
   `);
 }
 function setSvcType(t){
   window._svcType = t;
+  window._svcStatus = 'selesai';
+  renderServisModal();
+}
+function setSvcStatus(s){
+  window._svcStatus = s;
+  renderServisModal();
+}
+function renderSvcStatusBadge(s){
+  const status = s.status || 'selesai';
+  const isWaiting = status==='tunggu_sparepart';
+  const color = isWaiting ? 'var(--danger)' : 'var(--success)';
+  const label = isWaiting ? 'Tunggu Sparepart' : 'Selesai';
+  return ` &middot; <span style="color:${color};font-weight:700;cursor:pointer;" onclick="toggleSvcStatus('${s.id}')" title="Tap untuk ubah status">${isWaiting?'&#8987;':'&#9989;'} ${label}</span>`;
+}
+function toggleSvcStatus(id){
+  const idx = SERVIS.findIndex(s=>s.id===id); if(idx<0) return;
+  SERVIS[idx].status = (SERVIS[idx].status==='tunggu_sparepart') ? 'selesai' : 'tunggu_sparepart';
+  saveServis();
+  toast('Status servis diperbarui');
   renderServisModal();
 }
 function addServis(){
@@ -951,10 +981,14 @@ function addServis(){
   const hm = document.getElementById('newSvcHm').value;
   const note = document.getElementById('newSvcNote').value;
   if(!hm || isNaN(parseFloat(hm))){ toast('Isi HM saat servis dengan angka'); return; }
-  SERVIS.push({id:uid(), btId:USER.mainBt, date, hm:parseFloat(hm).toFixed(1), note, type: window._svcType==='lainnya'?'lainnya':'berkala'});
+  const isLainnya = window._svcType==='lainnya';
+  const mekanik = isLainnya ? (document.getElementById('newSvcMekanik')?document.getElementById('newSvcMekanik').value.trim():'') : '';
+  const status = isLainnya ? (window._svcStatus || 'selesai') : 'selesai';
+  SERVIS.push({id:uid(), btId:USER.mainBt, date, hm:parseFloat(hm).toFixed(1), note, type: isLainnya?'lainnya':'berkala', mekanik, status});
   saveServis();
   toast('Servis dicatat');
   window._svcType = 'berkala';
+  window._svcStatus = 'selesai';
   renderServisModal();
 }
 function deleteServis(id){
@@ -982,7 +1016,7 @@ function renderGantiHmModal(){
     <div class="section-eyebrow">Riwayat Perubahan HM</div>
     <div class="card card-flat">
       ${history.length===0 ? '<div class="empty-note">Belum pernah ada perubahan HM.</div>' :
-        history.map(r=>`<div class="list-row"><span>${fmtLabel(r.date)}<br><span class="field-sub">${escapeHtml(r.note||'')}</span></span></div>`).join('')}
+        history.map(r=>`<div class="list-row"><span>${fmtLabel(r.date)}<br><span class="field-sub">${escapeHtml(r.note||'')}</span></span><button class="icon-btn" onclick="deleteHmReset('${r.id}')">&#128465;</button></div>`).join('')}
     </div>
     `}
   `);
@@ -993,6 +1027,13 @@ function saveGantiHm(){
   HM_RESETS.push({id:uid(), btId:USER.mainBt, date, note: note || 'Ganti HM manual'});
   saveHmResets();
   toast('Perubahan HM dicatat');
+  renderGantiHmModal();
+}
+function deleteHmReset(id){
+  if(!confirm('Hapus catatan perubahan HM ini? Ini akan mempengaruhi perhitungan HM saat ini jika catatan ini masih relevan.')) return;
+  HM_RESETS = HM_RESETS.filter(r=>r.id!==id);
+  saveHmResets();
+  toast('Catatan perubahan HM dihapus');
   renderGantiHmModal();
 }
 
