@@ -79,7 +79,8 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
 /* Drawer (hamburger) */
 #drawerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:none;}
 #drawerOverlay.show{display:block;}
-#drawer{position:fixed;top:0;bottom:0;left:0;width:82%;max-width:320px;background:#fff;z-index:61;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:82%;max-width:320px;background:#fff;z-index:61;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;display:flex;flex-direction:column;}
+.drawer-footer-credit{margin-top:auto;padding:14px 18px 24px;font-size:12px;color:var(--on-surface-variant);opacity:.7;}
 #drawer.show{transform:translateX(0);}
 #drawer .dhead{background:var(--navy);color:#fff;padding:24px 20px;}
 #drawer .dhead .name{font-size:18px;font-weight:800;}
@@ -164,8 +165,8 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="closeDrawer();document.getElementById('petaFileInputDrawer').click()"><span class="ic">&#128247;</span> Ganti Gambar Peta</div>
   <input type="file" accept="image/*" id="petaFileInputDrawer" style="display:none;" onchange="handlePetaUpload(event)">
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.7 &middot; 14 Agu 2026</div>
-  <div class="drawer-version" style="padding-top:0;opacity:.7;">Yohanes Div.2</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.8 &middot; 19 Agu 2026</div>
+  <div class="drawer-footer-credit">By Yohanes Divisi 2</div>
 </div>
 
 <div id="modalOverlay"><div id="modalSheet"></div></div>
