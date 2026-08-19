@@ -165,7 +165,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="closeDrawer();document.getElementById('petaFileInputDrawer').click()"><span class="ic">&#128247;</span> Ganti Gambar Peta</div>
   <input type="file" accept="image/*" id="petaFileInputDrawer" style="display:none;" onchange="handlePetaUpload(event)">
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.9 &middot; 19 Agu 2026</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.10 &middot; 19 Agu 2026</div>
   <div class="drawer-footer-credit">By Yohanes Divisi 2</div>
 </div>
 
@@ -842,6 +842,13 @@ function recomputeLemburIfNeeded(entry, changedKey){
   if(!LEMBUR_TRIGGER_KEYS.includes(changedKey)) return;
   const val = computeLembur(entry);
   if(val!==null) entry.lembur = val.toFixed(1);
+}
+function computeLemburFinal(e){
+  const lembur = parseFloat(e.lembur);
+  if(isNaN(lembur) || lembur<=0) return 0;
+  const normal = normalJamKerja(e.date, e.liburMerah);
+  const final = normal>0 ? (lembur*2 - 0.5) : (lembur*2);
+  return final<0 ? 0 : final;
 }
 function quickSave(key, val){
   const e = getTodayEntry();
@@ -1618,7 +1625,7 @@ function deletePetaBlock(id){
   renderPeta();
   toast('Blok dihapus');
 }
-const ALL_EXPORT_HEADERS = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','HM Terpakai','BBM (L)','Lembur (j)','Catatan'];
+const ALL_EXPORT_HEADERS = ['Tanggal','No Unit','Jenis Layanan','Detail','Lokasi','Absen Berangkat','Absen Pulang','Istirahat','HM Awal','HM Akhir','HM Terpakai','BBM (L)','Lembur (j)','Lembur Final','Catatan'];
 function slugCol(h){ return h.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
 function openExportSheet(){
   openModal(`
@@ -1684,7 +1691,7 @@ function getExportRows(){
     return {
       'Tanggal': fmtLabel(e.date), 'No Unit': btLabel(e.btId), 'Jenis Layanan': e.jenisLayanan||'-', 'Detail': detail||'-', 'Lokasi': lokasi||'-',
       'Absen Berangkat': e.absenBerangkat||'-', 'Absen Pulang': e.absenPulang||'-', 'Istirahat': e.istirahat?'':'Lembur',
-      'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'HM Terpakai': hmTerpakai, 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Catatan': e.catatan||''
+      'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'HM Terpakai': hmTerpakai, 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Lembur Final': computeLemburFinal(e).toFixed(1), 'Catatan': e.catatan||''
     };
   });
   const totalHm = rows.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
