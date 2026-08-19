@@ -165,7 +165,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="ditem" onclick="closeDrawer();document.getElementById('petaFileInputDrawer').click()"><span class="ic">&#128247;</span> Ganti Gambar Peta</div>
   <input type="file" accept="image/*" id="petaFileInputDrawer" style="display:none;" onchange="handlePetaUpload(event)">
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.11 &middot; 19 Agu 2026</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.12 &middot; 19 Agu 2026</div>
   <div class="drawer-footer-credit">By Yohanes Divisi 2</div>
 </div>
 
@@ -1691,7 +1691,7 @@ function getExportRows(){
     return {
       'Tanggal': fmtLabel(e.date), 'No Unit': btLabel(e.btId), 'Jenis Layanan': e.jenisLayanan||'-', 'Detail': detail||'-', 'Lokasi': lokasi||'-',
       'Absen Berangkat': e.absenBerangkat||'-', 'Absen Pulang': e.absenPulang||'-', 'Istirahat': e.istirahat?'':'Lembur',
-      'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'HM Terpakai': hmTerpakai, 'BBM (L)': e.bbmLiter||'0', 'Lembur (j)': e.lembur||'0', 'Lembur Final': computeLemburFinal(e).toFixed(1), 'Catatan': e.catatan||''
+      'HM Awal': e.hmAwal||'-', 'HM Akhir': e.hmAkhir||'-', 'HM Terpakai': hmTerpakai, 'BBM (L)': fmtThousandsLive(e.bbmLiter||'0'), 'Lembur (j)': e.lembur||'0', 'Lembur Final': computeLemburFinal(e).toFixed(1), 'Catatan': e.catatan||''
     };
   });
   const totalHm = rows.reduce((s,e)=>{ const a=parseFloat(e.hmAwal), b=parseFloat(e.hmAkhir); return s+((!isNaN(a)&&!isNaN(b)&&b>=a)?(b-a):0); },0);
@@ -1735,7 +1735,7 @@ async function doExport(fmt){
   const totalRow = headers.map((h,i)=>{
     if(i===0) return 'TOTAL';
     if(h==='HM Terpakai') return totalHm.toFixed(1);
-    if(h==='BBM (L)') return totalBbm.toFixed(0);
+    if(h==='BBM (L)') return fmtThousandsLive(totalBbm.toFixed(0));
     if(h==='Lembur (j)') return totalLembur.toFixed(1);
     if(h==='Lembur Final') return totalLemburFinal.toFixed(1);
     return '';
