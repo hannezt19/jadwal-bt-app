@@ -1438,6 +1438,14 @@ let petaJustDragged = false;
 function applyPetaTransform(){
   const inner = document.getElementById('petaImgInner');
   if(inner) inner.style.transform = `translate(${petaZoom.panX}px, ${petaZoom.panY}px) scale(${petaZoom.scale})`;
+  const wrap = document.getElementById('petaImgWrap');
+  const dots = document.querySelectorAll('.peta-drawdot');
+  if(wrap && dots.length){
+    const rectWidth = wrap.getBoundingClientRect().width || 350;
+    const desiredScreenRadiusPx = 7;
+    const r = ((desiredScreenRadiusPx * 100 / rectWidth) / petaZoom.scale).toFixed(3);
+    dots.forEach(c=>{ c.setAttribute('r', r); });
+  }
 }
 function resetPetaZoom(){
   petaZoom = {scale:1, panX:0, panY:0};
