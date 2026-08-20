@@ -20,17 +20,17 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 :root{
-  --primary:#4A7FBF; --on-primary:#FFFFFF; --primary-container:#DBEAFE; --on-primary-container:#1E3A5F;
+  --primary:#4A7FBF; --on-primary:#FFFFFF; --primary-container:#DBEAFE; --on-primary-container:#1B2A4A;
   --secondary:#5A6B7E; --secondary-container:#E3ECF7;
   --success:#3A7A5C; --success-container:#D4E8DD;
   --danger:#B85C5C; --danger-container:#F3DCDC;
   --warn:#8A6E3A; --warn-container:#F5E8C8;
   --surface:#F6F9FF; --surface-container:#E8EEF8; --surface-container-high:#D6E3F5; --surface-container-low:#EFF5FF;
-  --on-surface:#1E232E; --on-surface-variant:#4A5568;
-  --outline:#B8C9DE; --outline-variant:#D6E3F3;
-  --navy:#1E2F4A; --navy-2:#2A4060;
+  --on-surface:#111827; --on-surface-variant:#4B5563;
+  --outline:#A0AFC5; --outline-variant:#CBD7EA;
+  --navy:#1B2A4A; --navy-2:#2E4A6F;
   --radius-xl:18px; --radius-lg:14px; --radius-md:12px; --radius-pill:100px;
-  --shadow-sm:0 1px 6px rgba(30,47,74,.06); --shadow-md:0 4px 14px rgba(30,47,74,.08); --shadow-lg:0 10px 28px rgba(30,47,74,.10);
+  --shadow-sm:0 1px 6px rgba(27,42,74,.06); --shadow-md:0 4px 14px rgba(27,42,74,.08); --shadow-lg:0 10px 28px rgba(27,42,74,.10);
   --shadow-primary:0 4px 14px rgba(74,127,191,.20);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -181,6 +181,15 @@ label.flabel{margin:10px 0 4px 2px !important;font-size:10px !important;}
 #drawer .dgroup{padding:12px 16px 4px !important;font-size:9.5px !important;}
 #drawer .dhead{padding:16px !important;}
 
+
+.hm-editable{width:100%;min-height:38px;border:1.2px solid var(--outline-variant);border-radius:10px;padding:8px 10px;background:#FFFFFF;color:var(--on-surface);font-size:13.5px;font-weight:500;line-height:1.2;display:flex;align-items:center;flex-wrap:wrap;word-break:break-all;transition:all .16s;cursor:text;outline:none;}
+.hm-editable:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(74,127,191,.14);background:#fff;}
+.hm-editable.field-error{border-color:var(--danger)!important;background:var(--danger-container);}
+.hm-editable .hm-int{color:var(--on-surface);}
+.hm-editable .hm-dec{color:#D32F2F;font-weight:800;}
+.hm-editable .hm-dot{color:#D32F2F;font-weight:800;}
+.hm-editable .ph{color:var(--on-surface-variant);opacity:.45;}
+
 </style>
 </head>
 <body>
@@ -261,6 +270,134 @@ const LS = {
 function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function fmtHmRed(hm){
+  if(hm==null || hm==='' || isNaN(parseFloat(hm))) return '-';
+  const s = String(parseFloat(hm).toFixed(1));
+  const parts = s.split('.');
+  if(parts.length===1) return parts[0];
+  return `${parts[0]}<span style="color:#D32F2F;font-weight:800;">.${parts[1]}</span>`;
+}
+function fmtHmRed2(hm){
+  if(hm==null || hm==='' || isNaN(parseFloat(hm))) return '-';
+  const s = String(parseFloat(hm).toFixed(2));
+  const parts = s.split('.');
+  if(parts.length===1) return parts[0];
+  return `${parts[0]}<span style="color:#D32F2F;font-weight:800;">.${parts[1]}</span>`;
+}
+
+
+function formatHmEditableHTML(val){
+  if(val==null) val='';
+  let raw = String(val).trim();
+  if(raw==='') return '<span class="ph">0.0</span>';
+  raw = raw.replace(/,/g, '.');
+  let clean;
+  if(raw.includes('.')){
+    clean = raw.replace(/[^0-9.]/g,'');
+    let firstDot = clean.indexOf('.');
+    if(firstDot!==-1){
+      let before = clean.slice(0,firstDot+1);
+      let after = clean.slice(firstDot+1).replace(/\./g,'');
+      clean = before + after;
+    }
+  }else{
+    let digits = raw.replace(/\D/g,'').slice(0,5);
+    if(digits==='') return '<span class="ph">0.0</span>';
+    if(digits.length===1) clean = digits;
+    else clean = digits.slice(0,-1)+'.'+digits.slice(-1);
+  }
+  if(clean==='' || clean==='.') return '<span class="ph">0.0</span>';
+  let parts = clean.split('.');
+  let intPart = parts[0] || '0';
+  let decPart = parts[1];
+  if(intPart.length>4) intPart = intPart.slice(0,4);
+  if(intPart!=='' && parseInt(intPart)>9999) intPart='9999';
+  if(decPart!==undefined && decPart.length>1) decPart = decPart.slice(0,1);
+  if(intPart==='9999' && decPart!==undefined && parseInt(decPart)>9) decPart='9';
+  if(decPart===undefined) return `<span class="hm-int">${intPart}</span>`;
+  return `<span class="hm-int">${intPart}</span><span class="hm-dot">.</span><span class="hm-dec">${decPart}</span>`;
+}
+function getHmEditableValue(el){
+  if(!el) return '';
+  let txt = el.textContent || '';
+  if(el.querySelector('.ph')) txt = '';
+  txt = txt.trim().replace(/,/g, '.');
+  let clean = txt.replace(/[^0-9.]/g,'');
+  let firstDot = clean.indexOf('.');
+  if(firstDot!==-1){
+    let before = clean.slice(0,firstDot+1);
+    let after = clean.slice(firstDot+1).replace(/\./g,'');
+    clean = before + after;
+  }else{
+    let digits = clean.replace(/\D/g,'').slice(0,5);
+    if(digits.length<=1) clean = digits;
+    else clean = digits.slice(0,-1)+'.'+digits.slice(-1);
+  }
+  let parts = clean.split('.');
+  let intPart = parts[0] || '';
+  let decPart = parts[1];
+  if(intPart.length>4) intPart = intPart.slice(0,4);
+  if(intPart!=='' && parseInt(intPart)>9999) intPart='9999';
+  if(decPart!==undefined && decPart.length>1) decPart = decPart.slice(0,1);
+  if(intPart==='9999' && decPart!==undefined && parseInt(decPart)>9) decPart='9';
+  if(intPart==='' && decPart===undefined) return '';
+  if(decPart===undefined) return intPart;
+  return intPart + '.' + decPart;
+}
+function attachHmEditable(el){
+  if(!el || el.dataset.inited) return;
+  el.dataset.inited='1';
+  let currentVal = el.getAttribute('data-value') || '';
+  currentVal = String(currentVal).replace(/,/g, '.');
+  el.innerHTML = formatHmEditableHTML(currentVal);
+  const placeCaretAtEnd = (elem)=>{
+    let range = document.createRange();
+    let sel = window.getSelection();
+    range.selectNodeContents(elem);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  };
+  el.addEventListener('focus', ()=>{ if(el.querySelector('.ph')) el.innerHTML=''; });
+  el.addEventListener('input', ()=>{
+    let val = getHmEditableValue(el);
+    let formatted = formatHmEditableHTML(val);
+    if(el.innerHTML !== formatted){
+      el.innerHTML = formatted;
+      placeCaretAtEnd(el);
+    }
+    let key = el.dataset.key;
+    let entryId = el.dataset.entry;
+    if(entryId){
+      quickSaveEntry(entryId, key, val);
+      checkHmWarning2(entryId);
+    }else{
+      quickSave(key, val);
+      checkHmWarning('qf');
+    }
+    if(val!=='' && parseFloat(val)>=9999.9){ el.style.borderColor='#D32F2F'; } else { el.style.borderColor=''; }
+  });
+  el.addEventListener('blur', ()=>{
+    let val = getHmEditableValue(el);
+    if(val===''){ el.innerHTML = '<span class="ph">0.0</span>'; } else { el.innerHTML = formatHmEditableHTML(val); }
+    let key = el.dataset.key;
+    let entryId = el.dataset.entry;
+    if(entryId){ quickSaveEntry(entryId, key, val); } else { quickSave(key, val); }
+    el.style.borderColor='';
+  });
+  el.addEventListener('keydown', (e)=>{
+    if(e.ctrlKey || e.metaKey) return;
+    const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Tab','Enter'];
+    if(allowed.includes(e.key)) return;
+    if(/^[0-9.,]$/.test(e.key)) return;
+    e.preventDefault();
+  });
+}
+function initAllHmEditables(){
+  document.querySelectorAll('.hm-editable').forEach(el=>{ attachHmEditable(el); });
+}
+
 function fmtLabel(iso){
   if(!iso) return '-';
   const d = new Date(iso+'T00:00:00');
@@ -671,8 +808,8 @@ function renderHari(){
     <div class="section-eyebrow">Hour Meter &amp; BBM</div>
     <div class="card">
       <div class="grid2">
-        <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSave('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
-        <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSave('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
+        <div><label class="flabel">HM Awal</label><div class="hm-editable" contenteditable="true" data-value="${escapeHtml(e.hmAwal)}" data-key="hmAwal" id="qf-hmA"></div></div>
+        <div><label class="flabel">HM Akhir</label><div class="hm-editable ${hmBad(e)?'field-error':''}" contenteditable="true" data-value="${escapeHtml(e.hmAkhir)}" data-key="hmAkhir" id="qf-hmB"></div></div>
         <div class="full" id="qf-hmWarning">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
         <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSave('bbmLiter', stripDots(this.value))"></div>
         <div><label class="flabel">Jam Lembur</label><input type="text" inputmode="decimal" value="${escapeHtml(e.lembur)}" onchange="quickSave('lembur', this.value)"></div>
@@ -683,6 +820,7 @@ function renderHari(){
 
     ${getSecondaryUnitsToday().map((se,i)=>renderSecondaryUnitCard(se, i+1)).join('')}
   `;
+  setTimeout(initAllHmEditables, 80);
 }
 function getSecondaryUnitsToday(){
   return ENTRIES.filter(x=>x.date===todayIso() && x.isSecondary);
@@ -1185,8 +1323,8 @@ function renderBeranda(){
 
     <div class="section-eyebrow">Ringkasan</div>
     <div class="grid2">
-      <div class="card"><div class="field-sub">Total HM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${totalHmBulan.toFixed(1)}</div></div>
-      <div class="card"><div class="field-sub">Overtime Bulan Ini</div><div style="font-size:20px;font-weight:800;">${totalLemburBulan.toFixed(1)} j</div></div>
+      <div class="card"><div class="field-sub">Total HM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${fmtHmRed(totalHmBulan)}</div></div>
+      <div class="card"><div class="field-sub">Overtime Bulan Ini</div><div style="font-size:20px;font-weight:800;">${fmtHmRed(totalLemburBulan)} j</div></div>
       <div class="card"><div class="field-sub">HM/Liter Selamanya</div><div style="font-size:20px;font-weight:800;">${lifetimeRasio!==null?lifetimeRasio.toFixed(2):'-'}</div></div>
       <div class="card"><div class="field-sub">Total BBM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${fmtThousandsLive(String(Math.round(bbmBulan)))} L</div></div>
     </div>
@@ -1221,7 +1359,7 @@ function renderBeranda(){
           const d = new Date(e.date+'T00:00:00');
           const shortDate = d.getDate()+'-'+(d.getMonth()+1)+'-'+String(d.getFullYear()).slice(2);
           return `<div class="field-sub" style="font-size:12.5px;display:grid;grid-template-columns:1.1fr 0.9fr 0.9fr 0.9fr 1.3fr;gap:4px;padding:9px 4px;border-bottom:1px solid var(--outline-variant);">
-            <span>${shortDate}</span><span>${escapeHtml(btLabel(e.btId))}</span><span>${hmUsed}j</span><span>${escapeHtml(e.lembur||'0')}j OT</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(entryTipeLabel(e))}</span>
+            <span>${shortDate}</span><span>${escapeHtml(btLabel(e.btId))}</span><span>${hmUsed==='-'?'-':fmtHmRed(hmUsed)}<span style="font-size:10px;color:#4A5568;">j</span></span><span>${escapeHtml(e.lembur||'0')}j OT</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(entryTipeLabel(e))}</span>
           </div>`;
         }).join('')}
     </div>
@@ -2388,7 +2526,7 @@ function setupBackButton(){
     if(closeAnyOverlay()) return;
     const activeTab = document.querySelector('#bottomnav button.active');
     if(activeTab && activeTab.dataset.tab !== 'beranda'){
-      showScreen('beranda');
+      showScreen('beranda'); setTimeout(initAllHmEditables, 300);
       return;
     }
     App.exitApp();
@@ -2397,7 +2535,7 @@ function setupBackButton(){
 setupBackButton();
 
 /* ================= INIT ================= */
-showScreen('beranda');
+showScreen('beranda'); setTimeout(initAllHmEditables, 300);
 </script>
 </body>
 </html>
