@@ -22,6 +22,7 @@
   --secondary:#5C5240; --secondary-container:#E6DCC6;
   --success:#2E7D32; --success-container:#D7ECD9;
   --danger:#B3261E; --danger-container:#F9DEDC;
+  --warn:#B36B00; --warn-container:#FFE9C2;
   --surface:#FFF8F3; --surface-container:#F3E8DA; --surface-container-high:#ECDFCB; --surface-container-low:#F8EFE4;
   --on-surface:#1F1B13; --on-surface-variant:#4E4636;
   --outline:#D6C6AC; --outline-variant:#E8DCC8;
@@ -104,6 +105,35 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
 .list-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--outline-variant);}
 .list-row:last-child{border-bottom:none;}
 .icon-btn{background:none;border:none;font-size:16px;padding:6px;cursor:pointer;color:var(--on-surface-variant);}
+.status-badge{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:100px;white-space:nowrap;}
+.kasus-card{background:#fff;border:1px solid var(--outline-variant);border-radius:16px;padding:14px;margin-bottom:10px;cursor:pointer;}
+.kasus-card .kctop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.kasus-card .kcunit{font-weight:800;font-size:14.5px;}
+.kasus-card .kcjenis{font-size:12px;color:var(--on-surface-variant);}
+.kasus-card .kcmeta{font-size:12px;color:var(--on-surface-variant);margin-top:6px;}
+.timeline{margin:4px 0 14px;}
+.tl-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--outline-variant);}
+.tl-item:last-child{border-bottom:none;}
+.tl-icon{font-size:15px;line-height:1.4;}
+.tl-body{flex:1;min-width:0;}
+.tl-title{font-weight:700;font-size:13px;}
+.tl-date{font-size:11.5px;color:var(--on-surface-variant);}
+.tl-note{font-size:12px;color:var(--on-surface-variant);margin-top:2px;}
+.tl-del{background:none;border:none;color:var(--danger);font-size:14px;cursor:pointer;padding:2px 4px;flex-shrink:0;}
+.ev-form{background:var(--surface-container-low);border:1px solid var(--outline-variant);border-radius:14px;padding:12px;margin:10px 0;}
+.sp-item{display:flex;gap:6px;align-items:center;background:var(--surface-container-low);border:1px solid var(--outline-variant);border-radius:12px;padding:8px 10px;margin-bottom:6px;}
+.sp-item input[type=text]{margin:0;min-height:36px;font-size:13px;}
+.sp-item .spname{flex:1.6;}
+.sp-item .spbrand{flex:1.1;}
+.sp-item .sptoggle{flex-shrink:0;font-size:18px;background:none;border:none;cursor:pointer;padding:2px;}
+.sp-item .spdate{flex:1;min-width:0;}
+.summary-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.summary-mini .sbox{background:var(--surface-container-high);border-radius:14px;padding:10px;text-align:center;}
+.summary-mini .sbox .num{font-size:19px;font-weight:800;color:var(--primary);}
+.summary-mini .sbox .lbl{font-size:10px;color:var(--on-surface-variant);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:2px;}
+.check-item{display:flex;align-items:center;gap:8px;background:var(--surface-container-low);border:1px solid var(--outline-variant);border-radius:10px;padding:8px 10px;font-size:12.5px;}
+.check-item input{margin:0;width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 </style>
 </head>
 <body>
@@ -161,6 +191,8 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="dgroup">Servis</div>
   <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
   <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
+  <div class="dgroup">Perbaikan</div>
+  <div class="ditem" onclick="openPerbaikanModal()"><span class="ic">&#128736;</span> Kasus Perbaikan &amp; Downtime</div>
   <div class="dgroup">Peta</div>
   <div class="ditem" onclick="closeDrawer();document.getElementById('petaFileInputDrawer').click()"><span class="ic">&#128247;</span> Ganti Gambar Peta</div>
   <input type="file" accept="image/*" id="petaFileInputDrawer" style="display:none;" onchange="handlePetaUpload(event)">
@@ -205,6 +237,16 @@ let KEGIATAN_LIST = LS.get('v2_kegiatan', ['Pel. Umum','Pemupukan','Penyemprotan
 let MUAT_TIPE_LIST = LS.get('v2_muattipe', ['Bibit','Produksi']);
 let DRONE_JENIS_LIST = LS.get('v2_dronejenis', ['Penyemprotan','Pemetaan']);
 let SHIFT_LIST = LS.get('v2_shift', ['Pagi','Siang','Malam']);
+let PERBAIKAN = LS.get('v2_perbaikan', []); // [{id, btId, jenisKerusakan, events:[{id,type,date,mandor,mekanik,down,note}], spareparts:[{id,name,brand,status,tglTerpasang}]}]
+function savePerbaikan(){ LS.set('v2_perbaikan', PERBAIKAN); }
+const EVENT_TYPES = {
+  lapor_mandor:{label:'Lapor ke Mandor/Pengawas', icon:'&#128993;', down:false},
+  diteruskan_workshop:{label:'Diteruskan ke Workshop', icon:'&#10145;&#65039;', down:false},
+  cek_workshop:{label:'Cek Workshop', icon:'&#128269;', down:false},
+  tunggu_sparepart:{label:'Tunggu Sparepart', icon:'&#9203;', down:null},
+  masuk_workshop:{label:'Masuk Workshop', icon:'&#128308;', down:true},
+  selesai:{label:'Selesai / Keluar Workshop', icon:'&#128994;', down:false}
+};
 function saveUser(){ LS.set('v2_user', USER); }
 function saveUnits(){ LS.set('v2_units', UNITS); }
 function saveBloks(){ LS.set('v2_bloks', BLOKS); }
@@ -1856,6 +1898,431 @@ async function saveOrShareBlob(blob, filename){
     window.open(url, '_blank');
     return 'opened';
   }
+}
+
+/* ================= KASUS PERBAIKAN & DOWNTIME ================= */
+function diffDays(a,b){ const d1=new Date(a+'T00:00:00'), d2=new Date(b+'T00:00:00'); return Math.round((d2-d1)/86400000); }
+function kasusForBt(btId){ return PERBAIKAN.filter(k=>k.btId===btId).sort((a,b)=>{
+  const la=lastEventDate(a), lb=lastEventDate(b); return (lb||'').localeCompare(la||'');
+}); }
+function lastEventDate(k){ const ev=[...(k.events||[])].sort((a,b)=>a.date.localeCompare(b.date)); return ev.length? ev[ev.length-1].date : null; }
+function computeKasusMetrics(k){
+  const events = [...(k.events||[])].sort((a,b)=>a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)));
+  let downSince=null, totalDowntimeHari=0, berjalan=false, closed=false;
+  let firstLapor=null, firstDiteruskan=null, firstMasuk=null;
+  events.forEach(ev=>{
+    if(ev.type==='lapor_mandor' && !firstLapor) firstLapor=ev.date;
+    if(ev.type==='diteruskan_workshop' && !firstDiteruskan) firstDiteruskan=ev.date;
+    if(ev.type==='masuk_workshop' && !firstMasuk) firstMasuk=ev.date;
+    const evDown = ev.type==='tunggu_sparepart' ? !!ev.down : EVENT_TYPES[ev.type].down;
+    if(evDown && downSince===null){ downSince=ev.date; }
+    else if(!evDown && downSince!==null){ totalDowntimeHari += Math.max(0,diffDays(downSince, ev.date)); downSince=null; }
+    if(ev.type==='selesai') closed=true;
+  });
+  if(downSince!==null){ totalDowntimeHari += Math.max(0,diffDays(downSince, todayIso())); berjalan=true; }
+  const waktuMandor = (firstLapor && firstDiteruskan) ? diffDays(firstLapor, firstDiteruskan) : null;
+  const waktuAntre = firstMasuk ? diffDays(firstDiteruskan||firstLapor||firstMasuk, firstMasuk) : null;
+  const lastEv = events[events.length-1] || null;
+  return {events, totalDowntimeHari, berjalan, closed, waktuMandor, waktuAntre, lastEv};
+}
+function kasusStatusBadge(k){
+  const m = computeKasusMetrics(k);
+  if(!m.lastEv) return {label:'Belum ada kejadian', color:'var(--on-surface-variant)', bg:'var(--surface-container-high)'};
+  if(m.lastEv.type==='selesai') return {label:'Selesai', color:'var(--success)', bg:'var(--success-container)'};
+  if(m.lastEv.type==='masuk_workshop' || (m.lastEv.type==='tunggu_sparepart' && m.lastEv.down))
+    return {label:EVENT_TYPES[m.lastEv.type].label, color:'var(--danger)', bg:'var(--danger-container)'};
+  return {label:EVENT_TYPES[m.lastEv.type].label, color:'var(--warn)', bg:'var(--warn-container)'};
+}
+function sparepartSuggest(field){
+  const set = new Set();
+  PERBAIKAN.forEach(k=>(k.spareparts||[]).forEach(sp=>{ if(sp[field]) set.add(sp[field]); }));
+  return [...set];
+}
+function openPerbaikanModal(){
+  closeDrawer();
+  window._pbUnit = USER.mainBt || (UNITS[0] && UNITS[0].id) || '';
+  renderPerbaikanModal();
+}
+function renderPerbaikanModal(){
+  const unitId = window._pbUnit;
+  const list = unitId ? kasusForBt(unitId) : [];
+  openModal(`
+    <div class="mhead"><h2>Kasus Perbaikan &amp; Downtime</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    ${UNITS.length===0 ? '<div class="empty-note">Tambah data No Unit dulu di Master Data.</div>' : `
+    <label class="flabel">Unit</label>
+    <select onchange="window._pbUnit=this.value;renderPerbaikanModal();">
+      ${UNITS.map(u=>`<option value="${u.id}" ${u.id===unitId?'selected':''}>${escapeHtml(u.kode)}${u.id===USER.mainBt?' (Unit Saya)':''}</option>`).join('')}
+    </select>
+    <button class="btn-block" onclick="openKasusBaruForm()">&#10133; Kasus Baru</button>
+    <button class="btn-block outline" style="margin-top:8px;" onclick="openLaporanPerbaikan()">&#128424;&#65039; Lihat &amp; Cetak Laporan</button>
+    <div class="section-eyebrow">Daftar Kasus ${escapeHtml(btLabel(unitId))}</div>
+    ${list.length===0 ? '<div class="empty-note">Belum ada kasus perbaikan untuk unit ini.</div>' :
+      list.map(k=>{
+        const b = kasusStatusBadge(k); const m = computeKasusMetrics(k);
+        return `<div class="kasus-card" onclick="openKasusDetail('${k.id}')">
+          <div class="kctop">
+            <div><div class="kcunit">${escapeHtml(btLabel(k.btId))}</div><div class="kcjenis">${escapeHtml(k.jenisKerusakan||'-')}</div></div>
+            <span class="status-badge" style="background:${b.bg};color:${b.color};">${b.label}</span>
+          </div>
+          <div class="kcmeta">${m.totalDowntimeHari>0 || m.berjalan ? ('Downtime: '+m.totalDowntimeHari+' hari'+(m.berjalan?' (berjalan)':'')) : 'Belum ada downtime tercatat'}</div>
+        </div>`;
+      }).join('')}
+    `}
+  `);
+}
+function openKasusBaruForm(){
+  const unitId = window._pbUnit;
+  openModal(`
+    <div class="mhead"><h2>Kasus Baru</h2><button class="mclose" onclick="renderPerbaikanModal()">&times;</button></div>
+    <label class="flabel">Unit</label>
+    <select id="kbUnit">${UNITS.map(u=>`<option value="${u.id}" ${u.id===unitId?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}</select>
+    <label class="flabel">Jenis Kerusakan</label>
+    <input type="text" id="kbJenis" placeholder="mis. Rem, Kelistrikan, Mesin">
+    <button class="btn-block" onclick="createKasusBaru()">Buat Kasus</button>
+  `);
+}
+function createKasusBaru(){
+  const btId = document.getElementById('kbUnit').value;
+  const jenisKerusakan = document.getElementById('kbJenis').value.trim();
+  if(!jenisKerusakan){ toast('Isi jenis kerusakan dulu'); return; }
+  const k = {id:uid(), btId, jenisKerusakan, events:[], spareparts:[]};
+  PERBAIKAN.push(k);
+  savePerbaikan();
+  toast('Kasus baru dibuat');
+  openKasusDetail(k.id);
+}
+function deleteKasus(id){
+  if(!confirm('Hapus kasus perbaikan ini beserta seluruh riwayat kejadian dan sparepartnya?')) return;
+  PERBAIKAN = PERBAIKAN.filter(k=>k.id!==id);
+  savePerbaikan();
+  toast('Kasus dihapus');
+  renderPerbaikanModal();
+}
+function openKasusDetail(id){ window._pbKasus = id; window._pbEvForm=false; renderKasusDetail(id); }
+function renderKasusDetail(id){
+  const k = PERBAIKAN.find(x=>x.id===id); if(!k){ renderPerbaikanModal(); return; }
+  const m = computeKasusMetrics(k);
+  const b = kasusStatusBadge(k);
+  const events = m.events;
+  const nameSug = sparepartSuggest('name'), brandSug = sparepartSuggest('brand');
+  openModal(`
+    <div class="mhead"><h2>${escapeHtml(btLabel(k.btId))} &middot; ${escapeHtml(k.jenisKerusakan)}</h2><button class="mclose" onclick="renderPerbaikanModal()">&times;</button></div>
+    <div style="margin-bottom:10px;"><span class="status-badge" style="background:${b.bg};color:${b.color};">${b.label}</span></div>
+
+    <div class="summary-mini">
+      <div class="sbox"><div class="num">${m.totalDowntimeHari}</div><div class="lbl">Hari Downtime${m.berjalan?' (berjalan)':''}</div></div>
+      <div class="sbox"><div class="num">${m.waktuAntre!==null?m.waktuAntre:'-'}</div><div class="lbl">Hari Antre Workshop</div></div>
+    </div>
+    ${m.waktuMandor!==null ? `<div class="field-sub" style="margin-bottom:10px;">Waktu di tangan Mandor: <b>${m.waktuMandor} hari</b></div>` : ''}
+
+    <div class="section-eyebrow-row"><span class="section-eyebrow" style="margin:10px 0 4px;">Riwayat Kejadian</span></div>
+    <div class="timeline">
+      ${events.length===0 ? '<div class="empty-note">Belum ada kejadian.</div>' :
+        events.map(ev=>{
+          const et = EVENT_TYPES[ev.type];
+          let extra = '';
+          if(ev.type==='lapor_mandor' && ev.mandor) extra = 'Mandor: '+escapeHtml(ev.mandor);
+          if(ev.type==='masuk_workshop' && ev.mekanik) extra = 'Mekanik: '+escapeHtml(ev.mekanik);
+          if(ev.type==='tunggu_sparepart') extra = ev.down ? 'Unit ditahan di workshop' : 'Unit dilepas sementara (tetap jalan)';
+          return `<div class="tl-item">
+            <div class="tl-icon">${et.icon}</div>
+            <div class="tl-body">
+              <div class="tl-title">${et.label}</div>
+              <div class="tl-date">${fmtLabel(ev.date)}</div>
+              ${extra?`<div class="tl-note">${extra}</div>`:''}
+              ${ev.note?`<div class="tl-note">${escapeHtml(ev.note)}</div>`:''}
+            </div>
+            <button class="tl-del" onclick="deleteEvent('${k.id}','${ev.id}')">&#128465;</button>
+          </div>`;
+        }).join('')}
+    </div>
+    ${window._pbEvForm ? renderEventForm(k) : `<button class="btn-block outline" onclick="window._pbEvForm=true;renderKasusDetail('${k.id}')">&#10133; Tambah Kejadian</button>`}
+
+    <div class="section-eyebrow">Sparepart</div>
+    <datalist id="spNameList">${nameSug.map(n=>`<option value="${escapeHtml(n)}">`).join('')}</datalist>
+    <datalist id="spBrandList">${brandSug.map(n=>`<option value="${escapeHtml(n)}">`).join('')}</datalist>
+    ${(k.spareparts||[]).length===0 ? '<div class="empty-note">Belum ada sparepart dicatat.</div>' :
+      k.spareparts.map(sp=>`<div class="sp-item">
+        <input type="text" class="spname" list="spNameList" value="${escapeHtml(sp.name)}" placeholder="Nama part" onchange="updateSparepart('${k.id}','${sp.id}','name',this.value)">
+        <input type="text" class="spbrand" list="spBrandList" value="${escapeHtml(sp.brand)}" placeholder="Merk" onchange="updateSparepart('${k.id}','${sp.id}','brand',this.value)">
+        <button class="sptoggle" title="Tap untuk ubah status" onclick="toggleSparepartStatus('${k.id}','${sp.id}')">${sp.status==='terpasang'?'&#9989;':'&#128992;'}</button>
+        ${sp.status==='terpasang' ? `<input type="date" class="spdate" value="${sp.tglTerpasang||todayIso()}" onchange="updateSparepart('${k.id}','${sp.id}','tglTerpasang',this.value)">` : ''}
+        <button class="tl-del" onclick="deleteSparepart('${k.id}','${sp.id}')">&#128465;</button>
+      </div>`).join('')}
+    <button class="add-link" style="display:flex;align-items:center;gap:6px;color:var(--primary);font-weight:700;font-size:13px;background:none;border:none;cursor:pointer;padding:6px 2px;" onclick="addSparepart('${k.id}')">&#10133; Tambah Sparepart</button>
+
+    <button class="btn-block" style="margin-top:16px;background:var(--danger-container);color:var(--danger);" onclick="deleteKasus('${k.id}')">Hapus Kasus Ini</button>
+  `);
+}
+function renderEventForm(k){
+  window._pbEvType = window._pbEvType || 'lapor_mandor';
+  window._pbEvDown = window._pbEvDown || false;
+  const t = window._pbEvType;
+  return `<div class="ev-form">
+    <label class="flabel">Jenis Kejadian</label>
+    <select onchange="window._pbEvType=this.value;renderKasusDetail('${k.id}')">
+      ${Object.keys(EVENT_TYPES).map(key=>`<option value="${key}" ${key===t?'selected':''}>${EVENT_TYPES[key].label}</option>`).join('')}
+    </select>
+    <label class="flabel">Tanggal</label>
+    <input type="date" id="evDate" value="${todayIso()}">
+    ${t==='lapor_mandor' ? '<label class="flabel">Nama Mandor/Pengawas</label><input type="text" id="evMandor" placeholder="mis. Pak Slamet">' : ''}
+    ${t==='masuk_workshop' ? '<label class="flabel">Mekanik</label><input type="text" id="evMekanik" placeholder="mis. Pak Budi">' : ''}
+    ${t==='tunggu_sparepart' ? `<label class="flabel">Kondisi Unit</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button type="button" class="chip ${!window._pbEvDown?'active':''}" onclick="window._pbEvDown=false;renderKasusDetail('${k.id}')">Dilepas sementara (jalan)</button>
+        <button type="button" class="chip ${window._pbEvDown?'active':''}" onclick="window._pbEvDown=true;renderKasusDetail('${k.id}')">Ditahan di workshop (down)</button>
+      </div>` : ''}
+    <label class="flabel">Catatan (opsional)</label>
+    <input type="text" id="evNote" placeholder="mis. keterangan tambahan">
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn-block outline" style="flex:1;" onclick="window._pbEvForm=false;renderKasusDetail('${k.id}')">Batal</button>
+      <button class="btn-block" style="flex:1;" onclick="saveEvent('${k.id}')">Simpan</button>
+    </div>
+  </div>`;
+}
+function saveEvent(kasusId){
+  const k = PERBAIKAN.find(x=>x.id===kasusId); if(!k) return;
+  const type = window._pbEvType;
+  const date = document.getElementById('evDate').value;
+  if(!date){ toast('Isi tanggal dulu'); return; }
+  const note = document.getElementById('evNote') ? document.getElementById('evNote').value.trim() : '';
+  const ev = {id:uid(), type, date, note};
+  if(type==='lapor_mandor') ev.mandor = document.getElementById('evMandor') ? document.getElementById('evMandor').value.trim() : '';
+  if(type==='masuk_workshop') ev.mekanik = document.getElementById('evMekanik') ? document.getElementById('evMekanik').value.trim() : '';
+  if(type==='tunggu_sparepart') ev.down = !!window._pbEvDown;
+  k.events = k.events || [];
+  k.events.push(ev);
+  savePerbaikan();
+  toast('Kejadian dicatat');
+  window._pbEvForm=false; window._pbEvType=null; window._pbEvDown=false;
+  renderKasusDetail(kasusId);
+}
+function deleteEvent(kasusId, evId){
+  const k = PERBAIKAN.find(x=>x.id===kasusId); if(!k) return;
+  if(!confirm('Hapus kejadian ini?')) return;
+  k.events = (k.events||[]).filter(e=>e.id!==evId);
+  savePerbaikan();
+  renderKasusDetail(kasusId);
+}
+function addSparepart(kasusId){
+  const k = PERBAIKAN.find(x=>x.id===kasusId); if(!k) return;
+  k.spareparts = k.spareparts || [];
+  k.spareparts.push({id:uid(), name:'', brand:'', status:'diminta', tglTerpasang:''});
+  savePerbaikan();
+  renderKasusDetail(kasusId);
+}
+function updateSparepart(kasusId, spId, field, value){
+  const k = PERBAIKAN.find(x=>x.id===kasusId); if(!k) return;
+  const sp = (k.spareparts||[]).find(s=>s.id===spId); if(!sp) return;
+  sp[field] = value;
+  savePerbaikan();
+}
+function toggleSparepartStatus(kasusId, spId){
+  const k = PERBAIKAN.find(x=>x.id===kasusId); if(!k) return;
+  const sp = (k.spareparts||[]).find(s=>s.id===spId); if(!sp) return;
+  sp.status = sp.status==='terpasang' ? 'diminta' : 'terpasang';
+  if(sp.status==='terpasang' && !sp.tglTerpasang) sp.tglTerpasang = todayIso();
+  savePerbaikan();
+  renderKasusDetail(kasusId);
+}
+function deleteSparepart(kasusId, spId){
+  const k = PERBAIKAN.find(x=>x.id===kasusId); if(!k) return;
+  k.spareparts = (k.spareparts||[]).filter(s=>s.id!==spId);
+  savePerbaikan();
+  renderKasusDetail(kasusId);
+}
+
+/* ---- Laporan Downtime & Sparepart ---- */
+function openLaporanPerbaikan(){
+  window._lapUnit = window._pbUnit || USER.mainBt || 'semua';
+  window._lapFrom = ''; window._lapTo = '';
+  window._lapStatusSelesai = true; window._lapStatusBelum = true;
+  window._lapInclDowntime = true; window._lapInclSparepart = true;
+  renderLaporanPerbaikan();
+}
+function laporanFilteredKasus(){
+  let list = PERBAIKAN.slice();
+  if(window._lapUnit && window._lapUnit!=='semua') list = list.filter(k=>k.btId===window._lapUnit);
+  list = list.filter(k=>{
+    const m = computeKasusMetrics(k);
+    if(m.closed && !window._lapStatusSelesai) return false;
+    if(!m.closed && !window._lapStatusBelum) return false;
+    if(window._lapFrom || window._lapTo){
+      const led = lastEventDate(k);
+      if(!led) return false;
+      if(window._lapFrom && led < window._lapFrom) return false;
+      if(window._lapTo && led > window._lapTo) return false;
+    }
+    return true;
+  });
+  return list.sort((a,b)=>(lastEventDate(b)||'').localeCompare(lastEventDate(a)||''));
+}
+function renderLaporanPerbaikan(){
+  const list = laporanFilteredKasus();
+  let totalKejadian = list.length, totalHari = 0, totalAntre=0, countAntre=0, berjalanCount=0;
+  list.forEach(k=>{ const m=computeKasusMetrics(k); totalHari+=m.totalDowntimeHari; if(m.berjalan) berjalanCount++; if(m.waktuAntre!==null){totalAntre+=m.waktuAntre;countAntre++;} });
+  const rataHari = totalKejadian ? (totalHari/totalKejadian).toFixed(1) : '0';
+  const rataAntre = countAntre ? (totalAntre/countAntre).toFixed(1) : '-';
+  openModal(`
+    <div class="mhead"><h2>Laporan Downtime</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div class="card card-flat">
+      <label class="flabel">Unit</label>
+      <select onchange="window._lapUnit=this.value;renderLaporanPerbaikan();">
+        <option value="semua" ${window._lapUnit==='semua'?'selected':''}>Semua Unit</option>
+        ${UNITS.map(u=>`<option value="${u.id}" ${u.id===window._lapUnit?'selected':''}>${escapeHtml(u.kode)}${u.id===USER.mainBt?' (Unit Saya)':''}</option>`).join('')}
+      </select>
+      <div class="row2" style="display:flex;gap:8px;">
+        <div style="flex:1;"><label class="flabel">Dari</label><input type="date" onchange="window._lapFrom=this.value;renderLaporanPerbaikan();" value="${window._lapFrom}"></div>
+        <div style="flex:1;"><label class="flabel">Sampai</label><input type="date" onchange="window._lapTo=this.value;renderLaporanPerbaikan();" value="${window._lapTo}"></div>
+      </div>
+      <label class="flabel" style="margin-top:4px;">Status</label>
+      <div class="filter-grid">
+        <label class="check-item"><input type="checkbox" ${window._lapStatusSelesai?'checked':''} onchange="window._lapStatusSelesai=this.checked;renderLaporanPerbaikan();"> Selesai</label>
+        <label class="check-item"><input type="checkbox" ${window._lapStatusBelum?'checked':''} onchange="window._lapStatusBelum=this.checked;renderLaporanPerbaikan();"> Belum Selesai</label>
+      </div>
+      <label class="flabel" style="margin-top:8px;">Sertakan di Laporan</label>
+      <div class="filter-grid">
+        <label class="check-item"><input type="checkbox" ${window._lapInclDowntime?'checked':''} onchange="window._lapInclDowntime=this.checked;renderLaporanPerbaikan();"> Riwayat Downtime</label>
+        <label class="check-item"><input type="checkbox" ${window._lapInclSparepart?'checked':''} onchange="window._lapInclSparepart=this.checked;renderLaporanPerbaikan();"> Ketahanan Sparepart</label>
+      </div>
+    </div>
+
+    <div class="section-eyebrow">Ringkasan</div>
+    <div class="summary-mini">
+      <div class="sbox"><div class="num">${totalKejadian}</div><div class="lbl">Kejadian</div></div>
+      <div class="sbox"><div class="num">${totalHari}</div><div class="lbl">Hari Downtime</div></div>
+    </div>
+    <div class="summary-mini">
+      <div class="sbox"><div class="num">${rataHari}</div><div class="lbl">Rata² Hari</div></div>
+      <div class="sbox" style="${berjalanCount>0?'background:var(--danger-container);':''}"><div class="num" style="${berjalanCount>0?'color:var(--danger);':''}">${berjalanCount}</div><div class="lbl" style="${berjalanCount>0?'color:var(--danger);':''}">Masih Berjalan</div></div>
+    </div>
+    <div class="field-sub" style="margin-bottom:10px;">Rata-rata waktu antre workshop: <b>${rataAntre}${rataAntre!=='-'?' hari':''}</b></div>
+
+    ${window._lapInclDowntime ? `
+    <div class="section-eyebrow">Riwayat Kejadian</div>
+    <div class="card">
+      ${list.length===0 ? '<div class="empty-note">Tidak ada kasus sesuai filter.</div>' : list.map(k=>{
+        const b = kasusStatusBadge(k); const m = computeKasusMetrics(k);
+        return `<div class="kcmeta" style="border-bottom:1px solid var(--outline-variant);padding:10px 0;">
+          <div style="display:flex;justify-content:space-between;"><b>${escapeHtml(btLabel(k.btId))} &middot; ${escapeHtml(k.jenisKerusakan)}</b><span class="status-badge" style="background:${b.bg};color:${b.color};">${b.label}</span></div>
+          <div class="field-sub">Downtime: ${m.totalDowntimeHari} hari${m.berjalan?' (berjalan)':''}${m.waktuAntre!==null?' &middot; Antre: '+m.waktuAntre+' hari':''}</div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    ${window._lapInclSparepart ? `
+    <div class="section-eyebrow">Ketahanan Sparepart</div>
+    <div class="card card-flat">
+      ${renderKetahananSparepart(list)}
+    </div>` : ''}
+
+    <button class="btn-block" style="margin-top:10px;" onclick="cetakLaporanPerbaikan()">&#128424;&#65039; Cetak Laporan (PDF)</button>
+  `);
+}
+function renderKetahananSparepart(list){
+  // group by (btId, name) across all events with tglTerpasang, sort by date, compute durations between consecutive same-name installs
+  const groups = {};
+  list.forEach(k=>{
+    (k.spareparts||[]).filter(sp=>sp.status==='terpasang' && sp.tglTerpasang && sp.name).forEach(sp=>{
+      const key = k.btId+'|'+sp.name.trim().toLowerCase();
+      groups[key] = groups[key] || {unit:k.btId, name:sp.name, items:[]};
+      groups[key].items.push(sp);
+    });
+  });
+  const keys = Object.keys(groups);
+  if(keys.length===0) return '<div class="empty-note">Belum ada data sparepart terpasang.</div>';
+  return keys.map(key=>{
+    const g = groups[key];
+    g.items.sort((a,b)=>a.tglTerpasang.localeCompare(b.tglTerpasang));
+    let rows = '';
+    for(let i=0;i<g.items.length;i++){
+      const cur = g.items[i]; const next = g.items[i+1];
+      let durasi = next ? diffDays(cur.tglTerpasang, next.tglTerpasang)+' hari' : 'Berjalan';
+      rows += `<div class="sp-row" style="display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;border-bottom:1px dashed var(--outline-variant);">
+        <div><div style="font-weight:700;">${escapeHtml(cur.brand||'(tanpa merk)')}</div><div class="field-sub">Pasang ${fmtLabel(cur.tglTerpasang)}</div></div>
+        <div style="font-weight:800;color:var(--primary);text-align:right;">${durasi}</div>
+      </div>`;
+    }
+    return `<div style="margin-bottom:10px;"><h4 style="margin:0 0 2px;font-size:13px;">${escapeHtml(g.name)} <span class="field-sub">(${escapeHtml(btLabel(g.unit))})</span></h4>${rows}</div>`;
+  }).join('');
+}
+async function cetakLaporanPerbaikan(){
+  if(!window.jspdf){ toast('Library PDF belum siap'); return; }
+  const list = laporanFilteredKasus();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'portrait'});
+  let y = 14;
+  doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text('Laporan Downtime & Sparepart', 10, y); y+=7;
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  const unitLabel = window._lapUnit==='semua' ? 'Semua Unit' : btLabel(window._lapUnit);
+  doc.text('Unit: '+unitLabel, 10, y); y+=5;
+  doc.text('Periode: '+(window._lapFrom?fmtLabel(window._lapFrom):'Awal')+' s/d '+(window._lapTo?fmtLabel(window._lapTo):'Sekarang'), 10, y); y+=5;
+  doc.text('Dicetak: '+fmtLabel(todayIso()), 10, y); y+=8;
+
+  let totalHari=0, totalAntre=0, countAntre=0, berjalanCount=0;
+  list.forEach(k=>{ const m=computeKasusMetrics(k); totalHari+=m.totalDowntimeHari; if(m.berjalan) berjalanCount++; if(m.waktuAntre!==null){totalAntre+=m.waktuAntre;countAntre++;} });
+  doc.setFont(undefined,'bold'); doc.text('Ringkasan', 10, y); y+=6; doc.setFont(undefined,'normal');
+  doc.text('Total kejadian: '+list.length+'   Total hari downtime: '+totalHari+'   Masih berjalan: '+berjalanCount, 10, y); y+=5;
+  doc.text('Rata-rata waktu antre workshop: '+(countAntre?(totalAntre/countAntre).toFixed(1):'-')+' hari', 10, y); y+=9;
+
+  if(window._lapInclDowntime){
+    doc.setFont(undefined,'bold'); doc.text('Riwayat Kejadian', 10, y); y+=6; doc.setFont(undefined,'normal');
+    if(list.length===0){ doc.text('Tidak ada kasus sesuai filter.', 10, y); y+=6; }
+    list.forEach(k=>{
+      if(y>270){ doc.addPage(); y=14; }
+      const m = computeKasusMetrics(k); const b = kasusStatusBadge(k);
+      doc.setFont(undefined,'bold'); doc.text(btLabel(k.btId)+' - '+(k.jenisKerusakan||'-'), 10, y); doc.setFont(undefined,'normal');
+      doc.text('['+b.label+']', 150, y);
+      y+=5;
+      m.events.forEach(ev=>{
+        if(y>270){ doc.addPage(); y=14; }
+        let extra='';
+        if(ev.type==='lapor_mandor'&&ev.mandor) extra=' - Mandor: '+ev.mandor;
+        if(ev.type==='masuk_workshop'&&ev.mekanik) extra=' - Mekanik: '+ev.mekanik;
+        if(ev.type==='tunggu_sparepart') extra = ev.down ? ' - unit ditahan' : ' - unit dilepas sementara';
+        doc.text('  '+fmtLabel(ev.date)+'  '+EVENT_TYPES[ev.type].label.replace(/&[a-z]+;/g,'')+extra, 12, y);
+        y+=4.5;
+      });
+      if((k.spareparts||[]).length){
+        doc.text('  Sparepart: '+k.spareparts.map(sp=>sp.name+(sp.brand?' ('+sp.brand+')':'')+(sp.status==='terpasang'?' - terpasang':' - diminta')).join(', '), 12, y);
+        y+=4.5;
+      }
+      doc.text('  Downtime: '+m.totalDowntimeHari+' hari'+(m.berjalan?' (berjalan)':''), 12, y);
+      y+=7;
+    });
+  }
+
+  if(window._lapInclSparepart){
+    if(y>250){ doc.addPage(); y=14; }
+    doc.setFont(undefined,'bold'); doc.text('Ketahanan Sparepart', 10, y); y+=6; doc.setFont(undefined,'normal');
+    const groups = {};
+    list.forEach(k=>(k.spareparts||[]).filter(sp=>sp.status==='terpasang'&&sp.tglTerpasang&&sp.name).forEach(sp=>{
+      const key=k.btId+'|'+sp.name.trim().toLowerCase();
+      groups[key]=groups[key]||{unit:k.btId,name:sp.name,items:[]};
+      groups[key].items.push(sp);
+    }));
+    const keys = Object.keys(groups);
+    if(keys.length===0){ doc.text('Belum ada data sparepart terpasang.', 10, y); y+=6; }
+    keys.forEach(key=>{
+      if(y>270){ doc.addPage(); y=14; }
+      const g = groups[key];
+      g.items.sort((a,b)=>a.tglTerpasang.localeCompare(b.tglTerpasang));
+      doc.setFont(undefined,'bold'); doc.text(g.name+' ('+btLabel(g.unit)+')', 10, y); doc.setFont(undefined,'normal'); y+=5;
+      for(let i=0;i<g.items.length;i++){
+        if(y>270){ doc.addPage(); y=14; }
+        const cur=g.items[i], next=g.items[i+1];
+        const durasi = next ? diffDays(cur.tglTerpasang,next.tglTerpasang)+' hari' : 'Berjalan';
+        doc.text('  '+(cur.brand||'(tanpa merk)')+' - pasang '+fmtLabel(cur.tglTerpasang)+' - '+durasi, 12, y);
+        y+=4.5;
+      }
+      y+=3;
+    });
+  }
+
+  const pdfBlob = doc.output('blob');
+  const result = await saveOrShareBlob(pdfBlob, 'laporan-downtime-'+todayIso()+'.pdf');
+  toast(result==='shared'?'PDF siap dibagikan':'PDF diunduh');
 }
 
 /* ================= TOMBOL BACK SISTEM (ANDROID) ================= */
