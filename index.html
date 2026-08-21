@@ -31,10 +31,10 @@
 html,body{margin:0;padding:0;background:var(--surface);font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--on-surface);}
 button,input,select,textarea{font-family:inherit;}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
-#topbar{background:var(--navy);color:#fff;padding:calc(14px + env(safe-area-inset-top, 24px)) 16px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+#topbar{background:var(--primary);color:#fff;padding:calc(14px + env(safe-area-inset-top, 24px)) 16px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
 #topbar .hbtn{background:none;border:none;color:#fff;font-size:22px;padding:6px;cursor:pointer;line-height:1;}
 #topbar .titles{flex:1;min-width:0;}
-#topbar .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#D8CBE8;font-weight:700;}
+#topbar .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.85);font-weight:700;}
 #topbar .titlemain{font-size:16px;font-weight:800;margin-top:2px;}
 #topbar .badge{background:var(--primary-container);color:var(--on-primary-container);font-size:12px;font-weight:700;padding:6px 12px;border-radius:100px;white-space:nowrap;}
 #screens{flex:1;overflow-y:auto;padding:16px 16px 100px;}
@@ -169,7 +169,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
   <div class="drawer-footer-credit">By Yohanes Divisi 2</div>
 </div>
 
-<div id="modalOverlay"><div id="modalSheet"></div></div>
+<div id="modalOverlay" onclick="if(event.target===this) closeModal()"><div id="modalSheet"></div></div>
 <datalist id="lokasiSuggest"></datalist>
 <div id="toast"></div>
 
@@ -367,7 +367,9 @@ function renderKelolaBlokModal(){
     </div>
     <div class="card card-flat">
       ${BLOKS.length===0 ? '<div class="empty-note">Belum ada blok. Tambahkan di atas.</div>' :
-        BLOKS.map(b=>`<div class="list-row"><span>${escapeHtml(b.kode)}</span><button class="icon-btn" onclick="deleteBlok('${b.id}')">${ic('trash')}</button></div>`).join('')}
+        `<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:14px;">
+          ${BLOKS.map(b=>`<div class="list-row" style="padding:9px 0;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.kode)}</span><button class="icon-btn" onclick="deleteBlok('${b.id}')">${ic('trash')}</button></div>`).join('')}
+        </div>`}
     </div>
   `);
 }
@@ -1246,8 +1248,8 @@ function renderBeranda(){
   }
 
   host.innerHTML = `
-    <div class="card" style="background:var(--navy);color:#fff;border:none;">
-      <div class="field-sub" style="color:#B9C0D6;">${fmtLabel(todayIso())}</div>
+    <div class="card" style="background:var(--primary);color:#fff;border:none;">
+      <div class="field-sub" style="color:rgba(255,255,255,.85);">${fmtLabel(todayIso())}</div>
       <div style="font-size:18px;font-weight:800;margin-top:2px;">${escapeHtml(USER.name||'Halo!')} &middot; ${escapeHtml(btLabel(bt))}</div>
     </div>
 
@@ -1264,10 +1266,10 @@ function renderBeranda(){
 
     <div class="section-eyebrow">Ringkasan</div>
     <div class="grid2">
-      <div class="card"><div class="field-sub">Total HM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${totalHmBulan.toFixed(1)}</div></div>
-      <div class="card"><div class="field-sub">Overtime Bulan Ini</div><div style="font-size:20px;font-weight:800;">${totalLemburBulan.toFixed(1)} j</div></div>
-      <div class="card"><div class="field-sub">HM/Liter Selamanya</div><div style="font-size:20px;font-weight:800;">${lifetimeRasio!==null?lifetimeRasio.toFixed(2):'-'}</div></div>
-      <div class="card"><div class="field-sub">Total BBM Bulan Ini</div><div style="font-size:20px;font-weight:800;">${fmtThousandsLive(String(Math.round(bbmBulan)))} L</div></div>
+      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('truck',15)}Total BBM</div><div style="font-size:20px;font-weight:800;">${fmtThousandsLive(String(Math.round(bbmBulan)))} L</div></div>
+      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('gear',15)}Total HM</div><div style="font-size:20px;font-weight:800;">${totalHmBulan.toFixed(1)}</div></div>
+      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('hourglass',15)}Overtime</div><div style="font-size:20px;font-weight:800;">${totalLemburBulan.toFixed(1)} j</div></div>
+      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('sync',15)}HM/Liter</div><div style="font-size:20px;font-weight:800;">${lifetimeRasio!==null?lifetimeRasio.toFixed(2):'-'}</div></div>
     </div>
 
     <div class="section-eyebrow section-eyebrow-row">HM &amp; Lembur 15 Hari Terakhir
