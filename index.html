@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Jadwal BT</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#7A4A00">
+<meta name="theme-color" content="#26303B">
 <script src="vendor/jspdf.umd.min.js"></script>
 <script>
   if (!window.jspdf) {
@@ -18,14 +18,14 @@
 <script src="vendor/xlsx.full.min.js"></script>
 <style>
 :root{
-  --primary:#8A5A00; --on-primary:#FFFFFF; --primary-container:#FFDDAE; --on-primary-container:#2B1700;
+  --primary:#E86A1C; --on-primary:#FFFFFF; --primary-container:#FFD9B8; --on-primary-container:#5A2600;
   --secondary:#5C5240; --secondary-container:#E6DCC6;
   --success:#2E7D32; --success-container:#D7ECD9;
   --danger:#B3261E; --danger-container:#F9DEDC;
-  --surface:#FFF8F3; --surface-container:#F3E8DA; --surface-container-high:#ECDFCB; --surface-container-low:#F8EFE4;
-  --on-surface:#1F1B13; --on-surface-variant:#4E4636;
-  --outline:#D6C6AC; --outline-variant:#E8DCC8;
-  --navy:#1C2333;
+  --surface:#FAF7F2; --surface-container:#F1ECE2; --surface-container-high:#E8E1D3; --surface-container-low:#FCFAF6;
+  --on-surface:#26303B; --on-surface-variant:#5A6472;
+  --outline:#D6CFC0; --outline-variant:#E8E2D5;
+  --navy:#26303B;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;background:var(--surface);font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--on-surface);}
@@ -109,7 +109,7 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
 <body>
 <div id="app">
   <div id="topbar">
-    <button class="hbtn" onclick="openDrawer()">&#9776;</button>
+    <button class="hbtn" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
     <div class="titles">
       <div class="eyebrow" id="tb-eyebrow">BERANDA</div>
       <div class="titlemain" id="tb-title">Ringkasan</div>
@@ -151,21 +151,21 @@ label.flabel{display:block;font-size:12px;font-weight:700;color:var(--on-surface
     <div class="sub" id="dw-unit">Unit default: -</div>
   </div>
   <div class="dgroup">Akun</div>
-  <div class="ditem" onclick="openSettingAkun()"><span class="ic">&#9881;</span> Pengaturan Akun</div>
+  <div class="ditem" onclick="openSettingAkun()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.97 7.97 0 000-2l2-1.5-2-3.4-2.4 1a8 8 0 00-1.7-1L15 3h-4l-.3 2.6a8 8 0 00-1.7 1l-2.4-1-2 3.4L6.6 11a7.97 7.97 0 000 2l-2 1.5 2 3.4 2.4-1a8 8 0 001.7 1L11 21h4l.3-2.6a8 8 0 001.7-1l2.4 1 2-3.4-2-1.5z"/></svg></span> Pengaturan Akun</div>
   <div class="dgroup">Master Data</div>
-  <div class="ditem" onclick="openKelolaUnit()"><span class="ic">&#128666;</span> No Unit</div>
-  <div class="ditem" onclick="openKelolaBlok()"><span class="ic">&#128506;</span> No Blok</div>
-  <div class="ditem" onclick="openKelolaJenis()"><span class="ic">&#128203;</span> Jenis Layanan</div>
-  <div class="ditem" onclick="openKelolaTipeAntar()"><span class="ic">&#128101;</span> Tipe (Antar/Jemput)</div>
-  <div class="ditem" onclick="openKelolaKegiatan()"><span class="ic">&#128221;</span> Kegiatan</div>
+  <div class="ditem" onclick="openKelolaUnit()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><path d="M3 7h11v9H3z"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></span> No Unit</div>
+  <div class="ditem" onclick="openKelolaBlok()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg></span> No Blok</div>
+  <div class="ditem" onclick="openKelolaJenis()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg></span> Jenis Layanan</div>
+  <div class="ditem" onclick="openKelolaTipeAntar()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 15.2c2.6.3 4.5 2 4.5 4.8"/></svg></span> Tipe (Antar/Jemput)</div>
+  <div class="ditem" onclick="openKelolaKegiatan()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><path d="M4 6h9M4 12h9M4 18h5"/><path d="M17 14l3 3-5 5h-3v-3z"/></svg></span> Kegiatan</div>
   <div class="dgroup">Servis</div>
-  <div class="ditem" onclick="openServisModal()"><span class="ic">&#128295;</span> Riwayat &amp; Catat Servis</div>
-  <div class="ditem" onclick="openGantiHmModal()"><span class="ic">&#128260;</span> Ganti HM Manual</div>
+  <div class="ditem" onclick="openServisModal()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.8 2.8-2-2 2.8-2.8z"/></svg></span> Riwayat &amp; Catat Servis</div>
+  <div class="ditem" onclick="openGantiHmModal()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><path d="M4 12a8 8 0 0113.7-5.7L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 01-13.7 5.7L4 16"/><path d="M4 20v-4h4"/></svg></span> Ganti HM Manual</div>
   <div class="dgroup">Peta</div>
-  <div class="ditem" onclick="closeDrawer();document.getElementById('petaFileInputDrawer').click()"><span class="ic">&#128247;</span> Ganti Gambar Peta</div>
+  <div class="ditem" onclick="closeDrawer();document.getElementById('petaFileInputDrawer').click()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;"><path d="M4 8h3l2-3h6l2 3h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/></svg></span> Ganti Gambar Peta</div>
   <input type="file" accept="image/*" id="petaFileInputDrawer" style="display:none;" onchange="handlePetaUpload(event)">
   <div class="dgroup">Tentang</div>
-  <div class="drawer-version" id="dw-version">Versi 1.0.13 &middot; 19 Agu 2026</div>
+  <div class="drawer-version" id="dw-version">Versi 1.0.15 &middot; 21 Agu 2026</div>
   <div class="drawer-footer-credit">By Yohanes Divisi 2</div>
 </div>
 
@@ -182,6 +182,35 @@ const LS = {
 function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const ICON_PATHS = {
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 002 2h6a2 2 0 002-2l1-13"/><path d="M10 11v6M14 11v6"/>',
+  warning: '<path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  wrench: '<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.8 2.8-2-2 2.8-2.8z"/>',
+  hammer: '<path d="M14 6l4 4-8.5 8.5a2 2 0 01-2.8 0l-1.2-1.2a2 2 0 010-2.8L14 6z"/><path d="M13 5l6 6M3 21l4-4"/>',
+  edit: '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z"/><path d="M13.5 6.5l4 4"/>',
+  coffee: '<path d="M3 8h14v6a5 5 0 01-5 5H8a5 5 0 01-5-5V8z"/><path d="M17 9h1a3 3 0 010 6h-1"/><path d="M6 3c0 1 1 1 1 2s-1 1-1 2M10 3c0 1 1 1 1 2s-1 1-1 2"/>',
+  hourglass: '<path d="M6 3h12M6 21h12M7 3v4a5 5 0 005 5 5 5 0 005-5V3M7 21v-4a5 5 0 015-5 5 5 0 015 5v4"/>',
+  map: '<path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4V8z"/><circle cx="12" cy="13" r="3.5"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  document: '<path d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M14 3v5h5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.97 7.97 0 000-2l2-1.5-2-3.4-2.4 1a8 8 0 00-1.7-1L15 3h-4l-.3 2.6a8 8 0 00-1.7 1l-2.4-1-2 3.4L6.6 11a7.97 7.97 0 000 2l-2 1.5 2 3.4 2.4-1a8 8 0 001.7 1L11 21h4l.3-2.6a8 8 0 001.7-1l2.4 1 2-3.4-2-1.5z"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 015 5v1"/>',
+  splitfwd: '<path d="M6 3v6a4 4 0 004 4h4"/><path d="M11 10l3 3-3 3"/>',
+  splitback: '<path d="M18 3v6a4 4 0 01-4 4H10"/><path d="M13 10l-3 3 3 3"/>',
+  download: '<path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/>',
+  truck: '<path d="M3 7h11v9H3z"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>',
+  sync: '<path d="M4 12a8 8 0 0113.7-5.7L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 01-13.7 5.7L4 16"/><path d="M4 20v-4h4"/>',
+  notepad: '<path d="M4 6h9M4 12h9M4 18h5"/><path d="M17 14l3 3-5 5h-3v-3z"/>',
+  clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/>',
+  barchart: '<path d="M4 20V10M10 20V4M16 20v-7"/>',
+  people: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 15.2c2.6.3 4.5 2 4.5 4.8"/>'
+};
+function ic(name, size){
+  size = size || 18;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;display:inline-block;">${ICON_PATHS[name]||''}</svg>`;
+}
 function fmtLabel(iso){
   if(!iso) return '-';
   const d = new Date(iso+'T00:00:00');
@@ -303,7 +332,7 @@ function renderKelolaUnitModal(){
     </div>
     <div class="card card-flat">
       ${UNITS.length===0 ? '<div class="empty-note">Belum ada unit. Tambahkan di atas.</div>' :
-        UNITS.map(u=>`<div class="list-row"><span>${escapeHtml(u.kode)}</span><button class="icon-btn" onclick="deleteUnit('${u.id}')">&#128465;</button></div>`).join('')}
+        UNITS.map(u=>`<div class="list-row"><span>${escapeHtml(u.kode)}</span><button class="icon-btn" onclick="deleteUnit('${u.id}')">${ic('trash')}</button></div>`).join('')}
     </div>
   `);
 }
@@ -338,7 +367,7 @@ function renderKelolaBlokModal(){
     </div>
     <div class="card card-flat">
       ${BLOKS.length===0 ? '<div class="empty-note">Belum ada blok. Tambahkan di atas.</div>' :
-        BLOKS.map(b=>`<div class="list-row"><span>${escapeHtml(b.kode)}</span><button class="icon-btn" onclick="deleteBlok('${b.id}')">&#128465;</button></div>`).join('')}
+        BLOKS.map(b=>`<div class="list-row"><span>${escapeHtml(b.kode)}</span><button class="icon-btn" onclick="deleteBlok('${b.id}')">${ic('trash')}</button></div>`).join('')}
     </div>
   `);
 }
@@ -371,7 +400,7 @@ function renderKelolaJenisModal(){
       <button class="pill-btn" onclick="addJenis()">+ Tambah</button>
     </div>
     <div class="card card-flat">
-      ${JENIS_LAYANAN_LIST.map(j=>`<div class="list-row"><span>${escapeHtml(j)}</span><button class="icon-btn" onclick="deleteJenis('${escapeHtml(j)}')">&#128465;</button></div>`).join('')}
+      ${JENIS_LAYANAN_LIST.map(j=>`<div class="list-row"><span>${escapeHtml(j)}</span><button class="icon-btn" onclick="deleteJenis('${escapeHtml(j)}')">${ic('trash')}</button></div>`).join('')}
     </div>
   `);
 }
@@ -406,7 +435,7 @@ function renderKelolaTipeAntarModal(){
     </div>
     <div class="card card-flat">
       ${TIPE_ANTAR_LIST.length===0 ? '<div class="empty-note">Belum ada tipe. Tambahkan di atas.</div>' :
-        TIPE_ANTAR_LIST.map(t=>`<div class="list-row"><span>${escapeHtml(t)}</span><button class="icon-btn" onclick="deleteTipeAntar('${escapeHtml(t)}')">&#128465;</button></div>`).join('')}
+        TIPE_ANTAR_LIST.map(t=>`<div class="list-row"><span>${escapeHtml(t)}</span><button class="icon-btn" onclick="deleteTipeAntar('${escapeHtml(t)}')">${ic('trash')}</button></div>`).join('')}
     </div>
   `);
 }
@@ -441,7 +470,7 @@ function renderKelolaKegiatanModal(){
     </div>
     <div class="card card-flat">
       ${KEGIATAN_LIST.length===0 ? '<div class="empty-note">Belum ada kegiatan. Tambahkan di atas.</div>' :
-        KEGIATAN_LIST.map(k=>`<div class="list-row"><span>${escapeHtml(k)}</span><button class="icon-btn" onclick="deleteKegiatan('${escapeHtml(k)}')">&#128465;</button></div>`).join('')}
+        KEGIATAN_LIST.map(k=>`<div class="list-row"><span>${escapeHtml(k)}</span><button class="icon-btn" onclick="deleteKegiatan('${escapeHtml(k)}')">${ic('trash')}</button></div>`).join('')}
     </div>
   `);
 }
@@ -501,7 +530,7 @@ function handleSelectCustom(fieldKey, val){
 function renderHari(){
   const host = document.getElementById('screen-hari');
   if(!USER.mainBt || UNITS.length===0){
-    host.innerHTML = `<div class="card"><div class="empty-note">Kamu belum punya Unit default atau daftar unit masih kosong.<br><br>Buka menu &#9776; &rarr; Pengaturan Akun &amp; Kelola No Unit dulu ya.</div></div>`;
+    host.innerHTML = `<div class="card"><div class="empty-note">Kamu belum punya Unit default atau daftar unit masih kosong.<br><br>Buka menu ${ic('menu')} &rarr; Pengaturan Akun &amp; Kelola No Unit dulu ya.</div></div>`;
     return;
   }
   const e = getTodayEntry();
@@ -571,15 +600,15 @@ function renderHari(){
         <div><label class="flabel">Absen Pulang</label><input type="time" value="${escapeHtml(e.absenPulang)}" onchange="quickSave('absenPulang', this.value)"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:4px;">
-        <button class="chip ${e.istirahat?'active':''}" onclick="quickSave('istirahat', true);">&#9749; Istirahat</button>
-        <button class="chip ${!e.istirahat?'active':''}" onclick="quickSave('istirahat', false);">&#9203; Lembur</button>
+        <button class="chip ${e.istirahat?'active':''}" onclick="quickSave('istirahat', true);">${ic('coffee')} Istirahat</button>
+        <button class="chip ${!e.istirahat?'active':''}" onclick="quickSave('istirahat', false);">${ic('hourglass')} Lembur</button>
       </div>
       ${e.istirahat ? `
       <div class="grid2" style="margin-top:8px;">
         <div><label class="flabel">Istirahat Mulai</label><input type="text" inputmode="numeric" value="${escapeHtml(e.istMulai)}" placeholder="11.00" oninput="this.value=fmtJamTitikLive(this.value)" onchange="quickSave('istMulai', this.value)"></div>
         <div><label class="flabel">Istirahat Selesai</label><input type="text" inputmode="numeric" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" oninput="this.value=fmtJamTitikLive(this.value)" onchange="quickSave('istSelesai', this.value)"></div>
       </div>` : ''}
-      <div class="chk-row" style="margin-top:8px;"><input type="checkbox" id="qf-liburMerah" ${e.liburMerah?'checked':''} onchange="quickSave('liburMerah', this.checked)"><label for="qf-liburMerah" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
+      <div class="chk-row" style="margin-top:8px;"><input type="checkbox" id="qf-liburMerah" ${e.liburMerah?'checked':''} onchange="quickSave('liburMerah', this.checked)"><label for="qf-liburMerah" style="margin-left:6px;">${ic('calendar')} Tanggal Merah / Libur Nasional</label></div>
       <div class="field-sub" style="margin-top:4px;">Jam lembur dihitung otomatis dari Absen &amp; Istirahat di atas, tapi tetap bisa diedit manual di bawah.</div>
     </div>
 
@@ -588,7 +617,7 @@ function renderHari(){
       <div class="grid2">
         <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSave('hmAwal', this.value);checkHmWarning('qf')" id="qf-hmA"></div>
         <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSave('hmAkhir', this.value);checkHmWarning('qf')" id="qf-hmB"></div>
-        <div class="full" id="qf-hmWarning">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
+        <div class="full" id="qf-hmWarning">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">'+ic('warning')+' HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
         <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSave('bbmLiter', stripDots(this.value))"></div>
         <div><label class="flabel">Jam Lembur</label><input type="text" inputmode="decimal" value="${escapeHtml(e.lembur)}" onchange="quickSave('lembur', this.value)"></div>
       </div>
@@ -659,12 +688,12 @@ function checkHmWarning2(entryId){
   const a=parseFloat(hmA.value), b=parseFloat(hmB.value);
   const bad = !isNaN(a)&&!isNaN(b)&&b<a;
   hmB.classList.toggle('field-error', bad);
-  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>' : '';
+  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);">'+ic('warning')+' HM Akhir lebih kecil dari HM Awal.</div>' : '';
 }
 function renderSecondaryUnitCard(e, idx){
   const jenis = e.jenisLayanan;
   return `
-    <div class="section-eyebrow section-eyebrow-row">Unit Tambahan #${idx}<button class="icon-btn" onclick="deleteSecondaryUnit('${e.id}')">&#128465;</button></div>
+    <div class="section-eyebrow section-eyebrow-row">Unit Tambahan #${idx}<button class="icon-btn" onclick="deleteSecondaryUnit('${e.id}')">${ic('trash')}</button></div>
     <div class="card">
       <label class="flabel">No Unit</label>
       <select onchange="quickSaveEntry('${e.id}','btId', this.value)">
@@ -717,7 +746,7 @@ function renderSecondaryUnitCard(e, idx){
       <div class="grid2" style="margin-top:8px;">
         <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSaveEntry('${e.id}','hmAwal', this.value);checkHmWarning2('${e.id}')" id="qf2-hmA-${e.id}"></div>
         <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="quickSaveEntry('${e.id}','hmAkhir', this.value);checkHmWarning2('${e.id}')" id="qf2-hmB-${e.id}"></div>
-        <div class="full" id="qf2-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
+        <div class="full" id="qf2-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">'+ic('warning')+' HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
         <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="quickSaveEntry('${e.id}','bbmLiter', stripDots(this.value))"></div>
         <div><label class="flabel">Jam Lembur (manual)</label><input type="text" inputmode="decimal" value="${escapeHtml(e.lembur)}" onchange="quickSaveEntry('${e.id}','lembur', this.value)"></div>
       </div>
@@ -794,7 +823,7 @@ function checkHmWarning(ctx){
   const a=parseFloat(hmA.value), b=parseFloat(hmB.value);
   const bad = !isNaN(a)&&!isNaN(b)&&b<a;
   hmB.classList.toggle('field-error', bad);
-  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>' : '';
+  if(warnEl) warnEl.innerHTML = bad ? '<div class="field-sub" style="color:var(--danger);">'+ic('warning')+' HM Akhir lebih kecil dari HM Awal.</div>' : '';
 }
 function parseHHMM(s){
   if(!s) return null;
@@ -985,15 +1014,15 @@ function renderServisListItem(s){
   if(s.type==='berkala'){
     const chips=[]; if(s.filterSolar) chips.push('Filter Solar'); if(s.filterUdara) chips.push('Filter Udara'); if(s.filterOli) chips.push('Filter Oli');
     return `<div class="card" style="margin-bottom:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;">
-      <div><div style="font-weight:700;">&#128295; ${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm)}</div>${chips.length?`<div class="field-sub">${escapeHtml(chips.join(', '))}</div>`:''}${s.note?`<div class="field-sub">${escapeHtml(s.note)}</div>`:''}</div>
-      <button class="icon-btn" onclick="deleteServis('${s.id}')">&#128465;</button>
+      <div><div style="font-weight:700;">${ic('wrench')} ${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm)}</div>${chips.length?`<div class="field-sub">${escapeHtml(chips.join(', '))}</div>`:''}${s.note?`<div class="field-sub">${escapeHtml(s.note)}</div>`:''}</div>
+      <button class="icon-btn" onclick="deleteServis('${s.id}')">${ic('trash')}</button>
     </div>`;
   }
   const isLegacy = !('jenisKerusakan' in s);
   if(isLegacy){
     return `<div class="card" style="margin-bottom:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;">
-      <div><div style="font-weight:700;">&#128296; ${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm||'-')} <span class="field-sub">(Lainnya)</span></div>${s.note?`<div class="field-sub">${escapeHtml(s.note)}</div>`:''}</div>
-      <button class="icon-btn" onclick="deleteServis('${s.id}')">&#128465;</button>
+      <div><div style="font-weight:700;">${ic('hammer')} ${fmtLabel(s.date)} &middot; HM ${escapeHtml(s.hm||'-')} <span class="field-sub">(Lainnya)</span></div>${s.note?`<div class="field-sub">${escapeHtml(s.note)}</div>`:''}</div>
+      <button class="icon-btn" onclick="deleteServis('${s.id}')">${ic('trash')}</button>
     </div>`;
   }
   const dt = daysBetween(s.tglMasukWorkshop, s.tglSelesai);
@@ -1002,17 +1031,17 @@ function renderServisListItem(s){
   return `<div class="card" style="margin-bottom:10px;">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleServisCase('${s.id}')">
       <div>
-        <div style="font-weight:700;">&#128296; ${escapeHtml(s.jenisKerusakan||'Perbaikan')}</div>
+        <div style="font-weight:700;">${ic('hammer')} ${escapeHtml(s.jenisKerusakan||'Perbaikan')}</div>
         <div class="field-sub">${statusLabel}</div>
       </div>
-      <span class="icon-btn">&#9998;</span>
+      <span class="icon-btn">${ic('edit')}</span>
     </div>
     ${expanded ? `
       <div style="margin-top:12px;">
         ${servisLainnyaFields(s.id, s)}
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button class="btn-block" style="flex:1;" onclick="toggleServisCase('${s.id}')">Selesai</button>
-          <button class="pill-btn outline" onclick="exportServisCasePdf('${s.id}')">&#128196; Cetak</button>
+          <button class="pill-btn outline" onclick="exportServisCasePdf('${s.id}')">${ic('document')} Cetak</button>
           <button class="pill-btn outline" onclick="deleteServis('${s.id}')">Hapus</button>
         </div>
       </div>
@@ -1057,9 +1086,9 @@ async function exportServisCasePdf(id){
   ];
   doc.autoTable({
     head:[['Tahap','Tanggal','Mekanik']], body: kron,
-    startY: doc.lastAutoTable.finalY+10, styles:{fontSize:10, cellPadding:4}, headStyles:{fillColor:[138,90,0]}, theme:'grid',
+    startY: doc.lastAutoTable.finalY+10, styles:{fontSize:10, cellPadding:4}, headStyles:{fillColor:[232,106,28]}, theme:'grid',
     foot: [['Durasi Downtime', dt!==null?dt+' hari':'-', ''], ['Durasi Total', tot!==null?tot+' hari':'-', '']],
-    footStyles:{fillColor:[255,221,174], textColor:[30,20,0], fontStyle:'bold'}
+    footStyles:{fillColor:[255,217,184], textColor:[38,48,59], fontStyle:'bold'}
   });
   const pdfBlob = doc.output('blob');
   const result = await saveOrShareBlob(pdfBlob, 'servis-'+s.id.slice(0,6)+'.pdf');
@@ -1088,8 +1117,8 @@ function renderServisModal(){
     <div class="card card-flat">
       <label class="flabel">Jenis</label>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="chip ${window._svcType!=='lainnya'?'active':''}" onclick="setSvcType('berkala')">&#128295; Servis Berkala (Ganti Oli)</button>
-        <button class="chip ${window._svcType==='lainnya'?'active':''}" onclick="setSvcType('lainnya')">&#128296; Lainnya (Perbaikan)</button>
+        <button class="chip ${window._svcType!=='lainnya'?'active':''}" onclick="setSvcType('berkala')">${ic('wrench')} Servis Berkala (Ganti Oli)</button>
+        <button class="chip ${window._svcType==='lainnya'?'active':''}" onclick="setSvcType('lainnya')">${ic('hammer')} Lainnya (Perbaikan)</button>
       </div>
       <div class="field-sub" style="margin:-6px 0 12px;">${window._svcType==='lainnya' ? 'Tidak mereset hitungan pengingat servis.' : 'Akan mereset hitungan pengingat servis (ambang batas jam).'}</div>
       ${window._svcType!=='lainnya' ? `
@@ -1156,7 +1185,7 @@ function renderGantiHmModal(){
     <div class="section-eyebrow">Riwayat Perubahan HM</div>
     <div class="card card-flat">
       ${history.length===0 ? '<div class="empty-note">Belum pernah ada perubahan HM.</div>' :
-        history.map(r=>`<div class="list-row"><span>${fmtLabel(r.date)}<br><span class="field-sub">${escapeHtml(r.note||'')}</span></span><button class="icon-btn" onclick="deleteHmReset('${r.id}')">&#128465;</button></div>`).join('')}
+        history.map(r=>`<div class="list-row"><span>${fmtLabel(r.date)}<br><span class="field-sub">${escapeHtml(r.note||'')}</span></span><button class="icon-btn" onclick="deleteHmReset('${r.id}')">${ic('trash')}</button></div>`).join('')}
     </div>
     `}
   `);
@@ -1180,7 +1209,7 @@ function deleteHmReset(id){
 function renderBeranda(){
   const host = document.getElementById('screen-beranda');
   if(!USER.mainBt || UNITS.length===0){
-    host.innerHTML = `<div class="card"><div class="empty-note">Selamat datang! Buka menu &#9776; &rarr; Pengaturan Akun &amp; Kelola No Unit dulu untuk mulai.</div></div>`;
+    host.innerHTML = `<div class="card"><div class="empty-note">Selamat datang! Buka menu ${ic('menu')} &rarr; Pengaturan Akun &amp; Kelola No Unit dulu untuk mulai.</div></div>`;
     return;
   }
   const bt = USER.mainBt;
@@ -1243,8 +1272,8 @@ function renderBeranda(){
 
     <div class="section-eyebrow section-eyebrow-row">HM &amp; Lembur 15 Hari Terakhir
       <span style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;color:var(--on-surface-variant);">
-        <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#D9A65C;display:inline-block;"></span>HM</span>
-        <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#8EC5E8;display:inline-block;"></span>Lembur</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#E8A33D;display:inline-block;"></span>HM</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#5B7C99;display:inline-block;"></span>Lembur</span>
       </span>
     </div>
     <div class="card">
@@ -1254,8 +1283,8 @@ function renderBeranda(){
           const lemburH = Math.max(d.lembur>0?4:0, d.lembur/maxTotal15*70);
           return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
           <div style="width:100%;display:flex;flex-direction:column-reverse;">
-            <div style="width:100%;background:#D9A65C;border-radius:${d.lembur>0?'0':'4px 4px'} 0 0;height:${hmH}px;"></div>
-            ${d.lembur>0?`<div style="width:100%;background:#8EC5E8;border-radius:4px 4px 0 0;height:${lemburH}px;"></div>`:''}
+            <div style="width:100%;background:#E8A33D;border-radius:${d.lembur>0?'0':'4px 4px'} 0 0;height:${hmH}px;"></div>
+            ${d.lembur>0?`<div style="width:100%;background:#5B7C99;border-radius:4px 4px 0 0;height:${lemburH}px;"></div>`:''}
           </div>
           <div class="field-sub" style="font-size:10.5px;">${d.iso.slice(8,10)}</div>
         </div>`;}).join('')}
@@ -1384,7 +1413,7 @@ function renderRekap(){
   const sorted = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date));
   host.innerHTML = `
     <div style="position:sticky;top:0;z-index:5;background:var(--surface);padding-top:1px;margin:0 -16px;padding-left:16px;padding-right:16px;">
-      <button class="btn-block" onclick="openExportSheet()">&#8595; Export Laporan</button>
+      <button class="btn-block" onclick="openExportSheet()">${ic('download')} Export Laporan</button>
 
       ${missing.length>0 ? `
       <div class="section-eyebrow">Belum Diisi (30 Hari Terakhir)</div>
@@ -1410,7 +1439,7 @@ function renderRekap(){
             <div style="flex:1;min-width:0;">
               <div style="font-weight:800;">${fmtLabel(e.date)}</div>
               <div class="field-sub">${escapeHtml(btLabel(e.btId))}${e.jenisLayanan?' &middot; '+escapeHtml(entryTipeLabel(e)):''} &middot; HM ${escapeHtml(e.hmAwal||'-')}&rarr;${escapeHtml(e.hmAkhir||'-')} &middot; ${escapeHtml(e.bbmLiter||'0')} L</div>
-              ${isDup?'<div class="field-sub" style="color:var(--danger);font-weight:700;">&#9888;&#65039; Ada entri lain di tanggal &amp; unit yang sama</div>':''}
+              ${isDup?'<div class="field-sub" style="color:var(--danger);font-weight:700;">'+ic('warning')+' Ada entri lain di tanggal &amp; unit yang sama</div>':''}
             </div>
           </div>
           <div id="editrow-${e.id}" style="display:${expandedRowId===e.id?'block':'none'};margin-top:12px;">
@@ -1418,7 +1447,7 @@ function renderRekap(){
               <div><label class="flabel">No Unit</label><select onchange="editEntryField('${e.id}','btId',this.value)">${UNITS.map(u=>`<option value="${u.id}" ${e.btId===u.id?'selected':''}>${escapeHtml(u.kode)}</option>`).join('')}</select></div>
               <div><label class="flabel">Tanggal</label><input type="date" value="${e.date}" onchange="editEntryField('${e.id}','date',this.value)"></div>
             </div>
-            <button class="pill-btn sm outline" style="width:100%;justify-content:center;margin-bottom:8px;" onclick="toggleSecondaryFlag('${e.id}')">${e.isSecondary ? '&#8617; Jadikan Entri Utama (pakai absen)' : '&#8618; Jadikan Entri Tambahan (tanpa absen, lembur manual)'}</button>
+            <button class="pill-btn sm outline" style="width:100%;justify-content:center;margin-bottom:8px;" onclick="toggleSecondaryFlag('${e.id}')">${e.isSecondary ? ic('splitback')+' Jadikan Entri Utama (pakai absen)' : ic('splitfwd')+' Jadikan Entri Tambahan (tanpa absen, lembur manual)'}</button>
 
             <div class="section-eyebrow" style="margin-top:8px;">Jenis Layanan</div>
             <label class="flabel">Jenis Layanan</label>
@@ -1470,15 +1499,15 @@ function renderRekap(){
               <div><label class="flabel">Absen Pulang</label><input type="time" value="${escapeHtml(e.absenPulang)}" onchange="editEntryField('${e.id}','absenPulang',this.value)"></div>
             </div>
             <div style="display:flex;gap:8px;margin-top:4px;">
-              <button class="chip ${e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',true)">&#9749; Istirahat</button>
-              <button class="chip ${!e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',false)">&#9203; Lembur</button>
+              <button class="chip ${e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',true)">${ic('coffee')} Istirahat</button>
+              <button class="chip ${!e.istirahat?'active':''}" onclick="editEntryField('${e.id}','istirahat',false)">${ic('hourglass')} Lembur</button>
             </div>
             ${e.istirahat ? `
             <div class="grid2" style="margin-top:8px;">
               <div><label class="flabel">Istirahat Mulai</label><input type="text" inputmode="numeric" value="${escapeHtml(e.istMulai)}" placeholder="11.00" oninput="this.value=fmtJamTitikLive(this.value)" onchange="editEntryField('${e.id}','istMulai',this.value)"></div>
               <div><label class="flabel">Istirahat Selesai</label><input type="text" inputmode="numeric" value="${escapeHtml(e.istSelesai)}" placeholder="13.30" oninput="this.value=fmtJamTitikLive(this.value)" onchange="editEntryField('${e.id}','istSelesai',this.value)"></div>
             </div>` : ''}
-            <div class="chk-row" style="margin-top:8px;"><input type="checkbox" id="ed-liburMerah-${e.id}" ${e.liburMerah?'checked':''} onchange="editEntryField('${e.id}','liburMerah',this.checked)"><label for="ed-liburMerah-${e.id}" style="margin-left:6px;">&#128197; Tanggal Merah / Libur Nasional</label></div>
+            <div class="chk-row" style="margin-top:8px;"><input type="checkbox" id="ed-liburMerah-${e.id}" ${e.liburMerah?'checked':''} onchange="editEntryField('${e.id}','liburMerah',this.checked)"><label for="ed-liburMerah-${e.id}" style="margin-left:6px;">${ic('calendar')} Tanggal Merah / Libur Nasional</label></div>
             ` : `
             <div class="field-sub" style="margin-top:10px;">Ini entri tambahan (tanggal ini sudah ada entri lain) — tanpa absen otomatis, Jam Lembur di bawah diisi manual.</div>
             `}
@@ -1487,7 +1516,7 @@ function renderRekap(){
             <div class="grid2">
               <div><label class="flabel">HM Awal</label><input type="text" inputmode="numeric" id="ed-hmA-${e.id}" value="${escapeHtml(e.hmAwal)}" oninput="this.value=fmtHmLive(this.value)" onchange="editEntryField('${e.id}','hmAwal',this.value);checkHmWarning('${e.id}')"></div>
               <div><label class="flabel">HM Akhir</label><input type="text" inputmode="numeric" id="ed-hmB-${e.id}" class="${hmBad(e)?'field-error':''}" value="${escapeHtml(e.hmAkhir)}" oninput="this.value=fmtHmLive(this.value)" onchange="editEntryField('${e.id}','hmAkhir',this.value);checkHmWarning('${e.id}')"></div>
-              <div class="full" id="ed-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">&#9888;&#65039; HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
+              <div class="full" id="ed-hmWarning-${e.id}">${hmBad(e)?'<div class="field-sub" style="color:var(--danger);">'+ic('warning')+' HM Akhir lebih kecil dari HM Awal.</div>':''}</div>
               <div><label class="flabel">BBM (liter)</label><input type="text" inputmode="numeric" value="${escapeHtml(fmtThousandsLive(e.bbmLiter))}" oninput="this.value=fmtThousandsLive(this.value)" onchange="editEntryField('${e.id}','bbmLiter',stripDots(this.value))"></div>
               <div><label class="flabel">Jam Lembur</label><input type="text" value="${escapeHtml(e.lembur)}" onchange="editEntryField('${e.id}','lembur',this.value)"></div>
             </div>
@@ -1557,7 +1586,7 @@ function renderPeta(){
       <div class="card" style="margin-top:8px;">
         <div class="empty-note">Belum ada gambar peta. Upload gambar peta kebun (dari galeri HP) untuk mulai menandai blok kerja.</div>
         <input type="file" accept="image/*" id="petaFileInput" style="display:none;" onchange="handlePetaUpload(event)">
-        <button class="btn-block" onclick="document.getElementById('petaFileInput').click()">&#128247; Upload Gambar Peta</button>
+        <button class="btn-block" onclick="document.getElementById('petaFileInput').click()">${ic('camera')} Upload Gambar Peta</button>
       </div>`;
     return;
   }
@@ -1583,7 +1612,7 @@ function renderPeta(){
       <div style="position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom, 20px));background:var(--surface);border-radius:16px;padding:12px 14px;box-shadow:0 3px 12px rgba(0,0,0,.3);z-index:45;">
         <div class="field-sub" style="margin-bottom:8px;">Menggambar blok: ${petaDrawPoints.length} titik. Tap tiap sudut, lalu Simpan.</div>
         <div style="display:flex;gap:8px;">
-          <button class="pill-btn sm outline" style="flex:1;justify-content:center;" onclick="undoPetaPoint()">&#8630; Undo</button>
+          <button class="pill-btn sm outline" style="flex:1;justify-content:center;" onclick="undoPetaPoint()">${ic('undo')} Undo</button>
           <button class="pill-btn sm" style="flex:1;justify-content:center;" onclick="finishPetaDraw()">Simpan</button>
           <button class="pill-btn sm outline" style="flex:1;justify-content:center;" onclick="cancelPetaDraw()">Batal</button>
         </div>
@@ -1767,10 +1796,10 @@ function showPetaBlock(id){
   if(!b) return;
   _petaActiveBlockId = id;
   openModal(`
-    <div class="mhead"><h2>&#128506; ${escapeHtml(b.label)}</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
+    <div class="mhead"><h2>${ic('map')} ${escapeHtml(b.label)}</h2><button class="mclose" onclick="closeModal()">&times;</button></div>
     <div class="field-sub" style="margin-bottom:16px;">Ditandai: ${fmtLabel(b.date)}</div>
     <button class="btn-block" onclick="usePetaBlockAsLokasi('${b.id}')">Jadikan Lokasi Hari Ini</button>
-    <button class="pill-btn outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="editPetaBlockName('${b.id}')">&#9998; Edit Nama</button>
+    <button class="pill-btn outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="editPetaBlockName('${b.id}')">${ic('edit')} Edit Nama</button>
     <button class="pill-btn outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="deletePetaBlock('${b.id}');closeModal();">Hapus Blok</button>
   `);
 }
@@ -1825,8 +1854,8 @@ function openExportSheet(){
       ${ALL_EXPORT_HEADERS.map(h=>`<div class="chk-row"><input type="checkbox" class="exp-col-chk" id="exp-col-${slugCol(h)}" value="${escapeHtml(h)}" checked><label for="exp-col-${slugCol(h)}" style="margin-left:6px;">${escapeHtml(h)}</label></div>`).join('')}
     </div>
     <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn-block" style="flex:1;" onclick="doExport('pdf')">&#128196; PDF</button>
-      <button class="btn-block outline" style="flex:1;" onclick="doExport('xlsx')">&#128202; Excel</button>
+      <button class="btn-block" style="flex:1;" onclick="doExport('pdf')">${ic('document')} PDF</button>
+      <button class="btn-block outline" style="flex:1;" onclick="doExport('xlsx')">${ic('barchart')} Excel</button>
     </div>
   `);
 }
@@ -1878,6 +1907,9 @@ function getExportRows(){
   const totalLembur = rows.reduce((s,e)=>s+(parseFloat(e.lembur)||0),0);
   const totalLemburFinal = rows.reduce((s,e)=>s+computeLemburFinal(e),0);
   const totalBbm = rows.reduce((s,e)=>s+(parseFloat(e.bbmLiter)||0),0);
+  for(let i=data.length-1;i>0;i--){
+    if(data[i]['Tanggal']===data[i-1]['Tanggal']) data[i]['Tanggal'] = '';
+  }
   return {headers, rows:data, totalHm, totalLembur, totalLemburFinal, totalBbm};
 }
 function exportFileLabel(){
@@ -1949,7 +1981,7 @@ async function doExport(fmt){
     doc.autoTable({
       head: [headers], body: rows.map(r=>headers.map(h=>String(r[h]))),
       foot: [totalRow],
-      startY: 31, styles:{fontSize:8, cellPadding:2}, headStyles:{fillColor:[138,90,0]},
+      startY: 31, styles:{fontSize:8, cellPadding:2}, headStyles:{fillColor:[232,106,28]},
       footStyles:{fillColor:[240,230,210], textColor:[30,20,0], fontStyle:'bold'}, theme:'grid'
     });
   }
