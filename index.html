@@ -26,6 +26,7 @@
   --on-surface:#26303B; --on-surface-variant:#5A6472;
   --outline:#D6CFC0; --outline-variant:#E8E2D5;
   --navy:#26303B;
+  --maroon:#7A2618;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;background:var(--surface);font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--on-surface);}
@@ -1110,8 +1111,9 @@ function renderServisModal(){
       <input type="number" id="svcInterval" value="${SETTINGS.serviceInterval}" onchange="SETTINGS.serviceInterval=parseFloat(this.value)||240;saveSettings();renderServisModal();">
       ${svc.sisa===null ? `<div class="field-sub">${svc.baseHm===null?'Belum ada catatan servis.':'Belum ada data HM saat ini.'}</div>` : `
         <div class="field-sub">Terpakai sejak servis terakhir: <b>${svc.sisa.toFixed(1)} jam</b> dari ${SETTINGS.serviceInterval} jam</div>
-        <div style="background:var(--outline-variant);border-radius:100px;height:10px;margin-top:6px;overflow:hidden;">
-          <div style="height:100%;width:${Math.min(100, svc.sisa/SETTINGS.serviceInterval*100)}%;background:${svc.sisa>=SETTINGS.serviceInterval?'var(--danger)':(svc.sisa>=SETTINGS.serviceInterval*0.85?'#E08900':'var(--success)')};"></div>
+        <div style="position:relative;background:var(--outline-variant);border-radius:100px;height:10px;margin-top:6px;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:linear-gradient(90deg, var(--success) 0%, var(--success) 80%, #E08900 80%, #E08900 95%, var(--maroon) 95%, var(--maroon) 100%);"></div>
+          <div style="position:absolute;top:0;bottom:0;right:0;left:${Math.min(100, svc.sisa/SETTINGS.serviceInterval*100)}%;background:var(--outline-variant);"></div>
         </div>
       `}
     </div>
@@ -1242,9 +1244,10 @@ function renderBeranda(){
   const recent = ENTRIES.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
 
   let statusColor = 'var(--success)', statusText = 'Kondisi normal';
+  let svcPct = svc.sisa!==null ? Math.min(100, svc.sisa/SETTINGS.serviceInterval*100) : 0;
   if(svc.sisa!==null){
-    if(svc.sisa >= SETTINGS.serviceInterval){ statusColor='var(--danger)'; statusText='Segera servis!'; }
-    else if(svc.sisa >= SETTINGS.serviceInterval*0.85){ statusColor='#E08900'; statusText='Mendekati servis'; }
+    if(svcPct > 95){ statusColor='var(--maroon)'; statusText='Segera servis!'; }
+    else if(svcPct >= 80){ statusColor='#E08900'; statusText='Mendekati servis'; }
   }
 
   host.innerHTML = `
@@ -1258,18 +1261,19 @@ function renderBeranda(){
       ${svc.sisa===null ? `<div class="empty-note">${svc.baseHm===null?'Belum ada catatan servis.':'Belum ada data HM saat ini.'}</div>` : `
         <div style="font-weight:700;color:${statusColor};">${statusText}</div>
         <div class="field-sub" style="margin:4px 0 8px;">${svc.sisa.toFixed(1)} / ${SETTINGS.serviceInterval} jam terpakai</div>
-        <div style="background:var(--outline-variant);border-radius:100px;height:10px;overflow:hidden;">
-          <div style="height:100%;width:${Math.min(100, svc.sisa/SETTINGS.serviceInterval*100)}%;background:${statusColor};"></div>
+        <div style="position:relative;background:var(--outline-variant);border-radius:100px;height:10px;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:linear-gradient(90deg, var(--success) 0%, var(--success) 80%, #E08900 80%, #E08900 95%, var(--maroon) 95%, var(--maroon) 100%);"></div>
+          <div style="position:absolute;top:0;bottom:0;right:0;left:${svcPct}%;background:var(--outline-variant);"></div>
         </div>
       `}
     </div>
 
     <div class="section-eyebrow">Ringkasan</div>
     <div class="grid2">
-      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('truck',15)}Total BBM</div><div style="font-size:20px;font-weight:800;">${fmtThousandsLive(String(Math.round(bbmBulan)))} L</div></div>
-      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('gear',15)}Total HM</div><div style="font-size:20px;font-weight:800;">${totalHmBulan.toFixed(1)}</div></div>
-      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('hourglass',15)}Overtime</div><div style="font-size:20px;font-weight:800;">${totalLemburBulan.toFixed(1)} j</div></div>
-      <div class="card"><div class="field-sub" style="display:flex;align-items:center;gap:6px;">${ic('sync',15)}HM/Liter</div><div style="font-size:20px;font-weight:800;">${lifetimeRasio!==null?lifetimeRasio.toFixed(2):'-'}</div></div>
+      <div class="card"><div class="field-sub">Total BBM</div><div style="display:flex;align-items:center;gap:8px;margin-top:2px;"><span style="color:var(--primary);opacity:.65;">${ic('truck',26)}</span><span style="font-size:20px;font-weight:800;">${fmtThousandsLive(String(Math.round(bbmBulan)))} L</span></div></div>
+      <div class="card"><div class="field-sub">Total HM</div><div style="display:flex;align-items:center;gap:8px;margin-top:2px;"><span style="color:var(--primary);opacity:.65;">${ic('gear',26)}</span><span style="font-size:20px;font-weight:800;">${totalHmBulan.toFixed(1)}</span></div></div>
+      <div class="card"><div class="field-sub">Overtime</div><div style="display:flex;align-items:center;gap:8px;margin-top:2px;"><span style="color:var(--primary);opacity:.65;">${ic('hourglass',26)}</span><span style="font-size:20px;font-weight:800;">${totalLemburBulan.toFixed(1)} j</span></div></div>
+      <div class="card"><div class="field-sub">HM/Liter</div><div style="display:flex;align-items:center;gap:8px;margin-top:2px;"><span style="color:var(--primary);opacity:.65;">${ic('sync',26)}</span><span style="font-size:20px;font-weight:800;">${lifetimeRasio!==null?lifetimeRasio.toFixed(2):'-'}</span></div></div>
     </div>
 
     <div class="section-eyebrow section-eyebrow-row">HM &amp; Lembur 15 Hari Terakhir
